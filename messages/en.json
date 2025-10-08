@@ -1,4 +1,70 @@
 {
+  "home": {
+    "title": "Welcome to Authentication Demo",
+    "subtitle": "Secure authentication with Supabase & Next.js",
+    "checking": "Checking authentication...",
+    "welcomeBack": "Welcome back!",
+    "loggedInAs": "You are logged in as",
+    "notLoggedIn": "Not logged in",
+    "getStarted": "Please sign in or create an account to continue",
+    "register": "Register",
+    "registerDesc": "Create a new account",
+    "login": "Login",
+    "loginDesc": "Sign in to your account",
+    "profile": "Profile",
+    "viewProfile": "View Profile",
+    "profileDesc": "See your account details",
+    "dashboard": "Dashboard",
+    "dashboardDesc": "Go to your dashboard",
+    "logout": "Logout",
+    "logoutDesc": "Sign out of your account",
+    "loginRequired": "Login required",
+    "features": "Features",
+    "secureAuth": "Secure Authentication",
+    "secureAuthDesc": "HttpOnly cookies & backend validation",
+    "userManagement": "User Management",
+    "userManagementDesc": "Complete profile & session handling",
+    "modernUI": "Modern UI",
+    "modernUIDesc": "Beautiful design with dark mode"
+  },
+  "profile": {
+    "loading": "Loading...",
+    "backHome": "Back to Home",
+    "logout": "Logout",
+    "user": "User",
+    "accountInfo": "Account Information",
+    "userId": "User ID",
+    "email": "Email",
+    "phone": "Phone",
+    "name": "Name",
+    "emailStatus": "Email Status",
+    "verified": "Verified",
+    "pending": "Pending Verification",
+    "accountCreated": "Account Created",
+    "lastUpdated": "Last Updated",
+    "additionalInfo": "Additional Information"
+  },
+  "login": {
+    "title": "Welcome Back",
+    "subtitle": "Sign in to your account to continue",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "submit": "Sign in",
+    "submitting": "Signing in...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "noAccount": "Don't have an account?",
+    "registerLink": "Sign up",
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email",
+      "passwordRequired": "Password is required"
+    }
+  },
   "register": {
     "title": "Create Account",
     "subtitle": "Fill in the fields below to register",
@@ -14,8 +80,11 @@
     "confirmPasswordPlaceholder": "Enter your password again",
     "terms": "I accept the terms of use and privacy policy",
     "submit": "Register",
+    "submitting": "Creating account...",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Sign in",
     "errors": {
       "nameRequired": "Name is required",
       "emailRequired": "Email is required",
@@ -27,6 +96,6 @@
       "passwordMismatch": "Passwords do not match",
       "termsRequired": "You must accept the terms of use"
     },
-    "success": "Registration successful!"
+    "success": "Registration successful! Redirecting..."
   }
 }

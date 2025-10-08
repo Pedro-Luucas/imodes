@@ -1,4 +1,70 @@
 {
+  "home": {
+    "title": "Bem-vindo à Demo de Autenticação",
+    "subtitle": "Autenticação segura com Supabase & Next.js",
+    "checking": "Verificando autenticação...",
+    "welcomeBack": "Bem-vindo de volta!",
+    "loggedInAs": "Você está logado como",
+    "notLoggedIn": "Não está logado",
+    "getStarted": "Por favor, entre ou crie uma conta para continuar",
+    "register": "Registrar",
+    "registerDesc": "Criar uma nova conta",
+    "login": "Entrar",
+    "loginDesc": "Entre na sua conta",
+    "profile": "Perfil",
+    "viewProfile": "Ver Perfil",
+    "profileDesc": "Veja os detalhes da sua conta",
+    "dashboard": "Painel",
+    "dashboardDesc": "Ir para o painel",
+    "logout": "Sair",
+    "logoutDesc": "Sair da sua conta",
+    "loginRequired": "Login necessário",
+    "features": "Recursos",
+    "secureAuth": "Autenticação Segura",
+    "secureAuthDesc": "Cookies HttpOnly e validação no backend",
+    "userManagement": "Gestão de Usuários",
+    "userManagementDesc": "Perfil completo e gestão de sessões",
+    "modernUI": "Interface Moderna",
+    "modernUIDesc": "Design bonito com modo escuro"
+  },
+  "profile": {
+    "loading": "Carregando...",
+    "backHome": "Voltar para Início",
+    "logout": "Sair",
+    "user": "Usuário",
+    "accountInfo": "Informações da Conta",
+    "userId": "ID do Usuário",
+    "email": "E-mail",
+    "phone": "Telefone",
+    "name": "Nome",
+    "emailStatus": "Status do E-mail",
+    "verified": "Verificado",
+    "pending": "Verificação Pendente",
+    "accountCreated": "Conta Criada",
+    "lastUpdated": "Última Atualização",
+    "additionalInfo": "Informações Adicionais"
+  },
+  "login": {
+    "title": "Bem-vindo de Volta",
+    "subtitle": "Entre na sua conta para continuar",
+    "email": "E-mail",
+    "emailPlaceholder": "Digite seu e-mail",
+    "password": "Senha",
+    "passwordPlaceholder": "Digite sua senha",
+    "rememberMe": "Lembrar-me",
+    "forgotPassword": "Esqueceu a senha?",
+    "submit": "Entrar",
+    "submitting": "Entrando...",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "noAccount": "Não tem uma conta?",
+    "registerLink": "Cadastre-se",
+    "errors": {
+      "emailRequired": "O e-mail é obrigatório",
+      "emailInvalid": "E-mail inválido",
+      "passwordRequired": "A senha é obrigatória"
+    }
+  },
   "register": {
     "title": "Criar Conta",
     "subtitle": "Preencha os campos abaixo para se registrar",
@@ -14,8 +80,11 @@
     "confirmPasswordPlaceholder": "Digite sua senha novamente",
     "terms": "Eu aceito os termos de uso e política de privacidade",
     "submit": "Registrar",
+    "submitting": "Criando conta...",
     "showPassword": "Mostrar senha",
     "hidePassword": "Ocultar senha",
+    "haveAccount": "Já tem uma conta?",
+    "loginLink": "Entrar",
     "errors": {
       "nameRequired": "O nome é obrigatório",
       "emailRequired": "O e-mail é obrigatório",
@@ -27,6 +96,6 @@
       "passwordMismatch": "As senhas não coincidem",
       "termsRequired": "Você deve aceitar os termos de uso"
     },
-    "success": "Registro realizado com sucesso!"
+    "success": "Registro realizado com sucesso! Redirecionando..."
   }
 }

@@ -2,10 +2,14 @@
 
 import { useState, FormEvent } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { register } from "@/lib/authClient";
 
 export default function RegisterPage() {
   const t = useTranslations("register");
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -20,6 +24,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,25 +75,48 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitSuccess(false);
+    setApiError("");
 
     if (validateForm()) {
-      // Here you would typically send the data to your API
-      console.log("Form submitted:", formData);
-      setSubmitSuccess(true);
-      
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        password: "",
-        confirmPassword: "",
-        acceptTerms: false,
-      });
-      setErrors({});
+      setLoading(true);
+
+      try {
+        // Call the registration API with userData
+        const response = await register(formData.email, formData.password, {
+          name: formData.name,
+          phone: formData.phone,
+          acceptedTerms: formData.acceptTerms,
+          acceptedTermsAt: new Date().toISOString(),
+        });
+
+        // Check if email confirmation is required
+        if (response.requiresEmailConfirmation) {
+          // Show success message and redirect to check email page
+          setSubmitSuccess(true);
+          setApiError(response.message);
+          
+          // Redirect after 2 seconds
+          setTimeout(() => {
+            router.push('/login');
+          }, 2000);
+        } else {
+          // User is automatically logged in, redirect to home/dashboard
+          setSubmitSuccess(true);
+          
+          // Redirect immediately
+          setTimeout(() => {
+            router.push('/');
+          }, 1000);
+        }
+      } catch (error) {
+        // Handle API errors
+        setApiError(error instanceof Error ? error.message : "Registration failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -117,7 +146,13 @@ export default function RegisterPage() {
 
         {submitSuccess && (
           <div className="mb-6 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 rounded-lg text-center">
-            {t("success")}
+            {apiError || t("success")}
+          </div>
+        )}
+
+        {apiError && !submitSuccess && (
+          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg text-center">
+            {apiError}
           </div>
         )}
 
@@ -312,10 +347,22 @@ export default function RegisterPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {t("submit")}
+            {loading ? t("submitting") || "Creating account..." : t("submit")}
           </button>
+
+          {/* Login Link */}
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+            {t("haveAccount") || "Already have an account?"}{" "}
+            <Link
+              href="/login"
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+            >
+              {t("loginLink") || "Sign in"}
+            </Link>
+          </p>
         </form>
       </div>
     </div>
