@@ -1,0 +1,32 @@
+{
+  "register": {
+    "title": "Create Account",
+    "subtitle": "Fill in the fields below to register",
+    "name": "Full name",
+    "namePlaceholder": "Enter your full name",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "phone": "Phone",
+    "phonePlaceholder": "Enter your phone number",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Enter your password again",
+    "terms": "I accept the terms of use and privacy policy",
+    "submit": "Register",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "errors": {
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email",
+      "phoneRequired": "Phone is required",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match",
+      "termsRequired": "You must accept the terms of use"
+    },
+    "success": "Registration successful!"
+  }
+}

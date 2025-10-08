@@ -1,0 +1,32 @@
+{
+  "register": {
+    "title": "Criar Conta",
+    "subtitle": "Preencha os campos abaixo para se registrar",
+    "name": "Nome completo",
+    "namePlaceholder": "Digite seu nome completo",
+    "email": "E-mail",
+    "emailPlaceholder": "Digite seu e-mail",
+    "phone": "Telefone",
+    "phonePlaceholder": "Digite seu telefone",
+    "password": "Senha",
+    "passwordPlaceholder": "Digite sua senha",
+    "confirmPassword": "Confirmar senha",
+    "confirmPasswordPlaceholder": "Digite sua senha novamente",
+    "terms": "Eu aceito os termos de uso e política de privacidade",
+    "submit": "Registrar",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "errors": {
+      "nameRequired": "O nome é obrigatório",
+      "emailRequired": "O e-mail é obrigatório",
+      "emailInvalid": "E-mail inválido",
+      "phoneRequired": "O telefone é obrigatório",
+      "passwordRequired": "A senha é obrigatória",
+      "passwordMinLength": "A senha deve ter no mínimo 8 caracteres",
+      "confirmPasswordRequired": "A confirmação de senha é obrigatória",
+      "passwordMismatch": "As senhas não coincidem",
+      "termsRequired": "Você deve aceitar os termos de uso"
+    },
+    "success": "Registro realizado com sucesso!"
+  }
+}
