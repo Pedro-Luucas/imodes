@@ -1,63 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { setAuthCookies } from '@/lib/auth';
+import { registerSchema } from '@/lib/validations';
+import { ZodError } from 'zod';
 
 /**
  * POST /api/register
  * 
- * Registers a new user with email and password
- * Sets HttpOnly cookies with session tokens on success
+ * Registration flow:
+ * 1. Create user in Supabase Auth
+ * 2. Authenticate the user (sign in)
+ * 3. Create profile record (with authenticated session)
+ * 4. Create role-specific record (therapist or patient)
+ * 5. Set HttpOnly cookies with session tokens
  */
 
 export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { email, password, userData } = body;
 
-    // Validate input
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength (minimum 8 characters)
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
-    }
+    // Validate input with Zod
+    const validatedData = registerSchema.parse(body);
+    const { email, password, role, full_name, first_name, phone } = validatedData;
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonClient();
 
-    // Attempt to sign up with email and password
-    const { data, error } = await supabase.auth.signUp({
+    // Step 1: Create user in auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: userData || {}, // Optional user metadata
-      },
     });
 
     // Handle registration errors
-    if (error) {
-      console.error('Registration error:', error.message);
+    if (signUpError) {
+      console.error('Registration error:', signUpError.message);
       
       // Check for specific error types
-      if (error.message.includes('already registered')) {
+      if (signUpError.message.includes('already registered')) {
         return NextResponse.json(
           { error: 'An account with this email already exists' },
           { status: 409 }
@@ -65,61 +46,157 @@ export async function POST(request: NextRequest) {
       }
       
       return NextResponse.json(
-        { error: error.message || 'Registration failed' },
+        { error: signUpError.message || 'Registration failed' },
         { status: 400 }
       );
     }
 
     // Check if user was created
-    if (!data.user) {
+    if (!signUpData.user) {
       return NextResponse.json(
         { error: 'Failed to create user account' },
         { status: 500 }
       );
     }
 
-    const { user, session } = data;
+    const { user } = signUpData;
 
-    // Some Supabase configurations require email confirmation
-    // In that case, session will be null until email is confirmed
-    if (session) {
-      // Extract session tokens
-      const { access_token, refresh_token } = session;
+    // Step 2: Authenticate the user (sign in)
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      // Set secure HttpOnly cookies
-      await setAuthCookies(access_token, refresh_token);
-
-      // Return user information with session
+    if (signInError || !signInData.session) {
+      console.error('Authentication error after signup:', signInError?.message);
+      
       return NextResponse.json(
-        {
+        { 
           user: {
             id: user.id,
             email: user.email,
             email_confirmed_at: user.email_confirmed_at,
             created_at: user.created_at,
           },
-          message: 'Registration successful',
-          requiresEmailConfirmation: false,
-        },
-        { status: 201 }
-      );
-    } else {
-      // Email confirmation required
-      return NextResponse.json(
-        {
-          user: {
-            id: user.id,
-            email: user.email,
-            email_confirmed_at: user.email_confirmed_at,
-            created_at: user.created_at,
-          },
-          message: 'Registration successful. Please check your email to confirm your account.',
+          message: 'Account created. Please check your email to confirm your account before creating your profile.',
           requiresEmailConfirmation: true,
         },
         { status: 201 }
       );
     }
+
+    const { session } = signInData;
+
+    // Step 3: Create profile record (with authenticated session)
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        role: role,
+        full_name: full_name,
+        first_name: first_name,
+        email: email,
+        avatar_url: null,
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError.message);
+      
+      // Sign out the user since profile creation failed
+      await supabase.auth.signOut();
+      
+      return NextResponse.json(
+        { error: 'Failed to create user profile' },
+        { status: 500 }
+      );
+    }
+
+    // Step 4: Create role-specific record (with authenticated session)
+    if (role === 'therapist') {
+      const { error: therapistError } = await supabase
+        .from('therapists')
+        .insert({
+          id: user.id,
+          patients: [],
+          phone: phone || null,
+        });
+
+      if (therapistError) {
+        console.error('Therapist record creation error:', therapistError.message);
+        
+        // Clean up profile and sign out
+        await supabase.from('profiles').delete().eq('id', user.id);
+        await supabase.auth.signOut();
+        
+        return NextResponse.json(
+          { error: 'Failed to create therapist record' },
+          { status: 500 }
+        );
+      }
+    } else if (role === 'patient') {
+      const { error: patientError } = await supabase
+        .from('patients')
+        .insert({
+          id: user.id,
+          therapist_id: null,
+        });
+
+      if (patientError) {
+        console.error('Patient record creation error:', patientError.message);
+        
+        // Clean up profile and sign out
+        await supabase.from('profiles').delete().eq('id', user.id);
+        await supabase.auth.signOut();
+        
+        return NextResponse.json(
+          { error: 'Failed to create patient record' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Step 5: Set secure HttpOnly cookies
+    const { access_token, refresh_token } = session;
+    await setAuthCookies(access_token, refresh_token);
+
+    // Return user information with session
+    return NextResponse.json(
+      {
+        user: {
+          id: user.id,
+          email: user.email,
+          email_confirmed_at: user.email_confirmed_at,
+          created_at: user.created_at,
+        },
+        profile: {
+          id: profileData.id,
+          role: profileData.role,
+          full_name: profileData.full_name,
+          first_name: profileData.first_name,
+          email: profileData.email,
+        },
+        message: 'Registration successful',
+        requiresEmailConfirmation: false,
+      },
+      { status: 201 }
+    );
   } catch (error) {
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.issues.map((err) => ({
+            field: err.path.join('.'),
+            message: err.message,
+          })),
+        },
+        { status: 400 }
+      );
+    }
+
     console.error('Unexpected error during registration:', error);
     return NextResponse.json(
       { error: 'An unexpected error occurred' },

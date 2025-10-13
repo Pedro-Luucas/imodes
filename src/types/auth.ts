@@ -40,7 +40,10 @@ export interface LogoutResponse {
 export interface RegisterRequest {
   email: string;
   password: string;
-  userData?: Record<string, unknown>;
+  role: 'therapist' | 'patient';
+  full_name: string;
+  first_name: string;
+  phone?: string;
 }
 
 export interface RegisterResponse {
@@ -50,6 +53,31 @@ export interface RegisterResponse {
     email_confirmed_at: string | undefined;
     created_at: string;
   };
+  profile: {
+    id: string;
+    role: string;
+    full_name: string;
+    first_name: string;
+    email: string;
+  };
   message: string;
   requiresEmailConfirmation: boolean;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  password: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
 }

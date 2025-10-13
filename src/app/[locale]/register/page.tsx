@@ -12,7 +12,9 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    name: "",
+    role: "" as "" | "therapist" | "patient",
+    fullName: "",
+    firstName: "",
     email: "",
     phone: "",
     password: "",
@@ -35,9 +37,19 @@ export default function RegisterPage() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Name validation
-    if (!formData.name.trim()) {
-      newErrors.name = t("errors.nameRequired");
+    // Role validation
+    if (!formData.role) {
+      newErrors.role = t("errors.roleRequired");
+    }
+
+    // Full name validation
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = t("errors.fullNameRequired");
+    }
+
+    // First name validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = t("errors.firstNameRequired");
     }
 
     // Email validation
@@ -47,8 +59,8 @@ export default function RegisterPage() {
       newErrors.email = t("errors.emailInvalid");
     }
 
-    // Phone validation
-    if (!formData.phone.trim()) {
+    // Phone validation (required for therapists)
+    if (formData.role === "therapist" && !formData.phone.trim()) {
       newErrors.phone = t("errors.phoneRequired");
     }
 
@@ -84,13 +96,15 @@ export default function RegisterPage() {
       setLoading(true);
 
       try {
-        // Call the registration API with userData
-        const response = await register(formData.email, formData.password, {
-          name: formData.name,
-          phone: formData.phone,
-          acceptedTerms: formData.acceptTerms,
-          acceptedTermsAt: new Date().toISOString(),
-        });
+        // Call the registration API with new parameters
+        const response = await register(
+          formData.email,
+          formData.password,
+          formData.role as "therapist" | "patient",
+          formData.fullName,
+          formData.firstName,
+          formData.phone || undefined
+        );
 
         // Check if email confirmation is required
         if (response.requiresEmailConfirmation) {
@@ -157,29 +171,85 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Name Field */}
+          {/* Role Field */}
           <div>
             <label
-              htmlFor="name"
+              htmlFor="role"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              {t("name")}
+              {t("role")}
+            </label>
+            <select
+              id="role"
+              value={formData.role}
+              onChange={(e) => handleInputChange("role", e.target.value)}
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none ${
+                errors.role
+                  ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                  : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+              } text-gray-900 dark:text-white`}
+            >
+              <option value="">{t("rolePlaceholder")}</option>
+              <option value="therapist">{t("roleTherapist")}</option>
+              <option value="patient">{t("rolePatient")}</option>
+            </select>
+            {errors.role && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.role}
+              </p>
+            )}
+          </div>
+
+          {/* Full Name Field */}
+          <div>
+            <label
+              htmlFor="fullName"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              {t("fullName")}
             </label>
             <input
               type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              placeholder={t("namePlaceholder")}
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) => handleInputChange("fullName", e.target.value)}
+              placeholder={t("fullNamePlaceholder")}
               className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none ${
-                errors.name
+                errors.fullName
                   ? "border-red-500 bg-red-50 dark:bg-red-900/20"
                   : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
               } text-gray-900 dark:text-white placeholder-gray-400`}
             />
-            {errors.name && (
+            {errors.fullName && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.name}
+                {errors.fullName}
+              </p>
+            )}
+          </div>
+
+          {/* First Name Field */}
+          <div>
+            <label
+              htmlFor="firstName"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              {t("firstName")}
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => handleInputChange("firstName", e.target.value)}
+              placeholder={t("firstNamePlaceholder")}
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none ${
+                errors.firstName
+                  ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                  : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+              } text-gray-900 dark:text-white placeholder-gray-400`}
+            />
+            {errors.firstName && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.firstName}
               </p>
             )}
           </div>
@@ -217,7 +287,10 @@ export default function RegisterPage() {
               htmlFor="phone"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              {t("phone")}
+              {formData.role === "patient" ? t("phoneOptional") : t("phone")}
+              {formData.role === "therapist" && (
+                <span className="text-red-500 ml-1">*</span>
+              )}
             </label>
             <input
               type="tel"

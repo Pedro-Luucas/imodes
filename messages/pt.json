@@ -68,12 +68,21 @@
   "register": {
     "title": "Criar Conta",
     "subtitle": "Preencha os campos abaixo para se registrar",
+    "role": "Eu sou",
+    "roleTherapist": "Terapeuta",
+    "rolePatient": "Paciente",
+    "rolePlaceholder": "Selecione seu papel",
+    "fullName": "Nome completo",
+    "fullNamePlaceholder": "Digite seu nome completo",
+    "firstName": "Primeiro nome",
+    "firstNamePlaceholder": "Digite seu primeiro nome",
     "name": "Nome completo",
     "namePlaceholder": "Digite seu nome completo",
     "email": "E-mail",
     "emailPlaceholder": "Digite seu e-mail",
     "phone": "Telefone",
     "phonePlaceholder": "Digite seu telefone",
+    "phoneOptional": "Telefone (opcional para pacientes)",
     "password": "Senha",
     "passwordPlaceholder": "Digite sua senha",
     "confirmPassword": "Confirmar senha",
@@ -86,10 +95,13 @@
     "haveAccount": "Já tem uma conta?",
     "loginLink": "Entrar",
     "errors": {
+      "roleRequired": "O papel é obrigatório",
+      "fullNameRequired": "O nome completo é obrigatório",
+      "firstNameRequired": "O primeiro nome é obrigatório",
       "nameRequired": "O nome é obrigatório",
       "emailRequired": "O e-mail é obrigatório",
       "emailInvalid": "E-mail inválido",
-      "phoneRequired": "O telefone é obrigatório",
+      "phoneRequired": "O telefone é obrigatório para terapeutas",
       "passwordRequired": "A senha é obrigatória",
       "passwordMinLength": "A senha deve ter no mínimo 8 caracteres",
       "confirmPasswordRequired": "A confirmação de senha é obrigatória",
@@ -97,5 +109,40 @@
       "termsRequired": "Você deve aceitar os termos de uso"
     },
     "success": "Registro realizado com sucesso! Redirecionando..."
+  },
+  "forgotPassword": {
+    "title": "Esqueceu a Senha",
+    "subtitle": "Digite seu e-mail para receber um link de redefinição",
+    "email": "E-mail",
+    "emailPlaceholder": "Digite seu e-mail",
+    "submit": "Enviar Link",
+    "submitting": "Enviando...",
+    "backToLogin": "Voltar para login",
+    "success": "Se existir uma conta com este e-mail, um link de redefinição foi enviado.",
+    "checkEmail": "Por favor, verifique seu e-mail",
+    "errors": {
+      "emailRequired": "O e-mail é obrigatório",
+      "emailInvalid": "E-mail inválido"
+    }
+  },
+  "resetPassword": {
+    "title": "Redefinir Senha",
+    "subtitle": "Digite sua nova senha",
+    "password": "Nova Senha",
+    "passwordPlaceholder": "Digite sua nova senha",
+    "confirmPassword": "Confirmar Senha",
+    "confirmPasswordPlaceholder": "Digite sua senha novamente",
+    "submit": "Redefinir Senha",
+    "submitting": "Redefinindo...",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "success": "Senha redefinida com sucesso! Redirecionando para o login...",
+    "invalidLink": "Link de redefinição inválido ou expirado",
+    "errors": {
+      "passwordRequired": "A senha é obrigatória",
+      "passwordMinLength": "A senha deve ter no mínimo 8 caracteres",
+      "confirmPasswordRequired": "A confirmação de senha é obrigatória",
+      "passwordMismatch": "As senhas não coincidem"
+    }
   }
 }

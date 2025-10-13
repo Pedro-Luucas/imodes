@@ -17,7 +17,8 @@
     "next-intl": "^4.3.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "zod": "^4.1.12"
   },
   "optionalDependencies": {
     "lightningcss-darwin-arm64": "^1.28.2",

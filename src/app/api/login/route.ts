@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { setAuthCookies } from '@/lib/auth';
+import { loginSchema } from '@/lib/validations';
+import { ZodError } from 'zod';
 
 /**
  * POST /api/login
@@ -12,15 +14,10 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { email, password } = body;
 
-    // Validate input
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
+    // Validate input with Zod
+    const validatedData = loginSchema.parse(body);
+    const { email, password } = validatedData;
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonClient();
@@ -60,6 +57,20 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.issues.map((err) => ({
+            field: err.path.join('.'),
+            message: err.message,
+          })),
+        },
+        { status: 400 }
+      );
+    }
+
     console.error('Unexpected error during login:', error);
     return NextResponse.json(
       { error: 'An unexpected error occurred' },

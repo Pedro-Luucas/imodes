@@ -68,12 +68,21 @@
   "register": {
     "title": "Create Account",
     "subtitle": "Fill in the fields below to register",
+    "role": "I am a",
+    "roleTherapist": "Therapist",
+    "rolePatient": "Patient",
+    "rolePlaceholder": "Select your role",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Enter your full name",
+    "firstName": "First name",
+    "firstNamePlaceholder": "Enter your first name",
     "name": "Full name",
     "namePlaceholder": "Enter your full name",
     "email": "Email",
     "emailPlaceholder": "Enter your email",
     "phone": "Phone",
     "phonePlaceholder": "Enter your phone number",
+    "phoneOptional": "Phone (optional for patients)",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "confirmPassword": "Confirm password",
@@ -86,10 +95,13 @@
     "haveAccount": "Already have an account?",
     "loginLink": "Sign in",
     "errors": {
+      "roleRequired": "Role is required",
+      "fullNameRequired": "Full name is required",
+      "firstNameRequired": "First name is required",
       "nameRequired": "Name is required",
       "emailRequired": "Email is required",
       "emailInvalid": "Invalid email",
-      "phoneRequired": "Phone is required",
+      "phoneRequired": "Phone is required for therapists",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 8 characters",
       "confirmPasswordRequired": "Password confirmation is required",
@@ -97,5 +109,40 @@
       "termsRequired": "You must accept the terms of use"
     },
     "success": "Registration successful! Redirecting..."
+  },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your email to receive a password reset link",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "submit": "Send Reset Link",
+    "submitting": "Sending...",
+    "backToLogin": "Back to login",
+    "success": "If an account exists with this email, a password reset link has been sent.",
+    "checkEmail": "Please check your email",
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email"
+    }
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password",
+    "password": "New Password",
+    "passwordPlaceholder": "Enter your new password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Enter your password again",
+    "submit": "Reset Password",
+    "submitting": "Resetting...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "success": "Password successfully reset! Redirecting to login...",
+    "invalidLink": "Invalid or expired reset link",
+    "errors": {
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    }
   }
 }

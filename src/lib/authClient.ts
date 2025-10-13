@@ -9,7 +9,11 @@ import type {
   RegisterRequest,
   RegisterResponse,
   ProfileResponse, 
-  ErrorResponse 
+  ErrorResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse
 } from '@/types/auth';
 
 /**
@@ -18,14 +22,24 @@ import type {
 export async function register(
   email: string, 
   password: string, 
-  userData?: Record<string, unknown>
+  role: 'therapist' | 'patient',
+  full_name: string,
+  first_name: string,
+  phone?: string
 ): Promise<RegisterResponse> {
   const response = await fetch('/api/register', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, password, userData } as RegisterRequest),
+    body: JSON.stringify({ 
+      email, 
+      password, 
+      role, 
+      full_name, 
+      first_name, 
+      phone 
+    } as RegisterRequest),
   });
 
   const data = await response.json();
@@ -101,4 +115,46 @@ export async function isAuthenticated(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Request a password reset email
+ */
+export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+  const response = await fetch('/api/forgot-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email } as ForgotPasswordRequest),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to send password reset email');
+  }
+
+  return data as ForgotPasswordResponse;
+}
+
+/**
+ * Reset password with the token from the reset email
+ */
+export async function resetPassword(password: string, accessToken: string, refreshToken: string): Promise<ResetPasswordResponse> {
+  const response = await fetch('/api/reset-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ password, accessToken, refreshToken } as ResetPasswordRequest),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to reset password');
+  }
+
+  return data as ResetPasswordResponse;
 }
