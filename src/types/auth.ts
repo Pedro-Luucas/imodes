@@ -53,7 +53,7 @@ export interface RegisterResponse {
     email_confirmed_at: string | undefined;
     created_at: string;
   };
-  profile: {
+  profile?: {
     id: string;
     role: string;
     full_name: string;
