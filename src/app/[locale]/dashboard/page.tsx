@@ -1,11 +1,14 @@
 'use client';
 
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
+  const { profile, loading: profileLoading } = useProfile({ requireAuth: false });
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
@@ -17,6 +20,9 @@ export default function DashboardPage() {
   }
 
   if (!user) return null;
+
+  const isTherapist = profile?.role === 'therapist';
+  const isPatient = profile?.role === 'patient';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -48,9 +54,22 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Welcome to your Dashboard!
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Welcome to your Dashboard{profile?.full_name ? `, ${profile.first_name}` : ''}!
+                </h2>
+                {profile?.role && (
+                  <span className={`inline-flex items-center mt-2 px-3 py-1 rounded-full text-sm font-medium ${
+                    isTherapist 
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  }`}>
+                    {profile.role === 'therapist' ? '👨‍⚕️ Therapist' : '🧑‍🦰 Patient'}
+                  </span>
+                )}
+              </div>
+            </div>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               You are successfully authenticated with Supabase.
             </p>
@@ -94,6 +113,73 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Role-Specific Quick Actions */}
+          {profile && (isTherapist || isPatient) && (
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Quick Actions
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {isTherapist && (
+                  <>
+                    <Link
+                      href="/my-patients"
+                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">My Patients</div>
+                        <div className="text-sm text-blue-100">View & manage patients</div>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">My Profile</div>
+                        <div className="text-sm text-purple-100">View profile details</div>
+                      </div>
+                    </Link>
+                  </>
+                )}
+                {isPatient && (
+                  <>
+                    <Link
+                      href="/my-therapist"
+                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">My Therapist</div>
+                        <div className="text-sm text-green-100">View therapist info</div>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">My Profile</div>
+                        <div className="text-sm text-blue-100">View profile details</div>
+                      </div>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Additional Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
@@ -104,8 +190,10 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Profile</h3>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">Active</p>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Role</h3>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'Active'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -145,30 +233,90 @@ export default function DashboardPage() {
               What&apos;s Next?
             </h3>
             <ul className="space-y-3">
-              <li className="flex items-start">
-                <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                  1
-                </span>
-                <p className="ml-3 text-gray-700 dark:text-gray-300">
-                  Customize this dashboard with your own content
-                </p>
-              </li>
-              <li className="flex items-start">
-                <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                  2
-                </span>
-                <p className="ml-3 text-gray-700 dark:text-gray-300">
-                  Add more protected routes using the useAuth hook
-                </p>
-              </li>
-              <li className="flex items-start">
-                <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                  3
-                </span>
-                <p className="ml-3 text-gray-700 dark:text-gray-300">
-                  Implement profile editing and password reset
-                </p>
-              </li>
+              {isTherapist && (
+                <>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      1
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      View and manage your assigned patients
+                    </p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      2
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Contact patients via email or phone
+                    </p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      3
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Keep track of patient progress and sessions
+                    </p>
+                  </li>
+                </>
+              )}
+              {isPatient && (
+                <>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      1
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      View your assigned therapist contact information
+                    </p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      2
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Schedule appointments and reach out when needed
+                    </p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      3
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Track your therapy progress and goals
+                    </p>
+                  </li>
+                </>
+              )}
+              {!profile?.role && (
+                <>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      1
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Customize this dashboard with your own content
+                    </p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      2
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Add more protected routes using the useAuth hook
+                    </p>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
+                      3
+                    </span>
+                    <p className="ml-3 text-gray-700 dark:text-gray-300">
+                      Implement profile editing and password reset
+                    </p>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </div>

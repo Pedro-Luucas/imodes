@@ -13,7 +13,14 @@ import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   ResetPasswordRequest,
-  ResetPasswordResponse
+  ResetPasswordResponse,
+  AssignTherapistRequest,
+  AssignTherapistResponse,
+  GetTherapistResponse,
+  GetPatientsResponse,
+  GetProfileResponse,
+  UnassignTherapistResponse,
+  Profile
 } from '@/types/auth';
 
 /**
@@ -27,7 +34,7 @@ export async function register(
   first_name: string,
   phone?: string
 ): Promise<RegisterResponse> {
-  const response = await fetch('/api/register', {
+  const response = await fetch('/api/auth/register', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -55,7 +62,7 @@ export async function register(
  * Login with email and password
  */
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const response = await fetch('/api/login', {
+  const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -93,7 +100,7 @@ export async function getProfile(): Promise<ProfileResponse> {
  * Logout the current user
  */
 export async function logout(): Promise<void> {
-  const response = await fetch('/api/logout', {
+  const response = await fetch('/api/auth/logout', {
     method: 'POST',
   });
 
@@ -121,7 +128,7 @@ export async function isAuthenticated(): Promise<boolean> {
  * Request a password reset email
  */
 export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-  const response = await fetch('/api/forgot-password', {
+  const response = await fetch('/api/auth/forgot-password', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -142,7 +149,7 @@ export async function forgotPassword(email: string): Promise<ForgotPasswordRespo
  * Reset password with the token from the reset email
  */
 export async function resetPassword(password: string, accessToken: string, refreshToken: string): Promise<ResetPasswordResponse> {
-  const response = await fetch('/api/reset-password', {
+  const response = await fetch('/api/auth/reset-password', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -157,4 +164,135 @@ export async function resetPassword(password: string, accessToken: string, refre
   }
 
   return data as ResetPasswordResponse;
+}
+
+// ========================================
+// Patient-Therapist Management Functions
+// ========================================
+
+/**
+ * Assign a therapist to a patient
+ */
+export async function assignTherapist(patientId: string, therapistId: string): Promise<AssignTherapistResponse> {
+  const response = await fetch(`/api/patients/${patientId}/therapist`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ therapistId } as AssignTherapistRequest),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to assign therapist');
+  }
+
+  return data as AssignTherapistResponse;
+}
+
+/**
+ * Get a patient's assigned therapist
+ */
+export async function getPatientTherapist(patientId: string): Promise<Profile | null> {
+  const response = await fetch(`/api/patients/${patientId}/therapist`, {
+    method: 'GET',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to fetch therapist');
+  }
+
+  return (data as GetTherapistResponse).therapist;
+}
+
+/**
+ * Unassign a therapist from a patient
+ */
+export async function unassignTherapist(patientId: string): Promise<UnassignTherapistResponse> {
+  const response = await fetch(`/api/patients/${patientId}/therapist`, {
+    method: 'DELETE',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to unassign therapist');
+  }
+
+  return data as UnassignTherapistResponse;
+}
+
+/**
+ * Update a patient's therapist
+ */
+export async function updatePatientTherapist(patientId: string, therapistId: string): Promise<AssignTherapistResponse> {
+  const response = await fetch(`/api/patients/${patientId}/therapist`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ therapistId } as AssignTherapistRequest),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to update therapist');
+  }
+
+  return data as AssignTherapistResponse;
+}
+
+/**
+ * Get all patients assigned to a therapist
+ */
+export async function getTherapistPatients(therapistId: string): Promise<Profile[]> {
+  const response = await fetch(`/api/therapists/${therapistId}/patients`, {
+    method: 'GET',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to fetch patients');
+  }
+
+  return (data as GetPatientsResponse).patients;
+}
+
+/**
+ * Get a therapist's profile
+ */
+export async function getTherapistProfile(therapistId: string): Promise<Profile> {
+  const response = await fetch(`/api/therapists/${therapistId}`, {
+    method: 'GET',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to fetch therapist profile');
+  }
+
+  return (data as GetProfileResponse).profile;
+}
+
+/**
+ * Get a patient's profile
+ */
+export async function getPatientProfile(patientId: string): Promise<Profile> {
+  const response = await fetch(`/api/patients/${patientId}`, {
+    method: 'GET',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to fetch patient profile');
+  }
+
+  return (data as GetProfileResponse).profile;
 }

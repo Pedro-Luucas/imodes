@@ -81,3 +81,42 @@ export interface ResetPasswordRequest {
 export interface ResetPasswordResponse {
   message: string;
 }
+
+// Patient and Therapist Types
+
+export interface Profile {
+  id: string;
+  role: 'therapist' | 'patient';
+  full_name: string;
+  first_name: string;
+  email: string;
+  phone?: string;
+  therapist_id?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface AssignTherapistRequest {
+  therapistId: string;
+}
+
+export interface AssignTherapistResponse {
+  message: string;
+  patient: Profile;
+}
+
+export interface GetTherapistResponse {
+  therapist: Profile | null;
+}
+
+export interface GetPatientsResponse {
+  patients: Profile[];
+}
+
+export interface GetProfileResponse {
+  profile: Profile;
+}
+
+export interface UnassignTherapistResponse {
+  message: string;
+}
