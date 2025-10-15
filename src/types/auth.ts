@@ -124,3 +124,15 @@ export interface GetProfileResponse {
 export interface UnassignTherapistResponse {
   message: string;
 }
+
+// Avatar Upload Types
+
+export interface UploadAvatarResponse {
+  message: string;
+  avatar_url: string;
+  signed_url: string;
+}
+
+export interface DeleteAvatarResponse {
+  message: string;
+}

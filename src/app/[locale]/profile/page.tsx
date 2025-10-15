@@ -1,12 +1,101 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { uploadAvatar, deleteAvatar } from '@/lib/authClient';
 import { useTranslations } from 'next-intl';
 
 export default function ProfilePage() {
   const t = useTranslations('profile');
   const { user, loading, logout } = useAuth();
+  const { profile, refetch } = useProfile({ requireAuth: false });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Please select a valid image file (JPG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const response = await uploadAvatar(file);
+      setAvatarUrl(response.signed_url);
+      await refetch(); // Refresh profile data
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload avatar');
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!confirm('Are you sure you want to delete your avatar?')) {
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      await deleteAvatar();
+      setAvatarUrl(null);
+      await refetch(); // Refresh profile data
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to delete avatar');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Fetch signed URL when profile changes
+  useEffect(() => {
+    const fetchAvatarUrl = async () => {
+      if (profile?.avatar_url && !avatarUrl) {
+        try {
+          const response = await fetch('/api/profile/avatar/url');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.signed_url) {
+              setAvatarUrl(data.signed_url);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching avatar URL:', error);
+        }
+      }
+    };
+
+    fetchAvatarUrl();
+  }, [profile?.avatar_url, avatarUrl]);
+
+  const displayAvatarUrl = avatarUrl;
 
   if (loading) {
     return (
@@ -46,11 +135,41 @@ export default function ProfilePage() {
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
             <div className="flex items-center gap-4">
               {/* Avatar */}
-              <div className="w-20 h-20 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {user.email?.charAt(0).toUpperCase()}
+              <div className="relative group">
+                <div 
+                  onClick={handleAvatarClick}
+                  className="w-20 h-20 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer overflow-hidden transition-opacity hover:opacity-80"
+                >
+                  {displayAvatarUrl ? (
+                    <img 
+                      src={displayAvatarUrl} 
+                      alt="Profile avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{user.email?.charAt(0).toUpperCase()}</span>
+                  )}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                    </div>
+                  )}
+                </div>
+                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1.5 cursor-pointer hover:bg-blue-600 transition-colors" onClick={handleAvatarClick}>
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
               {/* Name/Email */}
-              <div>
+              <div className="flex-1">
                 <h1 className="text-2xl font-bold text-white">
                   {(() => {
                     const name = user.user_metadata?.name;
@@ -58,8 +177,21 @@ export default function ProfilePage() {
                   })()}
                 </h1>
                 <p className="text-blue-100">{user.email}</p>
+                {displayAvatarUrl && !uploading && (
+                  <button
+                    onClick={handleDeleteAvatar}
+                    className="mt-2 text-xs text-blue-100 hover:text-white underline"
+                  >
+                    Remove avatar
+                  </button>
+                )}
               </div>
             </div>
+            {uploadError && (
+              <div className="mt-4 p-3 bg-red-500 bg-opacity-20 border border-red-400 rounded-lg">
+                <p className="text-sm text-white">{uploadError}</p>
+              </div>
+            )}
           </div>
 
           {/* Info Section */}
@@ -202,3 +334,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

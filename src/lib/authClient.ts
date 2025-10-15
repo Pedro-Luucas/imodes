@@ -20,7 +20,9 @@ import type {
   GetPatientsResponse,
   GetProfileResponse,
   UnassignTherapistResponse,
-  Profile
+  Profile,
+  UploadAvatarResponse,
+  DeleteAvatarResponse
 } from '@/types/auth';
 
 /**
@@ -295,4 +297,46 @@ export async function getPatientProfile(patientId: string): Promise<Profile> {
   }
 
   return (data as GetProfileResponse).profile;
+}
+
+// ========================================
+// Avatar Upload Functions
+// ========================================
+
+/**
+ * Upload a profile avatar image
+ */
+export async function uploadAvatar(file: File): Promise<UploadAvatarResponse> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const response = await fetch('/api/profile/avatar', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to upload avatar');
+  }
+
+  return data as UploadAvatarResponse;
+}
+
+/**
+ * Delete the user's profile avatar
+ */
+export async function deleteAvatar(): Promise<DeleteAvatarResponse> {
+  const response = await fetch('/api/profile/avatar', {
+    method: 'DELETE',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to delete avatar');
+  }
+
+  return data as DeleteAvatarResponse;
 }
