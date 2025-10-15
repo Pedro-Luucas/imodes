@@ -86,12 +86,16 @@ export interface ResetPasswordResponse {
 
 export interface Profile {
   id: string;
-  role: 'therapist' | 'patient';
+  role: 'therapist' | 'patient' | 'admin';
   full_name: string;
   first_name: string;
   email: string;
   phone?: string;
   therapist_id?: string | null;
+  avatar_url?: string;
+  is_active: boolean;
+  subscription_active: boolean;
+  settings?: Record<string, unknown>;
   created_at: string;
   updated_at?: string;
 }

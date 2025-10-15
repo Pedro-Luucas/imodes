@@ -135,6 +135,18 @@ export default function DashboardPage() {
                       </div>
                     </Link>
                     <Link
+                      href="/statistics"
+                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">Statistics</div>
+                        <div className="text-sm text-indigo-100">Platform statistics</div>
+                      </div>
+                    </Link>
+                    <Link
                       href="/profile"
                       className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
                     >
@@ -144,6 +156,18 @@ export default function DashboardPage() {
                       <div>
                         <div className="font-semibold">My Profile</div>
                         <div className="text-sm text-purple-100">View profile details</div>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/api-test"
+                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">API Testing</div>
+                        <div className="text-sm text-orange-100">Test all API endpoints</div>
                       </div>
                     </Link>
                   </>
