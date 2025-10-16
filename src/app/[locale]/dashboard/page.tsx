@@ -1,14 +1,26 @@
 'use client';
 
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 export default function DashboardPage() {
-  const { user, loading, logout } = useAuth();
-  const { profile, loading: profileLoading } = useProfile({ requireAuth: false });
+  // Protect this page - redirects if not authenticated
+  useRequireAuth();
+  
+  // Access auth data from the store
+  const profile = useAuthProfile();
+  const loading = useAuthLoading();
+  const { logout: logoutAction } = useAuthActions();
+  const router = useRouter();
 
-  if (loading || profileLoading) {
+  // Handle logout with redirect
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/login');
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
@@ -19,7 +31,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) return null;
+  if (!profile) return null;
 
   const isTherapist = profile?.role === 'therapist';
   const isPatient = profile?.role === 'patient';
@@ -37,10 +49,10 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user.email}
+                {profile.email}
               </span>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Logout
@@ -81,34 +93,30 @@ export default function DashboardPage() {
               <dl className="space-y-2">
                 <div className="flex">
                   <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">User ID:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">{user.id}</dd>
+                  <dd className="text-blue-900 dark:text-blue-100">{profile.id}</dd>
                 </div>
                 <div className="flex">
                   <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Email:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">{user.email}</dd>
+                  <dd className="text-blue-900 dark:text-blue-100">{profile.email}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Full Name:</dt>
+                  <dd className="text-blue-900 dark:text-blue-100">{profile.full_name}</dd>
+                </div>
+                <div className="flex">
+                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Role:</dt>
+                  <dd className="text-blue-900 dark:text-blue-100">{profile.role}</dd>
                 </div>
                 <div className="flex">
                   <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Created:</dt>
                   <dd className="text-blue-900 dark:text-blue-100">
-                    {new Date(user.created_at).toLocaleDateString('en-US', {
+                    {new Date(profile.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
                     })}
                   </dd>
                 </div>
-                {user.email_confirmed_at && (
-                  <div className="flex">
-                    <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Confirmed:</dt>
-                    <dd className="text-blue-900 dark:text-blue-100">
-                      {new Date(user.email_confirmed_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </dd>
-                  </div>
-                )}
               </dl>
             </div>
           </div>

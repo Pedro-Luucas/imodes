@@ -1,12 +1,20 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
 
 export default function Home() {
   const t = useTranslations('home');
-  const { user, loading } = useAuth({ requireAuth: false });
+  const profile = useAuthProfile();
+  const loading = useAuthLoading();
+  const { logout: logoutAction } = useAuthActions();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -30,7 +38,7 @@ export default function Home() {
                 {t('checking') || 'Checking authentication...'}
               </p>
             </div>
-          ) : user ? (
+          ) : profile ? (
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
                 <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -44,7 +52,7 @@ export default function Home() {
                 {t('loggedInAs') || 'You are logged in as'}
               </p>
               <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-6">
-                {user.email}
+                {profile.email}
               </p>
             </div>
           ) : (
@@ -66,7 +74,7 @@ export default function Home() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {!user ? (
+          {!profile ? (
             <>
               {/* Register Button */}
               <Link
@@ -159,11 +167,7 @@ export default function Home() {
 
               {/* Logout Button */}
               <button
-                onClick={() => {
-                  fetch('/api/logout', { method: 'POST' }).then(() => {
-                    window.location.reload();
-                  });
-                }}
+                onClick={handleLogout}
                 className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200 p-6 text-center border-2 border-transparent hover:border-red-500"
               >
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full mb-4 group-hover:scale-110 transition-transform">

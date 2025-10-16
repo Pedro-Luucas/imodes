@@ -1,16 +1,25 @@
 'use client';
 
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useRef, useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
+import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { uploadAvatar, deleteAvatar } from '@/lib/authClient';
 import { useTranslations } from 'next-intl';
 
 export default function ProfilePage() {
   const t = useTranslations('profile');
-  const { user, loading, logout } = useAuth();
-  const { profile, refetch } = useProfile({ requireAuth: false });
+  useRequireAuth();
+  
+  const profile = useAuthProfile();
+  const loading = useAuthLoading();
+  const { logout: logoutAction, refetch } = useAuthActions();
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/login');
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -108,7 +117,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) return null;
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -122,7 +131,7 @@ export default function ProfilePage() {
             ← {t('backHome') || 'Back to Home'}
           </Link>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
           >
             {t('logout') || 'Logout'}
@@ -147,7 +156,7 @@ export default function ProfilePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span>{user.email?.charAt(0).toUpperCase()}</span>
+                    <span>{profile.first_name?.charAt(0).toUpperCase() || profile.email?.charAt(0).toUpperCase()}</span>
                   )}
                   {uploading && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -171,12 +180,9 @@ export default function ProfilePage() {
               {/* Name/Email */}
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-white">
-                  {(() => {
-                    const name = user.user_metadata?.name;
-                    return typeof name === 'string' && name ? name : (t('user') || 'User');
-                  })()}
+                  {profile.full_name || profile.first_name || (t('user') || 'User')}
                 </h1>
-                <p className="text-blue-100">{user.email}</p>
+                <p className="text-blue-100">{profile.email}</p>
                 {displayAvatarUrl && !uploading && (
                   <button
                     onClick={handleDeleteAvatar}
@@ -208,7 +214,7 @@ export default function ProfilePage() {
                     {t('userId') || 'User ID'}
                   </span>
                   <span className="text-sm text-gray-900 dark:text-gray-100 font-mono break-all">
-                    {user.id}
+                    {profile.id}
                   </span>
                 </div>
 
@@ -217,63 +223,99 @@ export default function ProfilePage() {
                     {t('email') || 'Email'}
                   </span>
                   <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {user.email}
+                    {profile.email}
                   </span>
                 </div>
 
-                {(() => {
-                  const phone = user.user_metadata?.phone;
-                  if (phone && typeof phone === 'string') {
-                    return (
-                      <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
-                          {t('phone') || 'Phone'}
-                        </span>
-                        <span className="text-sm text-gray-900 dark:text-gray-100">
-                          {phone}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {/* Full Name */}
+                {profile.full_name && (
+                  <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
+                      {t('fullName') || 'Full Name'}
+                    </span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {profile.full_name}
+                    </span>
+                  </div>
+                )}
 
-                {(() => {
-                  const name = user.user_metadata?.name;
-                  if (name && typeof name === 'string') {
-                    return (
-                      <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
-                          {t('name') || 'Name'}
-                        </span>
-                        <span className="text-sm text-gray-900 dark:text-gray-100">
-                          {name}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {/* First Name */}
+                {profile.first_name && (
+                  <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
+                      {t('firstName') || 'First Name'}
+                    </span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {profile.first_name}
+                    </span>
+                  </div>
+                )}
 
-                {/* Email Confirmed */}
+                {/* Phone */}
+                {profile.phone && (
+                  <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
+                      {t('phone') || 'Phone'}
+                    </span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {profile.phone}
+                    </span>
+                  </div>
+                )}
+
+                {/* Role */}
                 <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
-                    {t('emailStatus') || 'Email Status'}
+                    {t('role') || 'Role'}
+                  </span>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 capitalize">
+                    {profile.role}
+                  </span>
+                </div>
+
+                {/* Account Status */}
+                <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
+                    {t('accountStatus') || 'Account Status'}
                   </span>
                   <span className="text-sm">
-                    {user.email_confirmed_at ? (
+                    {profile.is_active ? (
                       <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        {t('verified') || 'Verified'}
+                        {t('active') || 'Active'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        {t('inactive') || 'Inactive'}
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Subscription Status */}
+                <div className="flex flex-col sm:flex-row sm:items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
+                    {t('subscription') || 'Subscription'}
+                  </span>
+                  <span className="text-sm">
+                    {profile.subscription_active ? (
+                      <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        {t('active') || 'Active'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
-                        {t('pending') || 'Pending Verification'}
+                        {t('inactive') || 'Inactive'}
                       </span>
                     )}
                   </span>
@@ -285,7 +327,7 @@ export default function ProfilePage() {
                     {t('accountCreated') || 'Account Created'}
                   </span>
                   <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {new Date(user.created_at).toLocaleDateString('en-US', {
+                    {new Date(profile.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
@@ -296,13 +338,13 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Last Updated */}
-                {user.updated_at && (
+                {profile.updated_at && (
                   <div className="flex flex-col sm:flex-row sm:items-center pb-3">
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400 sm:w-1/3">
                       {t('lastUpdated') || 'Last Updated'}
                     </span>
                     <span className="text-sm text-gray-900 dark:text-gray-100">
-                      {new Date(user.updated_at).toLocaleDateString('en-US', {
+                      {new Date(profile.updated_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -315,15 +357,15 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Additional Metadata */}
-            {user.user_metadata && Object.keys(user.user_metadata).length > 0 && (
+            {/* Additional Settings */}
+            {profile.settings && Object.keys(profile.settings).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {t('additionalInfo') || 'Additional Information'}
+                  {t('settings') || 'Settings'}
                 </h2>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                   <pre className="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto">
-                    {JSON.stringify(user.user_metadata, null, 2)}
+                    {JSON.stringify(profile.settings, null, 2)}
                   </pre>
                 </div>
               </div>

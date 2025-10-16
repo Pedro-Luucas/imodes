@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 interface TherapistStats {
   total: number;
@@ -29,9 +28,17 @@ interface MonthlyStats {
 }
 
 export default function StatisticsPage() {
+  useRequireAuth();
+  
   const router = useRouter();
-  const { user, loading: authLoading, logout } = useAuth();
-  const { profile, loading: profileLoading } = useProfile({ requireAuth: false });
+  const profile = useAuthProfile();
+  const profileLoading = useAuthLoading();
+  const { logout: logoutAction } = useAuthActions();
+  
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/login');
+  };
 
   const [therapistStats, setTherapistStats] = useState<TherapistStats | null>(null);
   const [patientsActivity, setPatientsActivity] = useState<ActivityStats | null>(null);
@@ -43,7 +50,7 @@ export default function StatisticsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !profileLoading && profile) {
+    if (!profileLoading && profile) {
       // Check if user is therapist or admin
       if (profile.role !== 'therapist' && profile.role !== 'admin') {
         router.push('/dashboard');
@@ -51,7 +58,8 @@ export default function StatisticsPage() {
       }
       fetchAllStatistics();
     }
-  }, [authLoading, profileLoading, profile, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileLoading, profile]);
 
   const fetchAllStatistics = async () => {
     setLoading(true);
@@ -96,7 +104,7 @@ export default function StatisticsPage() {
     }
   };
 
-  if (authLoading || profileLoading) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
@@ -107,7 +115,7 @@ export default function StatisticsPage() {
     );
   }
 
-  if (!user || !profile) return null;
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -128,10 +136,10 @@ export default function StatisticsPage() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user.email}
+                {profile.email}
               </span>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Logout

@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { register } from "@/lib/authClient";
+import { useAuthActions, useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
 
 export default function RegisterPage() {
   const t = useTranslations("register");
   const router = useRouter();
+  const { initialize } = useAuthActions();
+  const isAuthenticated = useIsAuthenticated();
+  const authLoading = useAuthLoading();
 
   const [formData, setFormData] = useState({
     role: "" as "" | "therapist" | "patient",
@@ -28,6 +31,13 @@ export default function RegisterPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push("/");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -117,8 +127,9 @@ export default function RegisterPage() {
             router.push('/login');
           }, 2000);
         } else {
-          // User is automatically logged in, redirect to home/dashboard
+          // User is automatically logged in, initialize auth state
           setSubmitSuccess(true);
+          await initialize();
           
           // Redirect immediately
           setTimeout(() => {
@@ -145,6 +156,23 @@ export default function RegisterPage() {
       });
     }
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render register form if already authenticated (will redirect)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">

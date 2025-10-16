@@ -1,15 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { getPatientTherapist } from '@/lib/authClient';
 import type { Profile } from '@/types/auth';
 
 export default function MyTherapistPage() {
-  const { logout } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  useRequireAuth();
+  
+  const router = useRouter();
+  const profile = useAuthProfile();
+  const profileLoading = useAuthLoading();
+  const { logout: logoutAction } = useAuthActions();
+  
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/login');
+  };
   const [therapist, setTherapist] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +105,7 @@ export default function MyTherapistPage() {
                 {profile.full_name}
               </span>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Logout

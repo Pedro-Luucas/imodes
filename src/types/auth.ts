@@ -17,16 +17,7 @@ export interface LoginResponse {
 }
 
 export interface ProfileResponse {
-  user: {
-    id: string;
-    email: string | undefined;
-    email_confirmed_at: string | undefined;
-    phone: string | undefined;
-    created_at: string;
-    updated_at: string | undefined;
-    user_metadata: Record<string, unknown>;
-    app_metadata: Record<string, unknown>;
-  };
+  profile: Profile;
 }
 
 export interface ErrorResponse {

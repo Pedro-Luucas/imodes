@@ -2,8 +2,8 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { Eye, EyeOff, CheckCircle } from "lucide-react";
 import { resetPassword } from "@/lib/authClient";
 

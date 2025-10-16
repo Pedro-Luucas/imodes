@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getUserFromCookie } from '@/lib/auth';
+import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 
 /**
  * GET /api/profile
  * 
- * Protected route that returns the authenticated user's profile
+ * Protected route that returns the authenticated user's profile from public.profiles
  * Requires valid session cookie
  */
 export async function GET() {
@@ -20,20 +21,37 @@ export async function GET() {
       );
     }
 
-    // Return user data
+    // Get user ID
+    const userId = user.id;
+
+    // Create Supabase client
+    const supabase = createSupabaseServerClient();
+
+    // Query public.profiles table
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching profile from database:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch profile from database' },
+        { status: 500 }
+      );
+    }
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Return profile data
     return NextResponse.json(
-      {
-        user: {
-          id: user.id,
-          email: user.email,
-          email_confirmed_at: user.email_confirmed_at,
-          phone: user.phone,
-          created_at: user.created_at,
-          updated_at: user.updated_at,
-          user_metadata: user.user_metadata,
-          app_metadata: user.app_metadata,
-        },
-      },
+      { profile },
       { status: 200 }
     );
   } catch (error) {

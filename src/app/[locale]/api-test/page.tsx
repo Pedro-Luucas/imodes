@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import Link from 'next/link';
+import { useRouter } from '@/i18n/navigation';
+import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { Link } from '@/i18n/navigation';
 
 interface ApiResponse {
   endpoint: string;
@@ -15,8 +16,17 @@ interface ApiResponse {
 }
 
 export default function ApiTestPage() {
-  const { user, loading: authLoading, logout } = useAuth();
-  const { profile, loading: profileLoading } = useProfile({ requireAuth: false });
+  useRequireAuth();
+  
+  const profile = useAuthProfile();
+  const profileLoading = useAuthLoading();
+  const { logout: logoutAction } = useAuthActions();
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/login');
+  };
 
   const [responses, setResponses] = useState<Map<string, ApiResponse>>(new Map());
   const [loading, setLoading] = useState<Set<string>>(new Set());
@@ -86,7 +96,7 @@ export default function ApiTestPage() {
     }
   };
 
-  if (authLoading || profileLoading) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
@@ -97,7 +107,7 @@ export default function ApiTestPage() {
     );
   }
 
-  if (!user) return null;
+  if (!profile) return null;
 
   const ResponseDisplay = ({ responseKey }: { responseKey: string }) => {
     const response = responses.get(responseKey);
@@ -158,10 +168,10 @@ export default function ApiTestPage() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user.email}
+                {profile?.email}
               </span>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Logout

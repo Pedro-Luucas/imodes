@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Mail } from "lucide-react";
 import { forgotPassword } from "@/lib/authClient";
 
