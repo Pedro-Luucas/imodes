@@ -3,9 +3,13 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Eye, EyeOff } from "lucide-react";
 import { login } from "@/lib/authClient";
 import { useAuthActions, useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import Image from "next/image";
 
 export default function LoginPage() {
   const t = useTranslations("login");
@@ -21,7 +25,6 @@ export default function LoginPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
@@ -104,10 +107,10 @@ export default function LoginPage() {
   // Show loading while checking authentication
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-page">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -119,134 +122,121 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-page p-16">
+      {/* Logo */}
+      <div className="relative w-[266px] h-[62px] mb-6">
+        <Image
+          src="/imodes.png" alt="iModes"
+          fill className="object-contain mix-blend-darken"
+          priority
+        />
+      </div>
+
+      {/* Form Card */}
+      <div className="w-full max-w-[450px] bg-white border border-stroke rounded-2xl p-12 flex flex-col gap-6">
+        {/* Title */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold text-foreground leading-7">
             {t("title")}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
-            {t("subtitle")}
-          </p>
         </div>
 
+        {/* Error Message */}
         {apiError && (
-          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg text-center">
+          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm text-center">
             {apiError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           {/* Email Field */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              {t("email")}
-            </label>
-            <input
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email">{t("email")}</Label>
+            <Input
               type="email"
               id="email"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
               placeholder={t("emailPlaceholder")}
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none ${
-                errors.email
-                  ? "border-red-500 bg-red-50 dark:bg-red-900/20"
-                  : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-              } text-gray-900 dark:text-white placeholder-gray-400`}
+              className={errors.email ? "border-red-500" : ""}
               autoComplete="email"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.email}
-              </p>
+              <p className="text-sm text-red-600">{errors.email}</p>
             )}
           </div>
 
           {/* Password Field */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              {t("password")}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder={t("passwordPlaceholder")}
-                className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none ${
-                  errors.password
-                    ? "border-red-500 bg-red-50 dark:bg-red-900/20"
-                    : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-                } text-gray-900 dark:text-white placeholder-gray-400`}
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="password">{t("password")}</Label>
+            <Input
+              type="password"
+              id="password"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              placeholder={t("passwordPlaceholder")}
+              className={errors.password ? "border-red-500" : ""}
+              autoComplete="current-password"
+            />
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.password}
-              </p>
+              <p className="text-sm text-red-600">{errors.password}</p>
             )}
           </div>
 
           {/* Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="rememberMe"
                 checked={formData.rememberMe}
-                onChange={(e) =>
-                  handleInputChange("rememberMe", e.target.checked)
+                onCheckedChange={(checked) =>
+                  handleInputChange("rememberMe", checked as boolean)
                 }
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="rememberMe"
+                className="font-medium cursor-pointer"
+              >
                 {t("rememberMe")}
-              </span>
-            </label>
+              </Label>
+            </div>
 
             <Link
               href="/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+              className="text-sm font-medium text-accent hover:underline"
             >
               {t("forgotPassword")}
             </Link>
           </div>
 
           {/* Submit Button */}
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full mt-4"
           >
-            {loading ? t("submitting") || "Signing in..." : t("submit")}
-          </button>
-
-          {/* Register Link */}
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            {t("noAccount") || "Don't have an account?"}{" "}
-            <Link
-              href="/register"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-            >
-              {t("registerLink") || "Sign up"}
-            </Link>
-          </p>
+            {loading ? t("submitting") : t("submit")}
+          </Button>
         </form>
+
+        {/* Register Link */}
+        <div className="flex items-center justify-center gap-1 text-sm">
+          <span className="text-foreground">{t("noAccount")}</span>
+          <Link
+            href="/register"
+            className="font-medium text-accent hover:underline"
+          >
+            {t("registerLink")}
+          </Link>
+        </div>
+      </div>
+
+      {/* Footer Text */}
+      <div className="mt-6">
+        <p className="text-sm text-muted-foreground">
+          Secure authentication • GDPR compliant
+        </p>
       </div>
     </div>
   );
