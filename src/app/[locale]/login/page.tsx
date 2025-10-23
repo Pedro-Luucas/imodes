@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { login } from "@/lib/authClient";
 import { useAuthActions, useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,13 @@ import Image from "next/image";
 export default function LoginPage() {
   const t = useTranslations("login");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { initialize } = useAuthActions();
   const isAuthenticated = useIsAuthenticated();
   const authLoading = useAuthLoading();
+  
+  // Get redirect path from query params
+  const redirectPath = searchParams.get('redirect');
 
   const [formData, setFormData] = useState({
     email: "",
@@ -31,9 +36,16 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.push("/");
+      // Redirect to the intended destination or home
+      if (redirectPath) {
+        // Remove locale prefix from redirect path if present
+        const pathWithoutLocale = redirectPath.replace(/^\/(en|pt)/, '');
+        router.push(pathWithoutLocale || '/');
+      } else {
+        router.push("/");
+      }
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, redirectPath]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,8 +85,14 @@ export default function LoginPage() {
         // Initialize auth state to fetch user profile
         await initialize();
 
-        // Login successful, redirect to home/dashboard
-        router.push("/");
+        // Login successful, redirect to intended destination or home
+        if (redirectPath) {
+          // Remove locale prefix from redirect path if present
+          const pathWithoutLocale = redirectPath.replace(/^\/(en|pt)/, '');
+          router.push(pathWithoutLocale || '/');
+        } else {
+          router.push("/");
+        }
       } catch (error) {
         // Handle API errors
         setApiError(

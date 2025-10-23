@@ -22,7 +22,12 @@ import type {
   UnassignTherapistResponse,
   Profile,
   UploadAvatarResponse,
-  DeleteAvatarResponse
+  DeleteAvatarResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  DeleteAccountResponse
 } from '@/types/auth';
 
 /**
@@ -339,4 +344,67 @@ export async function deleteAvatar(): Promise<DeleteAvatarResponse> {
   }
 
   return data as DeleteAvatarResponse;
+}
+
+// ========================================
+// Profile Management Functions
+// ========================================
+
+/**
+ * Update the current user's profile information
+ */
+export async function updateProfile(updates: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+  const response = await fetch('/api/profile', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to update profile');
+  }
+
+  return data as UpdateProfileResponse;
+}
+
+/**
+ * Change the current user's password
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<ChangePasswordResponse> {
+  const response = await fetch('/api/profile/change-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ currentPassword, newPassword } as ChangePasswordRequest),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to change password');
+  }
+
+  return data as ChangePasswordResponse;
+}
+
+/**
+ * Delete the current user's account and all associated data
+ */
+export async function deleteAccount(): Promise<DeleteAccountResponse> {
+  const response = await fetch('/api/profile/delete-account', {
+    method: 'DELETE',
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error((data as ErrorResponse).error || 'Failed to delete account');
+  }
+
+  return data as DeleteAccountResponse;
 }

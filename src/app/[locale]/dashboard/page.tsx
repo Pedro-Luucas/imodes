@@ -1,358 +1,230 @@
 'use client';
 
-import { Link, useRouter } from '@/i18n/navigation';
-import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
-import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Smile, Wrench, BrainCircuit, User, UserPlus, Plus } from 'lucide-react';
+
+// Mock data for the dashboard
+const stats = [
+  {
+    title: 'Total Patients',
+    value: '12',
+    subtitle: '+2 from last month',
+  },
+  {
+    title: 'Active Sessions',
+    value: '8',
+    subtitle: '3 scheduled today',
+  },
+  {
+    title: 'Completed Sessions',
+    value: '47',
+    subtitle: 'This month',
+  },
+  {
+    title: 'Pending Assignments',
+    value: '5',
+    subtitle: '2 due today',
+  },
+];
+
+const assignments = [
+  {
+    id: 1,
+    title: 'Mood Tracking Exercising',
+    patient: 'Sarah M.',
+    dueDate: 'Today',
+    status: 'In Progress',
+    icon: Smile,
+    iconBg: 'bg-sky-50',
+    iconColor: 'text-sky-600',
+    badgeClass: 'bg-green-50 text-green-600 border-transparent',
+  },
+  {
+    id: 2,
+    title: 'Cognitive Restructuring Worksheet',
+    patient: 'John D.',
+    dueDate: 'Today',
+    status: 'Pending',
+    icon: Wrench,
+    iconBg: 'bg-yellow-50',
+    iconColor: 'text-yellow-600',
+    badgeClass: 'bg-orange-50 text-orange-500 border-transparent',
+  },
+  {
+    id: 3,
+    title: 'Mindfulness Practice Log',
+    patient: 'John D.',
+    dueDate: 'Today',
+    status: 'Completed',
+    icon: BrainCircuit,
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
+    badgeClass: 'bg-neutral-200 text-muted-foreground border-transparent',
+  },
+];
+
+const recentSessions = [
+  {
+    id: 1,
+    patient: 'Sarah M.',
+    date: '11/03/2025, 1:15 PM - 2:00 PM',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+  },
+  {
+    id: 2,
+    patient: 'Jhon D.',
+    date: '11/03/2025, 7:00 PM - 8:00 AM',
+    iconBg: 'bg-stone-100',
+    iconColor: 'text-stone-600',
+  },
+  {
+    id: 3,
+    patient: 'Carla F.',
+    date: '11/03/2025, 7:00 PM - 8:00 AM',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+  },
+];
 
 export default function DashboardPage() {
-  // Protect this page - redirects if not authenticated
-  useRequireAuth();
-  
-  // Access auth data from the store
-  const profile = useAuthProfile();
-  const loading = useAuthLoading();
-  const { logout: logoutAction } = useAuthActions();
-  const router = useRouter();
-
-  // Handle logout with redirect
-  const handleLogout = async () => {
-    await logoutAction();
-    router.push('/login');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+  return (
+    <div className="flex flex-col gap-6 py-16 px-40">
+      {/* Page Title & Actions */}
+      <div className="flex items-center justify-between px-6 py-1">
+        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="default">
+            <UserPlus className="w-5 h-5" />
+            Add patient
+          </Button>
+          <Button variant="default" size="default">
+            <Plus className="w-5 h-5" />
+            Start new session
+          </Button>
         </div>
       </div>
-    );
-  }
 
-  if (!profile) return null;
-
-  const isTherapist = profile?.role === 'therapist';
-  const isPatient = profile?.role === 'patient';
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Dashboard
-              </h1>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 px-6">
+        {stats.map((stat, index) => (
+          <Card key={index} className="border border-input rounded-2xl p-6">
+            <div className="flex flex-col gap-4">
+              <h3 className="text-base font-medium text-foreground">
+                {stat.title}
+              </h3>
+              <p className="text-4xl font-bold text-primary leading-tight">
+                {stat.value}
+              </p>
+              <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {profile.email}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="flex flex-col gap-6">
+        {/* Assignments Section */}
+        <div className="px-6">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-semibold text-foreground">
+              Assignments
+            </h2>
+            <div className="flex flex-col gap-2">
+              {assignments.map((assignment) => {
+                const Icon = assignment.icon;
+                return (
+                  <Card
+                    key={assignment.id}
+                    className="border border-input rounded-2xl p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {/* Icon */}
+                        <div
+                          className={`w-14 h-14 rounded-lg flex items-center justify-center ${assignment.iconBg}`}
+                        >
+                          <Icon className={`w-6 h-6 ${assignment.iconColor}`} />
+                        </div>
+                        {/* Info */}
+                        <div className="flex flex-col gap-2">
+                          <h3 className="text-base font-medium text-foreground">
+                            {assignment.title}
+                          </h3>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <span>
+                              Assigned to{' '}
+                              <span className="text-primary">
+                                {assignment.patient}
+                              </span>
+                            </span>
+                            <span>•</span>
+                            <Calendar className="w-4 h-4" />
+                            <span>Due: {assignment.dueDate}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        <Badge className={`h-8 px-4 rounded-lg font-semibold ${assignment.badgeClass}`}>
+                          {assignment.status}
+                        </Badge>
+                        <Button variant="secondary" size="sm" className="h-8 px-3">
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Welcome to your Dashboard{profile?.full_name ? `, ${profile.first_name}` : ''}!
-                </h2>
-                {profile?.role && (
-                  <span className={`inline-flex items-center mt-2 px-3 py-1 rounded-full text-sm font-medium ${
-                    isTherapist 
-                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  }`}>
-                    {profile.role === 'therapist' ? '👨‍⚕️ Therapist' : '🧑‍🦰 Patient'}
-                  </span>
-                )}
-              </div>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              You are successfully authenticated with Supabase.
-            </p>
-            
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                Your Profile Information
-              </h3>
-              <dl className="space-y-2">
-                <div className="flex">
-                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">User ID:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">{profile.id}</dd>
-                </div>
-                <div className="flex">
-                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Email:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">{profile.email}</dd>
-                </div>
-                <div className="flex">
-                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Full Name:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">{profile.full_name}</dd>
-                </div>
-                <div className="flex">
-                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Role:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">{profile.role}</dd>
-                </div>
-                <div className="flex">
-                  <dt className="font-medium text-blue-800 dark:text-blue-200 w-32">Created:</dt>
-                  <dd className="text-blue-900 dark:text-blue-100">
-                    {new Date(profile.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-
-          {/* Role-Specific Quick Actions */}
-          {profile && (isTherapist || isPatient) && (
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Quick Actions
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {isTherapist && (
-                  <>
-                    <Link
-                      href="/my-patients"
-                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">My Patients</div>
-                        <div className="text-sm text-blue-100">View & manage patients</div>
+        {/* Recent Sessions Section */}
+        <div className="px-6">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-semibold text-foreground">
+              Recent Sessions
+            </h2>
+            <div className="flex flex-col gap-2">
+              {recentSessions.map((session) => (
+                <Card
+                  key={session.id}
+                  className="border border-input rounded-2xl p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {/* Icon */}
+                      <div
+                        className={`w-14 h-14 rounded-lg flex items-center justify-center ${session.iconBg}`}
+                      >
+                        <User className={`w-6 h-6 ${session.iconColor}`} />
                       </div>
-                    </Link>
-                    <Link
-                      href="/statistics"
-                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">Statistics</div>
-                        <div className="text-sm text-indigo-100">Platform statistics</div>
+                      {/* Info */}
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-base font-medium text-foreground">
+                          {session.patient}
+                        </h3>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>{session.date}</span>
+                        </div>
                       </div>
-                    </Link>
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">My Profile</div>
-                        <div className="text-sm text-purple-100">View profile details</div>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/api-test"
-                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">API Testing</div>
-                        <div className="text-sm text-orange-100">Test all API endpoints</div>
-                      </div>
-                    </Link>
-                  </>
-                )}
-                {isPatient && (
-                  <>
-                    <Link
-                      href="/my-therapist"
-                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">My Therapist</div>
-                        <div className="text-sm text-green-100">View therapist info</div>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">My Profile</div>
-                        <div className="text-sm text-blue-100">View profile details</div>
-                      </div>
-                    </Link>
-                  </>
-                )}
-              </div>
+                    </div>
+                    {/* Action */}
+                    <Button variant="secondary" size="sm" className="h-8 px-3">
+                      View
+                    </Button>
+                  </div>
+                </Card>
+              ))}
             </div>
-          )}
-
-          {/* Additional Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Role</h3>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'Active'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">Verified</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Security</h3>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">Enabled</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Next Steps */}
-          <div className="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              What&apos;s Next?
-            </h3>
-            <ul className="space-y-3">
-              {isTherapist && (
-                <>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      1
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      View and manage your assigned patients
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      2
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Contact patients via email or phone
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      3
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Keep track of patient progress and sessions
-                    </p>
-                  </li>
-                </>
-              )}
-              {isPatient && (
-                <>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      1
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      View your assigned therapist contact information
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      2
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Schedule appointments and reach out when needed
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      3
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Track your therapy progress and goals
-                    </p>
-                  </li>
-                </>
-              )}
-              {!profile?.role && (
-                <>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      1
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Customize this dashboard with your own content
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      2
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Add more protected routes using the useAuth hook
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      3
-                    </span>
-                    <p className="ml-3 text-gray-700 dark:text-gray-300">
-                      Implement profile editing and password reset
-                    </p>
-                  </li>
-                </>
-              )}
-            </ul>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

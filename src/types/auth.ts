@@ -127,3 +127,58 @@ export interface UploadAvatarResponse {
 export interface DeleteAvatarResponse {
   message: string;
 }
+
+// Update Profile Types
+
+export interface UpdateProfileRequest {
+  full_name?: string;
+  first_name?: string;
+  phone?: string;
+}
+
+export interface UpdateProfileResponse {
+  message: string;
+  profile: Profile;
+}
+
+// Change Password Types
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
+// Delete Account Types
+
+export interface DeleteAccountResponse {
+  message: string;
+}
+
+// Assignment Types
+
+export interface Assignment {
+  id: string;
+  therapist_id: string;
+  patient_id: string;
+  name: string;
+  description: string | null;
+  due_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAssignmentRequest {
+  patient_id: string;
+  name: string;
+  description?: string;
+  due_date: string;
+}
+
+export interface CreateAssignmentResponse {
+  message: string;
+  assignment: Assignment;
+}

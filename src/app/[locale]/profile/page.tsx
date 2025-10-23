@@ -2,6 +2,7 @@
 
 import { Link, useRouter } from '@/i18n/navigation';
 import { useRef, useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { uploadAvatar, deleteAvatar } from '@/lib/authClient';
@@ -150,9 +151,11 @@ export default function ProfilePage() {
                   className="w-20 h-20 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer overflow-hidden transition-opacity hover:opacity-80"
                 >
                   {displayAvatarUrl ? (
-                    <img 
+                    <Image 
                       src={displayAvatarUrl} 
                       alt="Profile avatar" 
+                      width={80}
+                      height={80}
                       className="w-full h-full object-cover"
                     />
                   ) : (
