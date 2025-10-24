@@ -11,8 +11,13 @@ const BUCKET_NAME = 'avatar';
  * 
  * Deletes the authenticated user's account and all associated data
  * This includes:
- * - Profile avatar from S3 storage
- * - Profile from profiles table (cascade deletes relationships)
+ * - Profile avatar from S3 storage (handles missing files gracefully)
+ * - Therapist record (if user is a therapist)
+ *   Database CASCADE constraints automatically:
+ *   - Set patients.therapist_id to NULL (preserve patient records)
+ *   - Delete related imodes_session records
+ *   - Delete related assignments
+ * - Profile from profiles table (cascade deletes patient record if applicable)
  * - User from Supabase auth
  * - Session cookies
  * 
@@ -34,10 +39,10 @@ export async function DELETE(): Promise<NextResponse<DeleteAccountResponse | Err
     // Create Supabase client
     const supabase = createSupabaseServerClient();
 
-    // Step 1: Get current profile to check for avatar
+    // Step 1: Get current profile to check for avatar and role
     const { data: currentProfile } = await supabase
       .from('profiles')
-      .select('avatar_url')
+      .select('avatar_url, role')
       .eq('id', user.id)
       .single();
 
@@ -50,11 +55,32 @@ export async function DELETE(): Promise<NextResponse<DeleteAccountResponse | Err
         }
       } catch (error) {
         console.error('Error deleting avatar file:', error);
-        // Continue even if avatar deletion fails
+        // Continue even if avatar deletion fails - file might not exist
+        // This handles cases where the file was already deleted or never existed
       }
     }
 
-    // Step 3: Delete profile from database
+    // Step 3: Delete therapist record if user is a therapist
+    // Database CASCADE constraints will automatically:
+    // - Set patients.therapist_id to NULL (preserve patient records)
+    // - Delete related imodes_session records
+    // - Delete related assignments
+    if (currentProfile?.role === 'therapist') {
+      const { error: deleteTherapistError } = await supabase
+        .from('therapists')
+        .delete()
+        .eq('id', user.id);
+
+      if (deleteTherapistError) {
+        console.error('Error deleting therapist record:', deleteTherapistError);
+        return NextResponse.json(
+          { error: 'Failed to delete therapist record' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Step 4: Delete profile from database
     // This will cascade delete relationships (therapist-patient assignments, etc.)
     const { error: deleteProfileError } = await supabase
       .from('profiles')
@@ -69,7 +95,7 @@ export async function DELETE(): Promise<NextResponse<DeleteAccountResponse | Err
       );
     }
 
-    // Step 4: Delete user from Supabase auth
+    // Step 5: Delete user from Supabase auth
     const { error: deleteUserError } = await supabase.auth.admin.deleteUser(
       user.id
     );
@@ -79,7 +105,7 @@ export async function DELETE(): Promise<NextResponse<DeleteAccountResponse | Err
       // Profile is already deleted, but continue to clear cookies
     }
 
-    // Step 5: Clear auth cookies
+    // Step 6: Clear auth cookies
     await clearAuthCookies();
 
     return NextResponse.json(

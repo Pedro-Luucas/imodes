@@ -129,22 +129,13 @@ export default function RegisterPage() {
           formData.phone || undefined
         );
 
-        // Check if email confirmation is required
-        if (response.requiresEmailConfirmation) {
-          setSubmitSuccess(true);
-          setApiError(response.message);
-          
-          setTimeout(() => {
-            router.push('/login');
-          }, 2000);
-        } else {
-          setSubmitSuccess(true);
-          await initialize();
-          
-          setTimeout(() => {
-            router.push('/');
-          }, 1000);
-        }
+        // Always redirect to login after successful registration
+        setSubmitSuccess(true);
+        setApiError(response.message);
+        
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
       } catch (error) {
         setApiError(error instanceof Error ? error.message : "Registration failed. Please try again.");
       } finally {
@@ -287,6 +278,25 @@ export default function RegisterPage() {
               <p className="text-sm text-red-600">{errors.role}</p>
             )}
           </div>
+
+          {/* Phone Field - Only show for therapists */}
+          {formData.role === "therapist" && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                type="tel"
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="+1234567890"
+                className={errors.phone ? "border-red-500" : ""}
+                autoComplete="tel"
+              />
+              {errors.phone && (
+                <p className="text-sm text-red-600">{errors.phone}</p>
+              )}
+            </div>
+          )}
 
           {/* Password Field */}
           <div className="flex flex-col gap-2">

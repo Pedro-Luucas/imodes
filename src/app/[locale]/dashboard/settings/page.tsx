@@ -452,6 +452,7 @@ export default function SettingsPage() {
                         width={80}
                         height={80}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                     ) : (
                       <User className="h-10 w-10 text-muted-foreground" />

@@ -157,6 +157,7 @@ export default function ProfilePage() {
                       width={80}
                       height={80}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <span>{profile.first_name?.charAt(0).toUpperCase() || profile.email?.charAt(0).toUpperCase()}</span>

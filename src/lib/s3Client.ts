@@ -57,16 +57,45 @@ export async function uploadFile(
 
 /**
  * Deletes a file from S3-compatible storage
+ * Handles NoSuchKey errors gracefully by checking if file exists first
  */
 export async function deleteFile(bucket: string, key: string): Promise<void> {
   const s3Client = createS3Client();
 
-  const command = new DeleteObjectCommand({
-    Bucket: bucket,
-    Key: key,
-  });
+  try {
+    // First check if the file exists
+    const headCommand = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
 
-  await s3Client.send(command);
+    try {
+      await s3Client.send(headCommand);
+    } catch (headError: any) {
+      // If file doesn't exist, that's fine - nothing to delete
+      if (headError.name === 'NoSuchKey' || headError.$metadata?.httpStatusCode === 404) {
+        console.log(`File ${key} does not exist in bucket ${bucket}, skipping deletion`);
+        return;
+      }
+      // Re-throw other errors
+      throw headError;
+    }
+
+    // File exists, proceed with deletion
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
+
+    await s3Client.send(deleteCommand);
+  } catch (error) {
+    // Handle any other errors during deletion
+    if (error instanceof Error && error.name === 'NoSuchKey') {
+      console.log(`File ${key} was already deleted from bucket ${bucket}`);
+      return;
+    }
+    throw error;
+  }
 }
 
 /**
