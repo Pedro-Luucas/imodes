@@ -71,9 +71,13 @@ export async function deleteFile(bucket: string, key: string): Promise<void> {
 
     try {
       await s3Client.send(headCommand);
-    } catch (headError: any) {
+    } catch (headError: unknown) {
       // If file doesn't exist, that's fine - nothing to delete
-      if (headError.name === 'NoSuchKey' || headError.$metadata?.httpStatusCode === 404) {
+      if (
+        headError instanceof Error && 
+        (headError.name === 'NoSuchKey' || 
+         (headError as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404)
+      ) {
         console.log(`File ${key} does not exist in bucket ${bucket}, skipping deletion`);
         return;
       }

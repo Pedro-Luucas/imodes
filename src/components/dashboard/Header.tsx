@@ -1,11 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Bell, Settings, ChevronDown, Menu } from 'lucide-react';
-import { useAuthProfile } from '@/stores/authStore';
+import { Settings, Menu,  LogOut } from 'lucide-react';
+import { useAuthProfile, useAuthActions } from '@/stores/authStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { NotificationCenter } from '@/components/ui/notification-center';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { logout } from '@/lib/authClient';
+import { useRouter } from '@/i18n/navigation';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -13,7 +25,11 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const profile = useAuthProfile();
+  const { logout: logoutAction } = useAuthActions();
+  const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Fetch signed avatar URL
   useEffect(() => {
@@ -58,6 +74,31 @@ export function Header({ onMenuClick }: HeaderProps) {
     return profile?.email || 'User';
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
+    setShowLogoutDialog(false);
+    try {
+      await logout();
+      logoutAction();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleSettingsClick = () => {
+    if (profile?.role === 'patient') {
+      router.push('/dashboard-patient/settings');
+    } else {
+      router.push('/dashboard/settings');
+    }
+  };
+
   return (
     <header className="border-b border-input bg-background sticky top-0 z-30">
       <div className="flex items-center justify-between px-8 py-6">
@@ -71,39 +112,27 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="w-6 h-6" />
           </button>
 
-          {/* Search bar */}
-          <div className="relative w-full max-w-[448px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 bg-popover border-input h-10"
-            />
-          </div>
         </div>
 
         {/* Right: Icons + User */}
         <div className="flex items-center gap-6">
           {/* Notification Button */}
-          <Button
-            variant="secondary"
-            size="icon"
-            className="rounded-lg"
-          >
-            <Bell className="w-5 h-5" />
-          </Button>
+          <NotificationCenter className="rounded-lg" />
 
           {/* Settings Button */}
           <Button
             variant="secondary"
             size="icon"
             className="rounded-lg"
+            onClick={handleSettingsClick}
           >
             <Settings className="w-5 h-5" />
           </Button>
 
+          
+
           {/* User Profile */}
-          <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity">
+          <div className="flex items-center gap-4">
             <Avatar className="w-10 h-10">
               <AvatarImage src={avatarUrl || undefined} alt="Profile picture" />
               <AvatarFallback className="bg-primary text-primary-foreground">
@@ -113,10 +142,42 @@ export function Header({ onMenuClick }: HeaderProps) {
             <span className="text-sm font-medium text-foreground hidden md:block">
               {getDisplayName()}
             </span>
-            <ChevronDown className="w-6 h-6 text-foreground hidden md:block" />
           </div>
+
+          {/* Logout Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-lg hover:bg-destructive/10"
+            onClick={handleLogoutClick}
+            disabled={isLoggingOut}
+          >
+            <LogOut className="w-5 h-5 text-destructive" />
+          </Button>
+
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent className="bg-popover text-popover-foreground border-stroke">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to sign in again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogoutConfirm}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

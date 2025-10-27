@@ -238,5 +238,56 @@
       "dueDateRequired": "A data de vencimento é obrigatória",
       "createFailed": "Falha ao criar tarefa"
     }
+  },
+  "notifications": {
+    "title": "Notificações",
+    "markAllAsRead": "Marcar todas como lidas",
+    "noNotifications": "Sem notificações",
+    "loading": "Carregando notificações...",
+    "justNow": "Agora mesmo",
+    "markAsRead": "Marcar como lida",
+    "dismiss": "Dispensar",
+    "view": "Ver",
+    "types": {
+      "assignmentCreated": "Nova Tarefa",
+      "assignmentDue": "Tarefa Vencendo em Breve",
+      "therapistAssigned": "Novo Terapeuta Designado",
+      "therapistUnassigned": "Terapeuta Removido",
+      "newPatient": "Novo Paciente",
+      "patientAssigned": "Paciente Atribuído",
+      "systemUpdate": "Atualização do Sistema",
+      "profileUpdate": "Perfil Atualizado",
+      "assignmentCompleted": "Tarefa Concluída",
+      "therapistRequest": "Pedido de Paciente",
+      "therapistRequestAccepted": "Pedido Aceito",
+      "therapistRequestRejected": "Pedido Recusado"
+    }
+  },
+  "therapistRequest": {
+    "dialogTitle": "Pedido de Paciente",
+    "dialogDescription": "Um paciente gostaria de trabalhar com você como seu terapeuta",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "sending": "Enviando...",
+    "acceptSuccess": "Pedido de Paciente Aceito",
+    "acceptSuccessDesc": "{patientName} agora é seu paciente!",
+    "declineSuccess": "Pedido de Paciente Recusado",
+    "declineSuccessDesc": "Você recusou o pedido de {patientName}.",
+    "requestSent": "Pedido enviado para {therapistName}!",
+    "requestSentDesc": "Você será notificado quando eles responderem.",
+    "errors": {
+      "processFailed": "Falha ao processar pedido"
+    }
+  },
+  "findTherapist": {
+    "title": "Encontre Seu Terapeuta",
+    "subtitle": "Selecione um terapeuta da lista abaixo para começar sua jornada terapêutica.",
+    "searchPlaceholder": "Pesquisar terapeutas por nome ou email...",
+    "noTherapistsFound": "Nenhum Terapeuta Encontrado",
+    "noTherapistsFoundDesc": "Tente ajustar seus critérios de pesquisa",
+    "noTherapistsAvailable": "Nenhum terapeuta está disponível atualmente",
+    "requestTherapist": "Solicitar Terapeuta",
+    "sendingRequest": "Enviando Pedido...",
+    "patientOnly": "Esta página é acessível apenas para pacientes."
   }
 }

@@ -4,8 +4,8 @@ import { useState, FormEvent, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { login } from "@/lib/authClient";
-import { useAuthActions, useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
+import { login, getProfile } from "@/lib/authClient";
+import { useAuthActions, useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,19 +33,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
+  const profile = useAuthProfile();
+
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      // Redirect to the intended destination or home
+    if (!authLoading && isAuthenticated && profile) {
+      // Check if there's a specific redirect path
       if (redirectPath) {
         // Remove locale prefix from redirect path if present
         const pathWithoutLocale = redirectPath.replace(/^\/(en|pt)/, '');
         router.push(pathWithoutLocale || '/');
       } else {
-        router.push("/");
+        // Redirect based on user role
+        if (profile.role === 'therapist') {
+          router.push("/dashboard");
+        } else if (profile.role === 'patient') {
+          router.push("/dashboard-patient");
+        } else {
+          // Admin or unknown role - go to home
+          router.push("/");
+        }
       }
     }
-  }, [authLoading, isAuthenticated, router, redirectPath]);
+  }, [authLoading, isAuthenticated, profile, router, redirectPath]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -85,13 +95,25 @@ export default function LoginPage() {
         // Initialize auth state to fetch user profile
         await initialize();
 
-        // Login successful, redirect to intended destination or home
+        // Fetch the profile to get the user's role
+        const profileData = await getProfile();
+        const userProfile = profileData.profile;
+
+        // Login successful, redirect to intended destination or role-based dashboard
         if (redirectPath) {
           // Remove locale prefix from redirect path if present
           const pathWithoutLocale = redirectPath.replace(/^\/(en|pt)/, '');
           router.push(pathWithoutLocale || '/');
         } else {
-          router.push("/");
+          // Redirect based on user role
+          if (userProfile.role === 'therapist') {
+            router.push("/dashboard");
+          } else if (userProfile.role === 'patient') {
+            router.push("/dashboard-patient");
+          } else {
+            // Admin or unknown role - go to home
+            router.push("/");
+          }
         }
       } catch (error) {
         // Handle API errors

@@ -238,5 +238,56 @@
       "dueDateRequired": "Due date is required",
       "createFailed": "Failed to create assignment"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllAsRead": "Mark all as read",
+    "noNotifications": "No notifications",
+    "loading": "Loading notifications...",
+    "justNow": "Just now",
+    "markAsRead": "Mark as read",
+    "dismiss": "Dismiss",
+    "view": "View",
+    "types": {
+      "assignmentCreated": "New Assignment",
+      "assignmentDue": "Assignment Due Soon",
+      "therapistAssigned": "New Therapist Assigned",
+      "therapistUnassigned": "Therapist Unassigned",
+      "newPatient": "New Patient",
+      "patientAssigned": "Patient Assigned",
+      "systemUpdate": "System Update",
+      "profileUpdate": "Profile Updated",
+      "assignmentCompleted": "Assignment Completed",
+      "therapistRequest": "Patient Request",
+      "therapistRequestAccepted": "Request Accepted",
+      "therapistRequestRejected": "Request Declined"
+    }
+  },
+  "therapistRequest": {
+    "dialogTitle": "Patient Request",
+    "dialogDescription": "A patient would like to work with you as their therapist",
+    "accept": "Accept",
+    "decline": "Decline",
+    "sending": "Sending...",
+    "acceptSuccess": "Patient Request Accepted",
+    "acceptSuccessDesc": "{patientName} is now your patient!",
+    "declineSuccess": "Patient Request Declined",
+    "declineSuccessDesc": "You have declined the request from {patientName}.",
+    "requestSent": "Request sent to {therapistName}!",
+    "requestSentDesc": "You will be notified when they respond.",
+    "errors": {
+      "processFailed": "Failed to process request"
+    }
+  },
+  "findTherapist": {
+    "title": "Find Your Therapist",
+    "subtitle": "Select a therapist from the list below to get started with your therapy journey.",
+    "searchPlaceholder": "Search therapists by name or email...",
+    "noTherapistsFound": "No Therapists Found",
+    "noTherapistsFoundDesc": "Try adjusting your search criteria",
+    "noTherapistsAvailable": "No therapists are currently available",
+    "requestTherapist": "Request Therapist",
+    "sendingRequest": "Sending Request...",
+    "patientOnly": "This page is only accessible to patients."
   }
 }

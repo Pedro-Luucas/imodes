@@ -327,7 +327,8 @@ export async function DELETE(
  * PATCH /api/patients/[patientId]/therapist
  * 
  * Updates/changes a patient's therapist
- * Only therapists and admins can update
+ * Therapists and admins can update any patient
+ * Patients can update their own therapist (self-assignment)
  */
 export async function PATCH(
   request: NextRequest,
@@ -336,12 +337,20 @@ export async function PATCH(
   try {
     const { patientId } = await context.params;
 
-    // Check authorization - only therapists and admins
-    const { authorized, profile } = await hasRole(['therapist', 'admin']);
+    // Check authorization - patients can update their own, therapists and admins can update any
+    const { authorized, profile } = await hasRole(['patient', 'therapist', 'admin']);
     
     if (!authorized || !profile) {
       return NextResponse.json(
-        { error: 'Unauthorized - Only therapists and admins can update patient assignments' },
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // If patient, they can only update their own therapist assignment
+    if (profile.role === 'patient' && profile.id !== patientId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - You can only update your own therapist assignment' },
         { status: 403 }
       );
     }

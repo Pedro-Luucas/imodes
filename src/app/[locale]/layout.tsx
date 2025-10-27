@@ -6,6 +6,8 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { AuthInitializer } from "@/components/AuthInitializer";
+import { NotificationInitializer } from "@/components/NotificationInitializer";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -41,6 +43,8 @@ export default async function RootLayout({
         className={`${inter.variable} antialiased`}
       >
         <AuthInitializer />
+        <NotificationInitializer />
+        <Toaster />
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

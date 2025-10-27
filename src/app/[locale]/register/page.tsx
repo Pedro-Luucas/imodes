@@ -4,7 +4,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { register } from "@/lib/authClient";
-import { useAuthActions, useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
+import { useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,6 @@ import { ArrowLeft } from "lucide-react";
 export default function RegisterPage() {
   const t = useTranslations("register");
   const router = useRouter();
-  const { initialize } = useAuthActions();
   const isAuthenticated = useIsAuthenticated();
   const authLoading = useAuthLoading();
 
@@ -116,8 +115,8 @@ export default function RegisterPage() {
       setLoading(true);
 
       try {
-        // Calculate fullName from firstName and lastName
-        const fullName = `${formData.lastName} ${formData.firstName}`.trim();
+        // Calculate fullName from firstName and lastName (in that order)
+        const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
         // Call the registration API
         const response = await register(

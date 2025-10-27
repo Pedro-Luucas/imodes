@@ -8,7 +8,6 @@ import {
   Download,
   Plus,
   UserPlus,
-  User,
   Calendar,
   Users,
   ClipboardList,
@@ -18,6 +17,7 @@ import type { Profile } from '@/types/auth';
 import { PatientDetailsDialog } from '@/components/dashboard/PatientDetailsDialog';
 import { AddPatientDialog } from '@/components/dashboard/AddPatientDialog';
 import { CreateAssignmentDialog } from '@/components/dashboard/CreateAssignmentDialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Extended data for demonstration
 interface ExtendedPatient extends Profile {
@@ -26,12 +26,16 @@ interface ExtendedPatient extends Profile {
   progress?: string;
 }
 
+interface PatientWithAvatar extends ExtendedPatient {
+  avatarSignedUrl?: string | null;
+}
+
 const PATIENTS_PER_PAGE = 10;
 
 export default function PatientsPage() {
   const profile = useAuthProfile();
   const [patients, setPatients] = useState<ExtendedPatient[]>([]);
-  const [displayedPatients, setDisplayedPatients] = useState<ExtendedPatient[]>([]);
+  const [displayedPatients, setDisplayedPatients] = useState<PatientWithAvatar[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -41,6 +45,23 @@ export default function PatientsPage() {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedPatientForAssignment, setSelectedPatientForAssignment] = useState<ExtendedPatient | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  //const [avatarUrls, setAvatarUrls] = useState<Record<string, string | null>>({});
+
+  // Fetch avatar URL for a patient
+  const fetchAvatarUrl = useCallback(async (patientId: string, avatarUrl: string | undefined) => {
+    if (!avatarUrl) return null;
+    
+    try {
+      const response = await fetch(`/api/profile/avatar/url/${patientId}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.signed_url;
+      }
+    } catch (error) {
+      console.error('Error fetching avatar URL for patient:', error);
+    }
+    return null;
+  }, []);
 
   // Fetch patients data
   const fetchPatients = useCallback(async () => {
@@ -65,14 +86,33 @@ export default function PatientsPage() {
       }));
 
       setPatients(enhancedPatients);
-      setDisplayedPatients(enhancedPatients.slice(0, PATIENTS_PER_PAGE));
+
+      // Fetch avatar URLs for all patients
+      const avatarUrlPromises = enhancedPatients.map((patient) =>
+        fetchAvatarUrl(patient.id, patient.avatar_url)
+      );
+      const signedUrls = await Promise.all(avatarUrlPromises);
+      
+      const avatarUrlMap: Record<string, string | null> = {};
+      enhancedPatients.forEach((patient, index) => {
+        avatarUrlMap[patient.id] = signedUrls[index];
+      });
+      //setAvatarUrls(avatarUrlMap);
+
+      // Add avatar URLs to displayed patients
+      const patientsWithAvatars: PatientWithAvatar[] = enhancedPatients.slice(0, PATIENTS_PER_PAGE).map((patient) => ({
+        ...patient,
+        avatarSignedUrl: avatarUrlMap[patient.id],
+      }));
+      
+      setDisplayedPatients(patientsWithAvatars);
       setHasMore(enhancedPatients.length > PATIENTS_PER_PAGE);
     } catch (error) {
       console.error('Error fetching patients:', error);
     } finally {
       setLoading(false);
     }
-  }, [profile?.id]);
+  }, [profile?.id, fetchAvatarUrl]);
 
   useEffect(() => {
     fetchPatients();
@@ -320,9 +360,23 @@ export default function PatientsPage() {
                   {/* Patient Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-lg flex items-center justify-center bg-purple-100">
-                        <User className="w-6 h-6 text-purple-600" />
-                      </div>
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage
+                        src={patient.avatarSignedUrl || undefined}
+                        alt={patient.full_name || 'Profile picture'}
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {patient.full_name
+                          ? patient.full_name
+                              .split(' ')
+                              .slice(0, 2)
+                              .map((n) => n[0])
+                              .join('')
+                              .toUpperCase()
+                          : 'P'}
+                      </AvatarFallback>
+                    </Avatar>
+
                       <div className="flex flex-col gap-2">
                         <h3 className="text-base font-medium text-foreground">
                           {patient.full_name}

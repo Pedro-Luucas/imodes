@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { hasRole } from '@/lib/roleAuth';
 import { createAssignmentSchema } from '@/lib/validations';
 import type { CreateAssignmentResponse, ErrorResponse, Assignment } from '@/types/auth';
+import { NotificationType } from '@/types/notifications';
 
 /**
  * POST /api/assignments
@@ -82,6 +83,28 @@ export async function POST(
         { error: 'Failed to create assignment' },
         { status: 500 }
       );
+    }
+
+    // Create notification for the patient
+    try {
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: patient_id,
+          type: NotificationType.ASSIGNMENT_CREATED,
+          title: 'New Assignment',
+          message: `Your therapist has created a new assignment: ${name}`,
+          data: { assignment_id: assignment.id },
+          link: '/dashboard-patient',
+        });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Don't fail the assignment creation if notification fails
+      }
+    } catch (notificationError) {
+      console.error('Failed to create notification:', notificationError);
+      // Don't fail the assignment creation if notification fails
     }
 
     return NextResponse.json(

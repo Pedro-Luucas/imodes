@@ -35,7 +35,7 @@ import {
 import { toast } from 'sonner';
 import { Loader2, Upload, Trash2, User } from 'lucide-react';
 
-export default function SettingsPage() {
+export default function PatientSettingsPage() {
   const t = useTranslations('settings');
   const locale = useLocale();
   const router = useRouter();
@@ -45,8 +45,6 @@ export default function SettingsPage() {
   // Form states
   const [fullName, setFullName] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState(locale);
   
   // Password states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -63,6 +61,9 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  
+  const [selectedLanguage, setSelectedLanguage] = useState(locale);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,7 +72,6 @@ export default function SettingsPage() {
     if (profile) {
       setFullName(profile.full_name || '');
       setFirstName(profile.first_name || '');
-      setPhone(profile.phone || '');
     }
   }, [profile]);
 
@@ -104,7 +104,7 @@ export default function SettingsPage() {
   // Handle language change
   const handleLanguageChange = (newLocale: string) => {
     setSelectedLanguage(newLocale);
-    router.replace('/dashboard/settings', { locale: newLocale });
+    router.replace('/dashboard-patient/settings', { locale: newLocale });
     toast.success(t('success.profileUpdated'));
   };
 
@@ -170,15 +170,10 @@ export default function SettingsPage() {
     if (!profile) return;
 
     // Check what changed
-    const updates: { full_name?: string; first_name?: string; phone?: string } = {};
+    const updates: { full_name?: string; first_name?: string } = {};
     
     if (fullName !== profile.full_name) updates.full_name = fullName;
     if (firstName !== profile.first_name) updates.first_name = firstName;
-    
-    // Only update phone for therapists
-    if (profile.role === 'therapist' && phone !== profile.phone) {
-      updates.phone = phone;
-    }
 
     // If nothing changed, show message
     if (Object.keys(updates).length === 0) {
@@ -310,12 +305,6 @@ export default function SettingsPage() {
                 <div className="h-5 w-24 bg-muted animate-pulse rounded mb-1" />
                 <div className="h-10 w-full bg-muted animate-pulse rounded" />
               </div>
-
-              {/* Phone Skeleton */}
-              <div>
-                <div className="h-5 w-24 bg-muted animate-pulse rounded mb-1" />
-                <div className="h-10 w-full bg-muted animate-pulse rounded" />
-              </div>
             </div>
           </div>
 
@@ -393,8 +382,6 @@ export default function SettingsPage() {
         <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
       </div>
 
-
-
       <div className="space-y-8 ">
         {/* Account Information Section */}
         {isLoadingAvatar ? (
@@ -424,12 +411,6 @@ export default function SettingsPage() {
               </div>
 
               {/* First Name Skeleton */}
-              <div>
-                <div className="h-5 w-24 bg-muted animate-pulse rounded mb-1" />
-                <div className="h-10 w-full bg-muted animate-pulse rounded" />
-              </div>
-
-              {/* Phone Skeleton */}
               <div>
                 <div className="h-5 w-24 bg-muted animate-pulse rounded mb-1" />
                 <div className="h-10 w-full bg-muted animate-pulse rounded" />
@@ -530,21 +511,6 @@ export default function SettingsPage() {
                   className="mt-1"
                 />
               </div>
-
-              {/* Phone - Only for therapists */}
-              {profile.role === 'therapist' && (
-                <div>
-                  <Label htmlFor="phone">{t('phone')}</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder={t('phonePlaceholder')}
-                    className="mt-1"
-                  />
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -662,12 +628,12 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-              {/* Success Message */}
-      {showSuccessMessage && (
-        <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm text-center mb-6">
-          {t('success.profileUpdated')}
-        </div>
-      )}
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm text-center mb-6">
+            {t('success.profileUpdated')}
+          </div>
+        )}
       </div>
 
       {/* Delete Account Confirmation Dialog */}
@@ -713,3 +679,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
