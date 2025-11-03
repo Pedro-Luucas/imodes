@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSignedUrl } from '@/lib/s3Client';
+import { hasRole } from '@/lib/roleAuth';
+
+const BUCKET_NAME = 'modes_cards';
+
+/**
+ * GET /api/cards/image
+ * 
+ * Gets a signed URL for a card image
+ * Query params: path (file path in bucket)
+ * Returns signed URL for image access
+ */
+export async function GET(
+  request: NextRequest
+): Promise<NextResponse<{ signed_url: string } | { error: string }>> {
+  try {
+    const { authorized } = await hasRole(['therapist', 'patient', 'admin']);
+    
+    if (!authorized) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid or missing session token' },
+        { status: 401 }
+      );
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const path = searchParams.get('path');
+
+    if (!path) {
+      return NextResponse.json(
+        { error: 'Path parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // Generate signed URL (24 hours expiration)
+    const signedUrl = await getSignedUrl(BUCKET_NAME, path, 86400);
+
+    return NextResponse.json({ signed_url: signedUrl }, { status: 200 });
+  } catch (error) {
+    console.error('Error getting card image URL:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred while fetching image URL' },
+      { status: 500 }
+    );
+  }
+}
+

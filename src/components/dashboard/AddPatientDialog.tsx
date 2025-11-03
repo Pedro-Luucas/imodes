@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export function AddPatientDialog({
   therapistId,
   onPatientAdded,
 }: AddPatientDialogProps) {
+  const t = useTranslations('dashboard.addPatient');
   const [patientId, setPatientId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export function AddPatientDialog({
     e.preventDefault();
     
     if (!patientId.trim()) {
-      setError('Please enter a patient ID');
+      setError(t('errorRequired'));
       return;
     }
 
@@ -59,7 +61,7 @@ export function AddPatientDialog({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to add patient');
+        throw new Error(data.error || t('errorFailed'));
       }
 
       setSuccess(true);
@@ -91,27 +93,27 @@ export function AddPatientDialog({
     <Dialog open={open} onOpenChange={handleClose} >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Patient</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            Enter the patient ID to assign them to your patient list.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="patientId">Patient ID</Label>
+              <Label htmlFor="patientId">{t('patientId')}</Label>
               <Input
                 id="patientId"
                 type="text"
-                placeholder="Enter patient ID (UUID)"
+                placeholder={t('patientIdPlaceholder')}
                 value={patientId}
                 onChange={(e) => setPatientId(e.target.value)}
                 disabled={loading}
                 className="font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                The patient must already have an account in the system.
+                {t('patientIdHint')}
               </p>
             </div>
 
@@ -126,7 +128,7 @@ export function AddPatientDialog({
               <Alert className="border-green-200 bg-green-50 text-green-900">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription>
-                  Patient added successfully! Refreshing list...
+                  {t('success')}
                 </AlertDescription>
               </Alert>
             )}
@@ -138,16 +140,16 @@ export function AddPatientDialog({
                 onClick={handleClose}
                 disabled={loading}
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={loading || success}>
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Adding...
+                    {t('adding')}
                   </>
                 ) : (
-                  'Add Patient'
+                  t('addPatient')
                 )}
               </Button>
             </DialogFooter>

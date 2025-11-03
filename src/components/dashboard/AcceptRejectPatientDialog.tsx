@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function AcceptRejectPatientDialog({
   onOpenChange,
   onComplete,
 }: AcceptRejectPatientDialogProps) {
+  const t = useTranslations('therapistRequest');
   const [loading, setLoading] = useState(false);
 
   const patientName = notification.data?.patient_name as string;
@@ -60,19 +62,19 @@ export function AcceptRejectPatientDialog({
       }
 
       if (action === 'accept') {
-        toast.success('Patient Request Accepted', {
-          description: `${patientName} is now your patient!`,
+        toast.success(t('acceptSuccess'), {
+          description: t('acceptSuccessDesc', { patientName }),
         });
       } else {
-        toast.info('Patient Request Declined', {
-          description: `You have declined the request from ${patientName}.`,
+        toast.info(t('declineSuccess'), {
+          description: t('declineSuccessDesc', { patientName }),
         });
       }
 
       onOpenChange(false);
       onComplete?.();
     } catch (err) {
-      toast.error('Failed to process request', {
+      toast.error(t('errors.processFailed'), {
         description: err instanceof Error ? err.message : 'Please try again',
       });
     } finally {
@@ -84,9 +86,9 @@ export function AcceptRejectPatientDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Patient Request</DialogTitle>
+          <DialogTitle>{t('dialogTitle')}</DialogTitle>
           <DialogDescription>
-            A patient would like to work with you as their therapist
+            {t('dialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -114,7 +116,7 @@ export function AcceptRejectPatientDialog({
             ) : (
               <UserX className="w-4 h-4 mr-2" />
             )}
-            Decline
+            {t('decline')}
           </Button>
           <Button
             onClick={() => handleResponse('accept')}
@@ -126,7 +128,7 @@ export function AcceptRejectPatientDialog({
             ) : (
               <UserCheck className="w-4 h-4 mr-2" />
             )}
-            Accept
+            {t('accept')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ interface PatientWithAvatar extends ExtendedPatient {
 const PATIENTS_PER_PAGE = 10;
 
 export default function PatientsPage() {
+  const t = useTranslations('dashboard.patients');
   const profile = useAuthProfile();
   const [patients, setPatients] = useState<ExtendedPatient[]>([]);
   const [displayedPatients, setDisplayedPatients] = useState<PatientWithAvatar[]>([]);
@@ -268,16 +270,16 @@ export default function PatientsPage() {
         {/* Page Title & Actions */}
         <div className="flex items-center justify-between px-6 py-1">
           <h1 className="text-2xl font-semibold text-foreground">
-            Patient Management
+            {t('title')}
           </h1>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="default">
               <Download className="w-5 h-5" />
-              Export
+              {t('export')}
             </Button>
             <Button variant="secondary" size="default">
               <Plus className="w-5 h-5" />
-              Start new session
+              {t('startNewSession')}
             </Button>
             <Button
               variant="default"
@@ -285,7 +287,7 @@ export default function PatientsPage() {
               onClick={() => setAddPatientDialogOpen(true)}
             >
               <UserPlus className="w-5 h-5" />
-              Add patient
+              {t('addPatient')}
             </Button>
           </div>
         </div>
@@ -295,13 +297,13 @@ export default function PatientsPage() {
           <Card className="border border-input rounded-2xl p-6">
             <div className="flex flex-col gap-4">
               <h3 className="text-base font-medium text-foreground">
-                Total Patients
+                {t('totalPatients')}
               </h3>
               <p className="text-4xl font-bold text-primary leading-5">
                 {stats.totalPatients}
               </p>
               <p className="text-xs text-muted-foreground">
-                +2 from last month
+                {t('fromLastMonth')}
               </p>
             </div>
           </Card>
@@ -309,13 +311,13 @@ export default function PatientsPage() {
           <Card className="border border-input rounded-2xl p-6">
             <div className="flex flex-col gap-4">
               <h3 className="text-base font-medium text-foreground">
-                Active Sessions
+                {t('activeSessions')}
               </h3>
               <p className="text-4xl font-bold text-primary leading-5">
                 {stats.activeSessions}
               </p>
               <p className="text-xs text-muted-foreground">
-                3 scheduled today
+                {t('scheduledToday')}
               </p>
             </div>
           </Card>
@@ -323,24 +325,24 @@ export default function PatientsPage() {
           <Card className="border border-input rounded-2xl p-6">
             <div className="flex flex-col gap-4">
               <h3 className="text-base font-medium text-foreground">
-                Completed Sessions
+                {t('completedSessions')}
               </h3>
               <p className="text-4xl font-bold text-primary leading-5">
                 {stats.completedSessions}
               </p>
-              <p className="text-xs text-muted-foreground">This month</p>
+              <p className="text-xs text-muted-foreground">{t('thisMonth')}</p>
             </div>
           </Card>
 
           <Card className="border border-input rounded-2xl p-6">
             <div className="flex flex-col gap-4">
               <h3 className="text-base font-medium text-foreground">
-                Pending Assignments
+                {t('pendingAssignments')}
               </h3>
               <p className="text-4xl font-bold text-primary leading-5">
                 {stats.pendingAssignments}
               </p>
-              <p className="text-xs text-muted-foreground">2 due today</p>
+              <p className="text-xs text-muted-foreground">{t('dueToday')}</p>
             </div>
           </Card>
         </div>
@@ -348,7 +350,7 @@ export default function PatientsPage() {
         {/* Assignments Section */}
         <div className="px-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
-            Assignments
+            {t('assignments')}
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
             {displayedPatients.slice(0, 4).map((patient, index) => (
@@ -384,35 +386,35 @@ export default function PatientsPage() {
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            Member since{' '}
+                            {t('memberSince')}{' '}
                             {new Date(patient.created_at).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
                     </div>
                     <Badge className="bg-green-50 text-green-600 border-transparent px-4 h-8 rounded-lg font-semibold">
-                      Active
+                      {t('active')}
                     </Badge>
                   </div>
 
                   {/* Patient Stats */}
                   <div className="flex flex-col">
                     <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <span className="text-sm text-foreground">Sessions</span>
+                      <span className="text-sm text-foreground">{t('sessions')}</span>
                       <span className="text-sm text-foreground">
                         {patient.sessions}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2.5 border-b border-input">
                       <span className="text-sm text-foreground">
-                        Last Session
+                        {t('lastSession')}
                       </span>
                       <span className="text-sm text-foreground">
                         {patient.lastSession}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <span className="text-sm text-foreground">Progress</span>
+                      <span className="text-sm text-foreground">{t('progress')}</span>
                       <span className="text-sm text-foreground">
                         {patient.progress}
                       </span>
@@ -426,7 +428,7 @@ export default function PatientsPage() {
                       className="flex-1 h-10"
                       onClick={() => handleSchedule(patient.id)}
                     >
-                      Schedule
+                      {t('schedule')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -434,14 +436,14 @@ export default function PatientsPage() {
                       onClick={() => handleCreateAssignment(patient)}
                     >
                       <ClipboardList className="w-4 h-4" />
-                      Assignment
+                      {t('assignment')}
                     </Button>
                     <Button
                       variant="secondary"
                       className="flex-1 h-10"
                       onClick={() => handleViewPatient(patient)}
                     >
-                      View
+                      {t('view')}
                     </Button>
                   </div>
                 </div>
@@ -455,7 +457,7 @@ export default function PatientsPage() {
           <div className="flex justify-center px-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              Loading more patients...
+              {t('loadingMore')}
             </div>
           </div>
         )}
@@ -468,7 +470,7 @@ export default function PatientsPage() {
         {/* No More Patients Message */}
         {!hasMore && displayedPatients.length > 0 && (
           <div className="text-center text-sm text-muted-foreground px-6">
-            All patients loaded
+            {t('allLoaded')}
           </div>
         )}
 
@@ -477,14 +479,14 @@ export default function PatientsPage() {
           <div className="flex flex-col items-center justify-center py-12 px-6">
             <Users className="w-12 h-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              No patients found
+              {t('noPatients')}
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Start by adding your first patient
+              {t('noPatientsDesc')}
             </p>
             <Button variant="default">
               <UserPlus className="w-5 h-5" />
-              Add patient
+              {t('addPatientButton')}
             </Button>
           </div>
         )}

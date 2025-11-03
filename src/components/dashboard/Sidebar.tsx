@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { LayoutDashboard, Users, Activity, Settings, X } from 'lucide-react';
 import Image from 'next/image';
@@ -10,31 +11,32 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const navItems = [
-  {
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    label: 'Patients',
-    href: '/dashboard/patients',
-    icon: Users,
-  },
-  {
-    label: 'Activity',
-    href: '/dashboard/activity',
-    icon: Activity,
-  },
-  {
-    label: 'Settings',
-    href: '/dashboard/settings',
-    icon: Settings,
-  },
-];
-
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const t = useTranslations('dashboard.sidebar');
   const pathname = usePathname();
+  
+  const navItems = [
+    {
+      label: t('dashboard'),
+      href: '/dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      label: t('patients'),
+      href: '/dashboard/patients',
+      icon: Users,
+    },
+    {
+      label: t('activity'),
+      href: '/dashboard/activity',
+      icon: Activity,
+    },
+    {
+      label: t('settings'),
+      href: '/dashboard/settings',
+      icon: Settings,
+    },
+  ];
 
   const isActive = (href: string) => {
     // Exact match for dashboard home

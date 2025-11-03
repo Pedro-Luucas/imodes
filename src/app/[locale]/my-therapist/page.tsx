@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -9,6 +10,7 @@ import type { Profile } from '@/types/auth';
 
 export default function MyTherapistPage() {
   useRequireAuth();
+  const t = useTranslations('myTherapist');
   
   const router = useRouter();
   const profile = useAuthProfile();
@@ -27,7 +29,7 @@ export default function MyTherapistPage() {
     if (profile && profile.role === 'patient') {
       fetchTherapist();
     } else if (!profileLoading && profile && profile.role !== 'patient') {
-      setError('Access denied: Only patients can view this page');
+      setError(t('accessDeniedMessage'));
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,7 +55,7 @@ export default function MyTherapistPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('loading')}</p>
         </div>
       </div>
     );
@@ -69,13 +71,13 @@ export default function MyTherapistPage() {
             <svg className="w-16 h-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-            <p className="text-gray-600 dark:text-gray-400">Only patients can access this page.</p>
+            <h2 className="text-xl font-bold mb-2">{t('accessDenied')}</h2>
+            <p className="text-gray-600 dark:text-gray-400">{t('accessDeniedMessage')}</p>
             <Link
               href="/dashboard"
               className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Go to Dashboard
+              {t('goToDashboard')}
             </Link>
           </div>
         </div>
@@ -94,10 +96,10 @@ export default function MyTherapistPage() {
                 href="/dashboard"
                 className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
               >
-                ← Dashboard
+                {t('backToDashboard')}
               </Link>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                My Therapist
+                {t('title')}
               </h1>
             </div>
             <div className="flex items-center gap-4">
@@ -108,7 +110,7 @@ export default function MyTherapistPage() {
                 onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
-                Logout
+                {t('logout')}
               </button>
             </div>
           </div>
@@ -137,19 +139,19 @@ export default function MyTherapistPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No Therapist Assigned
+                {t('noTherapist')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                You don&apos;t have a therapist assigned yet. Please contact support or wait for a therapist to be assigned to you.
+                {t('noTherapistDesc')}
               </p>
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 max-w-md mx-auto">
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  What to do next?
+                  {t('whatToDoNext')}
                 </h4>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 text-left">
-                  <li>• Contact your administrator for therapist assignment</li>
-                  <li>• Check back later for updates</li>
-                  <li>• Explore other features in your dashboard</li>
+                  <li>• {t('contactAdmin')}</li>
+                  <li>• {t('checkBack')}</li>
+                  <li>• {t('exploreFeatures')}</li>
                 </ul>
               </div>
             </div>
@@ -166,7 +168,7 @@ export default function MyTherapistPage() {
                     {therapist.full_name}
                   </h2>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white">
-                    Your Therapist
+                    {t('yourTherapist')}
                   </span>
                 </div>
               </div>
@@ -175,7 +177,7 @@ export default function MyTherapistPage() {
               <div className="px-8 py-6 space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Contact Information
+                    {t('contactInformation')}
                   </h3>
                   
                   <div className="space-y-4">
@@ -187,7 +189,7 @@ export default function MyTherapistPage() {
                         </svg>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('email')}</p>
                         <a
                           href={`mailto:${therapist.email}`}
                           className="text-base text-blue-600 dark:text-blue-400 hover:underline"
@@ -206,7 +208,7 @@ export default function MyTherapistPage() {
                           </svg>
                         </div>
                         <div className="ml-4">
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</p>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('phone')}</p>
                           <a
                             href={`tel:${therapist.phone}`}
                             className="text-base text-green-600 dark:text-green-400 hover:underline"
@@ -225,7 +227,7 @@ export default function MyTherapistPage() {
                         </svg>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Member Since</p>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('memberSince')}</p>
                         <p className="text-base text-gray-900 dark:text-gray-100">
                           {new Date(therapist.created_at).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -241,7 +243,7 @@ export default function MyTherapistPage() {
                 {/* Quick Actions */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Quick Actions
+                    {t('quickActions')}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <a
@@ -251,7 +253,7 @@ export default function MyTherapistPage() {
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      Send Email
+                      {t('sendEmail')}
                     </a>
                     {therapist.phone && (
                       <a
@@ -261,7 +263,7 @@ export default function MyTherapistPage() {
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
-                        Call Now
+                        {t('callNow')}
                       </a>
                     )}
                   </div>

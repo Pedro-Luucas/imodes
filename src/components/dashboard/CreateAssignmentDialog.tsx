@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -51,6 +52,7 @@ export function CreateAssignmentDialog({
   patientName,
   onAssignmentCreated,
 }: CreateAssignmentDialogProps) {
+  const t = useTranslations('assignments');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -124,9 +126,9 @@ export function CreateAssignmentDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create Assignment for {patientName}</DialogTitle>
+          <DialogTitle>{t('title', { patientName })}</DialogTitle>
           <DialogDescription>
-            Create a new assignment for this patient. They will be notified once the assignment is created.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -135,12 +137,12 @@ export function CreateAssignmentDialog({
             {/* Assignment Name */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="name">
-                Assignment Name <span className="text-destructive">*</span>
+                {t('name')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="e.g., Daily Mood Tracking"
+                placeholder={t('namePlaceholder')}
                 {...register('name')}
                 disabled={loading}
               />
@@ -151,10 +153,10 @@ export function CreateAssignmentDialog({
 
             {/* Description */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('assignmentDescription')}</Label>
               <Textarea
                 id="description"
-                placeholder="Provide details about the assignment..."
+                placeholder={t('descriptionPlaceholder')}
                 rows={4}
                 {...register('description')}
                 disabled={loading}
@@ -167,7 +169,7 @@ export function CreateAssignmentDialog({
             {/* Due Date */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="due_date">
-                Due Date <span className="text-destructive">*</span>
+                {t('dueDate')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="due_date"
@@ -191,7 +193,7 @@ export function CreateAssignmentDialog({
               <Alert className="border-green-200 bg-green-50 text-green-900">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription>
-                  Assignment created successfully!
+                  {t('success')}
                 </AlertDescription>
               </Alert>
             )}
@@ -203,16 +205,16 @@ export function CreateAssignmentDialog({
                 onClick={handleClose}
                 disabled={loading}
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={loading || success}>
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating...
+                    {t('submitting')}
                   </>
                 ) : (
-                  'Create Assignment'
+                  t('submit')
                 )}
               </Button>
             </DialogFooter>

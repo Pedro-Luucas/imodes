@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Settings, Menu,  LogOut } from 'lucide-react';
 import { useAuthProfile, useAuthActions } from '@/stores/authStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +25,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const t = useTranslations('dashboard.header');
   const profile = useAuthProfile();
   const { logout: logoutAction } = useAuthActions();
   const router = useRouter();
@@ -99,6 +101,10 @@ export function Header({ onMenuClick }: HeaderProps) {
     }
   };
 
+  const handleGoToCanvas = () => {
+    router.push('/canvas');
+  };
+
   return (
     <header className="border-b border-input bg-background sticky top-0 z-30">
       <div className="flex items-center justify-between px-8 py-6">
@@ -129,12 +135,18 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Settings className="w-5 h-5" />
           </Button>
 
-          
+          {/* Test: Go to Canvas Button */}
+          <Button
+            variant="outline"
+            onClick={handleGoToCanvas}
+          >
+            {t('goToCanvas')}
+          </Button>
 
           {/* User Profile */}
           <div className="flex items-center gap-4">
             <Avatar className="w-10 h-10">
-              <AvatarImage src={avatarUrl || undefined} alt="Profile picture" />
+              <AvatarImage src={avatarUrl || undefined} alt={t('profilePicture')} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {getInitials()}
               </AvatarFallback>
@@ -162,18 +174,18 @@ export function Header({ onMenuClick }: HeaderProps) {
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent className="bg-popover text-popover-foreground border-stroke">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirmLogout')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to logout? You will need to sign in again to access your account.
+              {t('confirmLogoutMessage')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogoutConfirm}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              Logout
+              {t('logout')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
