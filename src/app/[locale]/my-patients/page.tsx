@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -8,6 +9,7 @@ import { getTherapistPatients, unassignTherapist, assignTherapist } from '@/lib/
 import type { Profile } from '@/types/auth';
 
 export default function MyPatientsPage() {
+  usePageMetadata('My Patients', 'Manage and view your assigned patients.');
   useRequireAuth();
   
   const router = useRouter();

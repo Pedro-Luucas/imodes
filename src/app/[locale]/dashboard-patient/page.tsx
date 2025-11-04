@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useRouter } from '@/i18n/navigation';
 import { useAuthProfile } from '@/stores/authStore';
 import { useTherapistActions } from '@/stores/therapistStore';
@@ -37,6 +38,7 @@ interface Assignment {
 }
 
 export default function DashboardPatientPage() {
+  usePageMetadata('Patient Dashboard', 'View your therapy sessions, assignments, and progress.');
   const router = useRouter();
   const profile = useAuthProfile();
   const { getPatientTherapist } = useTherapistActions();

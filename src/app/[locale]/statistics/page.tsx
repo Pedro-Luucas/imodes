@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -28,6 +29,7 @@ interface MonthlyStats {
 }
 
 export default function StatisticsPage() {
+  usePageMetadata('Statistics', 'View platform statistics and analytics.');
   useRequireAuth();
   
   const router = useRouter();

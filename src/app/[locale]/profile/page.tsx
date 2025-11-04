@@ -1,6 +1,7 @@
 'use client';
 
 import { Link, useRouter } from '@/i18n/navigation';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
@@ -9,6 +10,7 @@ import { uploadAvatar, deleteAvatar } from '@/lib/authClient';
 import { useTranslations } from 'next-intl';
 
 export default function ProfilePage() {
+  usePageMetadata('Profile', 'View and manage your profile information.');
   const t = useTranslations('profile');
   useRequireAuth();
   

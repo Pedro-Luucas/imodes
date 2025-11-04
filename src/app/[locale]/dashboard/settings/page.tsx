@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
@@ -36,6 +37,7 @@ import { toast } from 'sonner';
 import { Loader2, Upload, Trash2, User } from 'lucide-react';
 
 export default function SettingsPage() {
+  usePageMetadata('Settings', 'Manage your account settings and preferences.');
   const t = useTranslations('settings');
   const locale = useLocale();
   const router = useRouter();

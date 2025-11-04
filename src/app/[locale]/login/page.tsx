@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -13,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Image from "next/image";
 
 export default function LoginPage() {
+  usePageMetadata('Login', 'Sign in to your iModes account.');
   const t = useTranslations("login");
   const router = useRouter();
   const searchParams = useSearchParams();

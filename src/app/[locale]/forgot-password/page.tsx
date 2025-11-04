@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { forgotPassword } from "@/lib/authClient";
@@ -11,6 +12,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
+  usePageMetadata('Forgot Password', 'Reset your password by entering your email address.');
   const t = useTranslations("forgotPassword");
 
   const [email, setEmail] = useState("");

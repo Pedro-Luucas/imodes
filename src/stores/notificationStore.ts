@@ -1,8 +1,6 @@
 'use client';
 
 import { create } from 'zustand';
-import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import { createSupabaseClient } from '@/lib/supabaseClient';
 import type {
   NotificationState,
   NotificationActions,
@@ -14,8 +12,7 @@ import type {
  * Internal Zustand store
  */
 const useNotificationStore = create<NotificationState & { actions: NotificationActions }>((set, get) => {
-  let supabase: SupabaseClient | null = null;
-  let subscription: RealtimeChannel | null = null;
+  let eventSource: EventSource | null = null;
 
   return {
     // Initial state
@@ -62,46 +59,46 @@ const useNotificationStore = create<NotificationState & { actions: NotificationA
       },
 
       subscribeToNotifications: (userId: string) => {
-        try {
-          // Initialize Supabase client if needed
-          if (!supabase) {
-            supabase = createSupabaseClient();
-          }
-        } catch (error) {
-          console.error('Failed to initialize Supabase client:', error);
-          return;
+        // Close existing connection if any
+        if (eventSource) {
+          eventSource.close();
         }
 
-        // Unsubscribe from existing subscription
-        if (subscription) {
-          subscription.unsubscribe();
-        }
+        // Create new EventSource connection to our SSE endpoint
+        eventSource = new EventSource('/api/notifications/stream');
 
-        // Subscribe to notifications for this user
-        subscription = supabase
-          .channel(`notifications:${userId}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-              schema: 'public',
-              table: 'notifications',
-              filter: `user_id=eq.${userId}`,
-            },
-            async (payload) => {
-              console.log('Notification event:', payload);
+        eventSource.onopen = () => {
+          console.log('Notification stream connected');
+        };
 
-              // Fetch latest notifications after change
+        eventSource.onmessage = async (event) => {
+          try {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'connected') {
+              console.log('SSE connection established');
+              return;
+            }
+
+            if (data.type === 'notification') {
+              // Refetch notifications when we receive an update
               await get().actions.fetchNotifications();
             }
-          )
-          .subscribe();
+          } catch (error) {
+            console.error('Error parsing SSE message:', error);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('SSE connection error:', error);
+          // EventSource will automatically reconnect
+        };
       },
 
       unsubscribe: () => {
-        if (subscription) {
-          subscription.unsubscribe();
-          subscription = null;
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
         }
       },
 

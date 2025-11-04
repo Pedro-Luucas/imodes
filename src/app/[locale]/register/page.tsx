@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { register } from "@/lib/authClient";
@@ -20,6 +21,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 
 export default function RegisterPage() {
+  usePageMetadata('Register', 'Create a new account on iModes platform.');
   const t = useTranslations("register");
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();

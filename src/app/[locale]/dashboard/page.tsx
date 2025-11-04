@@ -1,12 +1,14 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Smile, Wrench, BrainCircuit, User, UserPlus, Plus } from 'lucide-react';
 
 export default function DashboardPage() {
+  usePageMetadata('Dashboard', 'Therapist dashboard with patient overview and statistics.');
   const t = useTranslations('dashboard.page');
 
   // Mock data for the dashboard

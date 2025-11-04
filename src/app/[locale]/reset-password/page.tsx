@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -12,6 +13,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 
 export default function ResetPasswordPage() {
+  usePageMetadata('Reset Password', 'Create a new password for your account.');
   const t = useTranslations("resetPassword");
   const router = useRouter();
   const searchParams = useSearchParams();

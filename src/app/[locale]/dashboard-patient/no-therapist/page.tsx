@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useRouter } from '@/i18n/navigation';
 import { useAuthProfile } from '@/stores/authStore';
 import {
@@ -18,6 +19,7 @@ import { Search, UserPlus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NoTherapistPage() {
+  usePageMetadata('Find Your Therapist', 'Browse and select a therapist to begin your therapy journey.');
   const router = useRouter();
   const profile = useAuthProfile();
   const therapists = useTherapists();

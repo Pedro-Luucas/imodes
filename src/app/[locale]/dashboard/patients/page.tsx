@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ interface PatientWithAvatar extends ExtendedPatient {
 const PATIENTS_PER_PAGE = 10;
 
 export default function PatientsPage() {
+  usePageMetadata('Patients', 'Manage and view all your patients.');
   const t = useTranslations('dashboard.patients');
   const profile = useAuthProfile();
   const [patients, setPatients] = useState<ExtendedPatient[]>([]);

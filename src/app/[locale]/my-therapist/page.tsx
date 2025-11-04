@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthProfile, useAuthLoading, useAuthActions } from '@/stores/authStore';
@@ -9,6 +10,7 @@ import { getPatientTherapist } from '@/lib/authClient';
 import type { Profile } from '@/types/auth';
 
 export default function MyTherapistPage() {
+  usePageMetadata('My Therapist', 'View your assigned therapist information and contact details.');
   useRequireAuth();
   const t = useTranslations('myTherapist');
   

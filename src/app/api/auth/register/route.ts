@@ -28,6 +28,27 @@ export async function POST(request: NextRequest) {
     // Initialize Supabase client
     const supabase = createSupabaseAnonClient();
 
+    // Check if email already exists in profiles table using database function
+    const { data: emailExists, error: profileCheckError } = await supabase
+      .rpc('check_email_exists', { email_to_check: email });
+
+    // Handle database query errors
+    if (profileCheckError) {
+      console.error('Error checking profile existence:', profileCheckError.message);
+      return NextResponse.json(
+        { error: 'Failed to verify email availability' },
+        { status: 500 }
+      );
+    }
+
+    // If email exists, return error
+    if (emailExists === true) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+
     // Step 1: Create user in auth with metadata
     // Metadata will be used by database trigger to create profile after email confirmation
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

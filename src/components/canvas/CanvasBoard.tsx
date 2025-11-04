@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
+import { toast } from 'sonner';
 import { CanvasCard as CanvasCardType, Gender, CardCategory, ToolMode, PostItNote } from '@/types/canvas';
 import { CanvasCard } from './CanvasCard';
 import { CanvasLoading } from './CanvasLoading';
@@ -74,6 +75,76 @@ export function CanvasBoard({ onAddCard: _onAddCard, scale = 1, gender = 'male',
       setIsInitialized(true);
     }, 500);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Monitor console errors for Konva/Brave shield issues
+  useEffect(() => {
+    let hasShownWarning = false;
+    
+    const checkAndShowWarning = (errorMessage: string) => {
+      // Check if we've already shown the warning
+      if (hasShownWarning) {
+        return;
+      }
+      
+      const lowerMessage = errorMessage.toLowerCase();
+      
+      // Check for Konva errors related to Brave shield or similar issues
+      const isKonvaError = lowerMessage.includes('konva') || lowerMessage.includes('konvajs');
+      const isBraveShieldError = 
+        lowerMessage.includes('brave shield') ||
+        lowerMessage.includes('brave') ||
+        lowerMessage.includes('shield') ||
+        lowerMessage.includes('breaks konva') ||
+        lowerMessage.includes('breaks konvajs') ||
+        lowerMessage.includes('installhook');
+      
+      if (isKonvaError && isBraveShieldError) {
+        hasShownWarning = true;
+        toast.warning('Canvas Compatibility Warning', {
+          description: 'The canvas may not work properly due to browser extensions or privacy settings (such as Brave Shield) that interfere with Konva.js. Please disable any ad blockers, privacy shields, or similar browser extensions that may be blocking canvas functionality.',
+          duration: 10000,
+        });
+      }
+    };
+    
+    // Store original console.error
+    const originalError = console.error;
+    
+    // Override console.error to intercept errors
+    console.error = (...args: any[]) => {
+      // Call original console.error first
+      originalError.apply(console, args);
+      
+      // Convert all arguments to string for pattern matching
+      const errorMessage = args
+        .map(arg => {
+          if (typeof arg === 'string') return arg;
+          if (arg instanceof Error) return arg.message;
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        })
+        .join(' ');
+      
+      checkAndShowWarning(errorMessage);
+    };
+    
+    // Also listen to window error events as a backup
+    const handleError = (event: ErrorEvent) => {
+      const errorMessage = event.message || String(event.error || '');
+      checkAndShowWarning(errorMessage);
+    };
+    
+    window.addEventListener('error', handleError);
+    
+    // Cleanup: restore original console.error and remove listener
+    return () => {
+      console.error = originalError;
+      window.removeEventListener('error', handleError);
+    };
   }, []);
 
   // Handle canvas dimensions

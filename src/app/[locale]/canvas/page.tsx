@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface WindowWithCanvasCard extends Window {
 }
 
 export default function CanvasPage() {
+  usePageMetadata('Canvas', 'Interactive canvas for therapy sessions.');
   const params = useParams();
   const locale = (params.locale as string) || 'en';
   const tControls = useTranslations('canvas.controls');
