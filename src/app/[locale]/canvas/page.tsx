@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePageMetadata } from '@/hooks/usePageMetadata';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useAuthProfile } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { CanvasBoard } from '@/components/canvas/CanvasBoard';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
@@ -43,6 +44,9 @@ interface WindowWithCanvasCard extends Window {
 export default function CanvasPage() {
   usePageMetadata('Canvas', 'Interactive canvas for therapy sessions.');
   const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const profile = useAuthProfile();
   const locale = (params.locale as string) || 'en';
   const tControls = useTranslations('canvas.controls');
   const tPage = useTranslations('canvas.page');
@@ -52,6 +56,10 @@ export default function CanvasPage() {
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
   const [gender, setGender] = useState<Gender>('male');
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionName, setSessionName] = useState<string | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const creatingSessionRef = useRef(false);
 
   const handleAddCard = useCallback((card?: {
     imageUrl?: string;
@@ -75,12 +83,102 @@ export default function CanvasPage() {
     setShowClearDialog(false);
   }, []);
 
+  // Get sessionId from URL query params
+  useEffect(() => {
+    const sessionIdParam = searchParams.get('sessionId');
+    setSessionId(sessionIdParam);
+  }, [searchParams]);
+
+  // Auto-create session if missing
+  useEffect(() => {
+    // Check searchParams directly to avoid race condition with state update
+    const sessionIdFromUrl = searchParams.get('sessionId');
+    if (sessionIdFromUrl || !profile || creatingSessionRef.current) return;
+
+    const createSession = async () => {
+      creatingSessionRef.current = true;
+      setIsCreatingSession(true);
+      try {
+        const response = await fetch('/api/sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create session');
+        }
+
+        const data = await response.json();
+        const newSessionId = data.session.id;
+        router.replace(`/canvas?sessionId=${newSessionId}`);
+        setSessionId(newSessionId);
+        setSessionName(data.session.name);
+      } catch (error) {
+        console.error('Error creating session:', error);
+        // Don't redirect, let user see error or go back
+      } finally {
+        setIsCreatingSession(false);
+        creatingSessionRef.current = false;
+      }
+    };
+
+    createSession();
+  }, [searchParams, profile, router]);
+
+  // Load session name when sessionId changes
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const loadSessionName = async () => {
+      try {
+        const response = await fetch(`/api/sessions/${sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSessionName(data.session?.name || null);
+        }
+      } catch (error) {
+        console.error('Error loading session name:', error);
+      }
+    };
+
+    loadSessionName();
+  }, [sessionId]);
+
+  // Manual save handler
+  const handleManualSave = useCallback(async () => {
+    interface WindowWithManualSave extends Window {
+      _manualSaveCanvas?: () => Promise<void>;
+    }
+    const win = window as WindowWithManualSave;
+    if (win._manualSaveCanvas) {
+      await win._manualSaveCanvas();
+    } else {
+      throw new Error('Save function not available');
+    }
+  }, []);
+
+  const userRole = profile?.role === 'patient' ? 'patient' : profile?.role === 'therapist' ? 'therapist' : undefined;
+
+  if (isCreatingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>Creating session...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-gray-50">
       {/* Header */}
       <CanvasHeader 
         gender={gender}
         onGenderChange={setGender}
+        sessionTitle={sessionName || undefined}
+        onSave={sessionId ? handleManualSave : undefined}
       />
 
       {/* Canvas with Floating Controls */}
@@ -92,6 +190,10 @@ export default function CanvasPage() {
           gender={gender}
           locale={locale}
           toolMode={toolMode}
+          sessionId={sessionId}
+          userRole={userRole}
+          onSave={handleManualSave}
+          onZoomChange={setZoomLevel}
         />
 
         {/* Left Panel - Tools */}

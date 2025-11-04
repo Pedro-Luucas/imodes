@@ -27,6 +27,9 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
   const [lockIcon, setLockIcon] = useState<HTMLImageElement | null>(null);
   const [unlockIcon, setUnlockIcon] = useState<HTMLImageElement | null>(null);
 
+  // Track if we've auto-resized this card (to prevent overriding saved dimensions)
+  const hasAutoResizedRef = useRef(false);
+
   // Load image
   useEffect(() => {
     if (!card.imageUrl) {
@@ -38,33 +41,58 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       setImage(img);
-      // Scale image to reasonable size (max 400px on largest side)
-      const MAX_DIMENSION = 400;
-      let scaledWidth = img.width;
-      let scaledHeight = img.height;
       
-      if (img.width > img.height) {
-        // Image is wider
-        if (img.width > MAX_DIMENSION) {
-          scaledWidth = MAX_DIMENSION;
-          scaledHeight = (img.height / img.width) * MAX_DIMENSION;
-        }
-      } else {
-        // Image is taller or square
-        if (img.height > MAX_DIMENSION) {
-          scaledHeight = MAX_DIMENSION;
-          scaledWidth = (img.width / img.height) * MAX_DIMENSION;
-        }
-      }
+      // Only auto-resize if card has default dimensions (newly created card)
+      // AND we haven't already auto-resized it
+      // This preserves dimensions for cards loaded from session
+      const DEFAULT_WIDTH = 280;
+      const DEFAULT_HEIGHT = 320;
+      const isDefaultSize = card.width === DEFAULT_WIDTH && card.height === DEFAULT_HEIGHT;
       
-      // Update card size to match scaled image dimensions
-      if (onSizeChange && scaledWidth > 0 && scaledHeight > 0) {
-        onSizeChange(card.id, scaledWidth, scaledHeight);
+      if (isDefaultSize && !hasAutoResizedRef.current && onSizeChange) {
+        hasAutoResizedRef.current = true;
+        
+        // Scale image to reasonable size (max 400px on largest side)
+        const MAX_DIMENSION = 400;
+        let scaledWidth = img.width;
+        let scaledHeight = img.height;
+        
+        if (img.width > img.height) {
+          // Image is wider
+          if (img.width > MAX_DIMENSION) {
+            scaledWidth = MAX_DIMENSION;
+            scaledHeight = (img.height / img.width) * MAX_DIMENSION;
+          }
+        } else {
+          // Image is taller or square
+          if (img.height > MAX_DIMENSION) {
+            scaledHeight = MAX_DIMENSION;
+            scaledWidth = (img.width / img.height) * MAX_DIMENSION;
+          }
+        }
+        
+        // Update card size to match scaled image dimensions
+        if (scaledWidth > 0 && scaledHeight > 0) {
+          onSizeChange(card.id, scaledWidth, scaledHeight);
+        }
       }
     };
     img.onerror = () => setImage(null);
     img.src = card.imageUrl;
-  }, [card.imageUrl, card.id, onSizeChange]);
+  }, [card.imageUrl, card.id, card.width, card.height, onSizeChange]);
+
+  // Reset auto-resize flag when card dimensions change from default (user resized it)
+  useEffect(() => {
+    const DEFAULT_WIDTH = 280;
+    const DEFAULT_HEIGHT = 320;
+    const isDefaultSize = card.width === DEFAULT_WIDTH && card.height === DEFAULT_HEIGHT;
+    
+    // If card is resized to non-default size, mark as already resized
+    // This prevents auto-resize on re-renders
+    if (!isDefaultSize) {
+      hasAutoResizedRef.current = true;
+    }
+  }, [card.width, card.height]);
 
   // Load SVG icons
   useEffect(() => {
@@ -143,12 +171,13 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
         }
       };
 
-      groupRef.current.on('mouseenter', handleMouseEnter);
-      groupRef.current.on('mouseleave', handleMouseLeave);
+      const currentGroup = groupRef.current;
+      currentGroup.on('mouseenter', handleMouseEnter);
+      currentGroup.on('mouseleave', handleMouseLeave);
 
       return () => {
-        groupRef.current?.off('mouseenter', handleMouseEnter);
-        groupRef.current?.off('mouseleave', handleMouseLeave);
+        currentGroup?.off('mouseenter', handleMouseEnter);
+        currentGroup?.off('mouseleave', handleMouseLeave);
       };
     }
   }, [isSelected]);
@@ -253,7 +282,7 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
             y={cardHeight - 140}
             width={cardWidth}
             height={140}
-            fill="rgba(0,0,0,0.7)"
+            fill="rgba(0,0,0,0.4)"
             cornerRadius={[0, 0, 16, 16]}
           />
           

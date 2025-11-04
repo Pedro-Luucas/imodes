@@ -13,6 +13,7 @@ import {
   Calendar,
   ArrowLeft,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ interface CanvasHeaderProps {
   sessionSubtitle?: string;
   gender?: Gender;
   onGenderChange?: (gender: Gender) => void;
+  onSave?: () => Promise<void>;
 }
 
 export function CanvasHeader({
@@ -34,6 +36,7 @@ export function CanvasHeader({
   sessionSubtitle,
   gender = 'male',
   onGenderChange,
+  onSave,
 }: CanvasHeaderProps) {
   const t = useTranslations('canvas.header');
   const profile = useAuthProfile();
@@ -84,6 +87,18 @@ export function CanvasHeader({
     }
   };
 
+  const handleSave = async () => {
+    if (!onSave) return;
+    
+    try {
+      await onSave();
+      toast.success('Canvas saved successfully');
+    } catch (error) {
+      console.error('Error saving canvas:', error);
+      toast.error('Failed to save canvas');
+    }
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 w-full">
       <div className="flex items-center justify-between px-6 py-4">
@@ -107,9 +122,9 @@ export function CanvasHeader({
           </Button>
           
           <div className="flex flex-col">
-            <span className="text-sm text-zinc-500">{displayTitle}</span>
+            <span className="text-sm text-zinc-500">{sessionTitle || displayTitle}</span>
             <span className="text-base font-medium text-foreground">
-              {displaySubtitle}
+              {sessionSubtitle || displaySubtitle}
             </span>
           </div>
         </div>
@@ -139,7 +154,13 @@ export function CanvasHeader({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="secondary" size="default" className="h-10">
+          <Button 
+            variant="secondary" 
+            size="default" 
+            className="h-10"
+            onClick={handleSave}
+            disabled={!onSave}
+          >
             <Save className="w-5 h-5" />
             {t('save')}
           </Button>

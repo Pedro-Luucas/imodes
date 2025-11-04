@@ -31,9 +31,18 @@ export function useCardsData(
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: NodeJS.Timeout;
 
     async function fetchCards() {
       if (!category) return;
+
+      // Delay fetching cards to prioritize canvas images loading first
+      // This gives canvas images time to load before competing for bandwidth
+      await new Promise(resolve => {
+        timeoutId = setTimeout(resolve, 300); // 300ms delay
+      });
+
+      if (cancelled) return;
 
       setLoading(true);
       setError(null);
@@ -101,6 +110,9 @@ export function useCardsData(
 
     return () => {
       cancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [category, gender, locale]);
 

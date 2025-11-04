@@ -101,8 +101,8 @@ export function Header({ onMenuClick }: HeaderProps) {
     }
   };
 
-  const handleGoToCanvas = () => {
-    router.push('/canvas');
+  const handleGoToCanvasSelection = () => {
+    router.push('/canvas-selection');
   };
 
   return (
@@ -135,12 +135,12 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Settings className="w-5 h-5" />
           </Button>
 
-          {/* Test: Go to Canvas Button */}
+          {/* Canvas Selection Button */}
           <Button
             variant="outline"
-            onClick={handleGoToCanvas}
+            onClick={handleGoToCanvasSelection}
           >
-            {t('goToCanvas')}
+            Canvas Selection (test)
           </Button>
 
           {/* User Profile */}

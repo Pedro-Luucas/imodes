@@ -9,6 +9,8 @@ import { CanvasCard as CanvasCardType, Gender, CardCategory, ToolMode, PostItNot
 import { CanvasCard } from './CanvasCard';
 import { CanvasLoading } from './CanvasLoading';
 import { PostItNoteComponent } from './PostItNote';
+import { serializeCanvasState, deserializeCanvasState } from '@/lib/canvasSerialization';
+import { preloadImagesWithPriority } from '@/lib/imagePreloader';
 
 interface CanvasBoardProps {
   onAddCard?: (card?: {
@@ -22,6 +24,10 @@ interface CanvasBoardProps {
   gender?: Gender;
   locale?: string;
   toolMode?: ToolMode;
+  sessionId?: string | null;
+  userRole?: 'patient' | 'therapist';
+  onSave?: () => Promise<void>;
+  onZoomChange?: (zoomLevel: number) => void;
 }
 
 interface WindowWithCanvasCard extends Window {
@@ -33,6 +39,7 @@ interface WindowWithCanvasCard extends Window {
     cardNumber: number;
   }) => void;
   _clearCanvas?: () => void;
+  _manualSaveCanvas?: () => Promise<void>;
 }
 
 const CARD_COLORS = [
@@ -44,7 +51,14 @@ const CARD_COLORS = [
   '#6366f1', // indigo
 ];
 
-export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }: CanvasBoardProps) {
+export function CanvasBoard({ 
+  scale = 1, 
+  gender = 'male', 
+  toolMode = 'select',
+  sessionId,
+  userRole,
+  onZoomChange,
+}: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const [cards, setCards] = useState<CanvasCardType[]>([]);
   const [notes, setNotes] = useState<PostItNote[]>([]);
@@ -53,30 +67,124 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
   const [displayScale, setDisplayScale] = useState(scale);
+  const [currentGender, setCurrentGender] = useState<Gender>(gender);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevScaleRef = useRef<number>(scale);
   const stagePositionRef = useRef({ x: 0, y: 0 });
   const rafRef = useRef<number | null>(null);
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const patientZoomRef = useRef<number>(100);
+  const therapistZoomRef = useRef<number>(100);
+
+  // Update gender state when prop changes
+  useEffect(() => {
+    setCurrentGender(gender);
+  }, [gender]);
 
   // Initialize prevScaleRef on mount
   useEffect(() => {
     prevScaleRef.current = scale;
     setDisplayScale(scale);
-  }, [scale]);
+    // Update zoom refs based on user role
+    if (userRole === 'patient') {
+      patientZoomRef.current = scale * 100;
+    } else if (userRole === 'therapist') {
+      therapistZoomRef.current = scale * 100;
+    }
+  }, [scale, userRole]);
 
   // Keep ref in sync with state
   useEffect(() => {
     stagePositionRef.current = stagePosition;
   }, [stagePosition]);
 
-  // Set initialized after a short delay to show loading screen
+  // Load session data when sessionId changes
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (!sessionId) {
       setIsInitialized(true);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+      return;
+    }
+
+    const loadSession = async () => {
+      setIsLoadingSession(true);
+      try {
+        const response = await fetch(`/api/sessions/${sessionId}`);
+        if (!response.ok) {
+          throw new Error('Failed to load session');
+        }
+        const data = await response.json();
+        const session = data.session;
+
+        if (session?.data) {
+          const { cards: loadedCards, gender: loadedGender, patientZoomLevel, therapistZoomLevel } = 
+            deserializeCanvasState(session.data);
+
+          // Set cards immediately so they can start rendering
+          setCards(loadedCards);
+          setCurrentGender(loadedGender);
+          patientZoomRef.current = patientZoomLevel;
+          therapistZoomRef.current = therapistZoomLevel;
+
+          // Set zoom level based on user role
+          let zoomToSet: number;
+          if (userRole === 'patient') {
+            zoomToSet = patientZoomLevel;
+            setDisplayScale(patientZoomLevel / 100);
+            prevScaleRef.current = patientZoomLevel / 100;
+          } else if (userRole === 'therapist') {
+            zoomToSet = therapistZoomLevel;
+            setDisplayScale(therapistZoomLevel / 100);
+            prevScaleRef.current = therapistZoomLevel / 100;
+          } else {
+            zoomToSet = 100;
+          }
+
+          // Notify parent of zoom change
+          if (onZoomChange && zoomToSet) {
+            onZoomChange(zoomToSet);
+          }
+
+          // Extract image URLs from cards on canvas and preload them (priority)
+          // This happens after setting cards so canvas renders immediately
+          const canvasImageUrls = loadedCards
+            .map(card => card.imageUrl)
+            .filter((url): url is string => !!url);
+
+          // Preload canvas images in the background (don't await - let them load while canvas renders)
+          // Browser will prioritize these requests over other requests
+          preloadImagesWithPriority(canvasImageUrls).catch(() => {
+            // Ignore errors - images will load naturally when CanvasCard components request them
+          });
+        }
+      } catch (error) {
+        console.error('Error loading session:', error);
+        toast.error('Failed to load session');
+        setIsLoadingSession(false);
+        setIsInitialized(true);
+      } finally {
+        setIsLoadingSession(false);
+        // Set initialized after loading
+        setTimeout(() => {
+          setIsInitialized(true);
+        }, 500);
+      }
+    };
+
+    loadSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, userRole]);
+
+  // Set initialized after a short delay to show loading screen (if no session to load)
+  useEffect(() => {
+    if (!sessionId && !isLoadingSession) {
+      const timer = setTimeout(() => {
+        setIsInitialized(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [sessionId, isLoadingSession]);
 
   // Monitor console errors for Konva/Brave shield issues
   useEffect(() => {
@@ -268,7 +376,7 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
         imageUrl: cardData?.imageUrl,
         category: cardData?.category,
         cardNumber: cardData?.cardNumber,
-        gender: gender,
+        gender: currentGender,
       };
 
       setCards((prev) => [...prev, newCard]);
@@ -283,7 +391,7 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
     return () => {
       delete win._addCanvasCard;
     };
-  }, [cards.length, gender, dimensions.width, dimensions.height, displayScale, t]);
+  }, [cards.length, currentGender, dimensions.width, dimensions.height, displayScale, t]);
 
   // Clear canvas functionality - exposed via global method
   useEffect(() => {
@@ -438,6 +546,97 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
     );
   }, []);
 
+  // Auto-save every 5 seconds
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const saveSession = async () => {
+      try {
+        const currentZoom = displayScale * 100;
+        // Update zoom refs based on user role
+        if (userRole === 'patient') {
+          patientZoomRef.current = currentZoom;
+        } else if (userRole === 'therapist') {
+          therapistZoomRef.current = currentZoom;
+        }
+
+        const canvasState = serializeCanvasState(
+          cards,
+          currentGender,
+          patientZoomRef.current,
+          therapistZoomRef.current
+        );
+
+        const response = await fetch(`/api/sessions/${sessionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data: canvasState }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save session');
+        }
+      } catch (error) {
+        console.error('Error auto-saving session:', error);
+        // Don't show toast for auto-save errors to avoid spam
+      }
+    };
+
+    autoSaveIntervalRef.current = setInterval(saveSession, 5000);
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, [sessionId, cards, currentGender, displayScale, userRole]);
+
+  // Expose manual save function via window object for parent to call
+  useEffect(() => {
+    const manualSave = async () => {
+      if (!sessionId) {
+        throw new Error('No session to save');
+      }
+
+      const currentZoom = displayScale * 100;
+      // Update zoom refs based on user role
+      if (userRole === 'patient') {
+        patientZoomRef.current = currentZoom;
+      } else if (userRole === 'therapist') {
+        therapistZoomRef.current = currentZoom;
+      }
+
+      const canvasState = serializeCanvasState(
+        cards,
+        currentGender,
+        patientZoomRef.current,
+        therapistZoomRef.current
+      );
+
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ data: canvasState }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save session');
+      }
+    };
+
+    // Store the function so parent can access it
+    const win = window as WindowWithCanvasCard;
+    win._manualSaveCanvas = manualSave;
+
+    return () => {
+      delete win._manualSaveCanvas;
+    };
+  }, [sessionId, cards, currentGender, displayScale, userRole]);
+
   // Delete selected note on Delete/Backspace key (but not cards)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -469,7 +668,7 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
         backgroundSize: '32px 32px',
       }}
     >
-      {!isInitialized && <CanvasLoading />}
+      {(!isInitialized || isLoadingSession) && <CanvasLoading />}
       {isInitialized && dimensions.width > 0 && (
         <Stage
           width={dimensions.width}

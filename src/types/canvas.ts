@@ -44,3 +44,25 @@ export interface PostItNote {
   isEditing?: boolean;
 }
 
+export interface PersonalSettings {
+  zoomLevel: number;
+}
+
+export interface CanvasState {
+  cards: CanvasCard[];
+  gender: Gender;
+  patientSettings: PersonalSettings;
+  therapistSettings: PersonalSettings;
+}
+
+export interface CanvasSession {
+  id: string;
+  patient_id: string;
+  therapist_id: string;
+  name: string | null;
+  status: string | null;
+  data: CanvasState | null;
+  created_at: string;
+  updated_at: string;
+}
+
