@@ -17,13 +17,14 @@ export default async function middleware(request: NextRequest) {
   const pathnameLocale = pathname.split('/')[1];
   const locale = routing.locales.includes(pathnameLocale as typeof routing.locales[number]) ? pathnameLocale : routing.defaultLocale;
   
-  // Check if accessing a protected route
-  const protectedPaths = ['/dashboard', '/profile', '/my-patients', '/my-therapist', '/statistics'];
-  const isProtectedPath = protectedPaths.some(path => 
+  // Define public routes that don't require authentication
+  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const isPublicPath = publicPaths.some(path => 
     pathname === `/${locale}${path}` || pathname.startsWith(`/${locale}${path}/`)
   );
   
-  if (isProtectedPath) {
+  // Check authentication for all routes except public ones
+  if (!isPublicPath) {
     // Check for auth token in cookies
     const accessToken = request.cookies.get('sb-access-token')?.value;
     

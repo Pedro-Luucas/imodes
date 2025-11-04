@@ -327,7 +327,12 @@
       "undo": "Desfazer",
       "redo": "Refazer",
       "zoomIn": "Ampliar",
-      "zoomOut": "Reduzir"
+      "zoomOut": "Reduzir",
+      "clearCanvas": "Limpar Tela",
+      "clearCanvasTitle": "Limpar Tela",
+      "clearCanvasMessage": "Tem certeza de que deseja limpar toda a tela?",
+      "cancel": "Cancelar",
+      "clear": "Limpar"
     },
     "page": {
       "tools": "Ferramentas"

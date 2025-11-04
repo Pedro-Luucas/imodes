@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { Group, Rect, Text, Image as KonvaImage } from 'react-konva';
+import { Group, Rect, Text, Image as KonvaImage, Transformer } from 'react-konva';
 import Konva from 'konva';
 import { CanvasCard as CanvasCardType } from '@/types/canvas';
 
@@ -13,13 +13,16 @@ interface CanvasCardProps {
   onDelete: (id: string) => void;
   onLockToggle: (id: string) => void;
   onSizeChange?: (id: string, width: number, height: number) => void;
+  onRotationChange?: (id: string, rotation: number) => void;
 }
 
-export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, onLockToggle, onSizeChange }: CanvasCardProps) {
+export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, onLockToggle, onSizeChange, onRotationChange }: CanvasCardProps) {
   const groupRef = useRef<Konva.Group>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [deleteHovered, setDeleteHovered] = useState(false);
   const [lockHovered, setLockHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [trashIcon, setTrashIcon] = useState<HTMLImageElement | null>(null);
   const [lockIcon, setLockIcon] = useState<HTMLImageElement | null>(null);
   const [unlockIcon, setUnlockIcon] = useState<HTMLImageElement | null>(null);
@@ -99,10 +102,27 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
     }).catch(console.error);
   }, []);
 
+  // Calculate card dimensions - use card dimensions (which are updated when image loads with scaled size)
+  const cardWidth = card.width;
+  const cardHeight = card.height;
+  const cardRotation = card.rotation ?? 0;
+  const isLocked = card.locked ?? false;
+
+  // Attach transformer to selected card
+  useEffect(() => {
+    if (isSelected && transformerRef.current && groupRef.current && !isLocked) {
+      transformerRef.current.nodes([groupRef.current]);
+      transformerRef.current.getLayer()?.batchDraw();
+    } else if (transformerRef.current) {
+      transformerRef.current.nodes([]);
+    }
+  }, [isSelected, isLocked]);
+
   useEffect(() => {
     if (groupRef.current) {
-      // Add shadow on hover
-      groupRef.current.on('mouseenter', () => {
+      // Add shadow on hover and track hover state
+      const handleMouseEnter = () => {
+        setIsHovered(true);
         if (groupRef.current) {
           groupRef.current.to({
             shadowBlur: 15,
@@ -110,9 +130,10 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
             duration: 0.2,
           });
         }
-      });
+      };
 
-      groupRef.current.on('mouseleave', () => {
+      const handleMouseLeave = () => {
+        setIsHovered(false);
         if (groupRef.current) {
           groupRef.current.to({
             shadowBlur: isSelected ? 10 : 5,
@@ -120,35 +141,66 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
             duration: 0.2,
           });
         }
-      });
+      };
+
+      groupRef.current.on('mouseenter', handleMouseEnter);
+      groupRef.current.on('mouseleave', handleMouseLeave);
+
+      return () => {
+        groupRef.current?.off('mouseenter', handleMouseEnter);
+        groupRef.current?.off('mouseleave', handleMouseLeave);
+      };
     }
   }, [isSelected]);
 
-  // Calculate card dimensions - use card dimensions (which are updated when image loads with scaled size)
-  const cardWidth = card.width;
-  const cardHeight = card.height;
-
-  const isLocked = card.locked ?? false;
+  // Handle transformer changes
+  const handleTransform = () => {
+    if (!groupRef.current) return;
+    
+    const node = groupRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    
+    // Reset scale and update width/height
+    node.scaleX(1);
+    node.scaleY(1);
+    
+    const newWidth = Math.max(50, cardWidth * scaleX);
+    const newHeight = Math.max(50, cardHeight * scaleY);
+    
+    if (onSizeChange) {
+      onSizeChange(card.id, newWidth, newHeight);
+    }
+    
+    // Update rotation
+    const newRotation = node.rotation();
+    if (onRotationChange && Math.abs(newRotation - cardRotation) > 0.1) {
+      onRotationChange(card.id, newRotation);
+    }
+  };
 
   return (
-    <Group
-      ref={groupRef}
-      x={card.x}
-      y={card.y}
-      draggable={!isLocked}
-      onClick={onSelect}
-      onTap={onSelect}
-      onDragEnd={(e) => {
-        if (!isLocked) {
-          onDragEnd(card.id, e.target.x(), e.target.y());
-        }
-      }}
-      shadowColor="black"
-      shadowBlur={isSelected ? 10 : 5}
-      shadowOpacity={isSelected ? 0.25 : 0.15}
-      shadowOffsetX={0}
-      shadowOffsetY={2}
-    >
+    <>
+      <Group
+        ref={groupRef}
+        x={card.x}
+        y={card.y}
+        rotation={cardRotation}
+        draggable={!isLocked}
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          if (!isLocked) {
+            onDragEnd(card.id, e.target.x(), e.target.y());
+          }
+        }}
+        onTransformEnd={handleTransform}
+        shadowColor="black"
+        shadowBlur={isSelected ? 10 : 5}
+        shadowOpacity={isSelected ? 0.25 : 0.15}
+        shadowOffsetX={0}
+        shadowOffsetY={2}
+      >
       {/* Card Background */}
       <Rect
         width={cardWidth}
@@ -192,8 +244,8 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
         </>
       )}
 
-      {/* Text Overlay - shown when selected */}
-      {isSelected && (
+      {/* Text Overlay - shown when selected or hovered (text only on hover, buttons only when selected) */}
+      {(isSelected || isHovered) && (
         <>
           {/* Dark overlay gradient */}
           <Rect
@@ -326,7 +378,27 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
           </Group>
         </Group>
       )}
-    </Group>
+      </Group>
+      {isSelected && !isLocked && (
+        <Transformer
+          ref={transformerRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            // Limit minimum size
+            if (Math.abs(newBox.width) < 50 || Math.abs(newBox.height) < 50) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+          rotateEnabled={true}
+          enabledAnchors={[
+            'top-left',
+            'top-right',
+            'bottom-left',
+            'bottom-right',
+          ]}
+        />
+      )}
+    </>
   );
 }
 

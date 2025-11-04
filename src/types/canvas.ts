@@ -10,6 +10,7 @@ export interface CanvasCard {
   color: string;
   width: number;
   height: number;
+  rotation?: number;
   imageUrl?: string;
   category?: CardCategory;
   cardNumber?: number;

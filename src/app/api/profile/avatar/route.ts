@@ -75,13 +75,24 @@ export async function POST(
     // Delete old avatar if exists
     if (currentProfile?.avatar_url) {
       try {
-        const oldKey = extractKeyFromUrl(currentProfile.avatar_url);
+        // Extract file key from stored URL
+        // Stored format is typically "avatar/filename.jpg"
+        let oldKey: string | null = null;
+        
+        if (currentProfile.avatar_url.startsWith(`${BUCKET_NAME}/`)) {
+          // Simple format: "avatar/filename.jpg"
+          oldKey = currentProfile.avatar_url.replace(`${BUCKET_NAME}/`, '');
+        } else {
+          // Try to extract from full URL or other formats
+          oldKey = extractKeyFromUrl(currentProfile.avatar_url);
+        }
+        
         if (oldKey) {
           await deleteFile(BUCKET_NAME, oldKey);
         }
       } catch (error) {
         console.error('Error deleting old avatar:', error);
-        // Continue even if deletion fails
+        // Continue even if deletion fails - we don't want to block the upload
       }
     }
 
@@ -159,7 +170,17 @@ export async function DELETE(): Promise<NextResponse<DeleteAvatarResponse | Erro
     }
 
     // Delete file from storage
-    const fileKey = extractKeyFromUrl(currentProfile.avatar_url);
+    // Extract file key from stored URL (format: "avatar/filename.jpg")
+    let fileKey: string | null = null;
+    
+    if (currentProfile.avatar_url.startsWith(`${BUCKET_NAME}/`)) {
+      // Simple format: "avatar/filename.jpg"
+      fileKey = currentProfile.avatar_url.replace(`${BUCKET_NAME}/`, '');
+    } else {
+      // Try to extract from full URL or other formats
+      fileKey = extractKeyFromUrl(currentProfile.avatar_url);
+    }
+    
     if (fileKey) {
       try {
         await deleteFile(BUCKET_NAME, fileKey);

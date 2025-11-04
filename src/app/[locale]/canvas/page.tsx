@@ -8,6 +8,16 @@ import { Button } from '@/components/ui/button';
 import { CanvasBoard } from '@/components/canvas/CanvasBoard';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { ToolsPanel } from '@/components/canvas/ToolsPanel';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Gender, CardCategory } from '@/types/canvas';
 import {
   MousePointer2,
@@ -16,6 +26,7 @@ import {
   Redo2,
   Plus,
   Minus,
+  Trash2,
 } from 'lucide-react';
 
 interface WindowWithCanvasCard extends Window {
@@ -26,6 +37,7 @@ interface WindowWithCanvasCard extends Window {
     category: CardCategory;
     cardNumber: number;
   }) => void;
+  _clearCanvas?: () => void;
 }
 
 export default function CanvasPage() {
@@ -39,6 +51,7 @@ export default function CanvasPage() {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
   const [gender, setGender] = useState<Gender>('male');
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
   const handleAddCard = useCallback((card?: {
     imageUrl?: string;
@@ -52,6 +65,14 @@ export default function CanvasPage() {
     if (win._addCanvasCard) {
       win._addCanvasCard(card);
     }
+  }, []);
+
+  const handleClearCanvas = useCallback(() => {
+    const win = window as WindowWithCanvasCard;
+    if (win._clearCanvas) {
+      win._clearCanvas();
+    }
+    setShowClearDialog(false);
   }, []);
 
   return (
@@ -186,8 +207,40 @@ export default function CanvasPage() {
               <Minus className="w-5 h-5" />
             </Button>
           </div>
+
+          {/* Clear Canvas Button */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className="size-10"
+            onClick={() => setShowClearDialog(true)}
+            title={tControls('clearCanvas') || 'Clear Canvas'}
+          >
+            <Trash2 className="w-5 h-5" />
+          </Button>
         </div>
       </div>
+
+      {/* Clear Canvas Confirmation Dialog */}
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tControls('clearCanvasTitle') || 'Clear Canvas'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tControls('clearCanvasMessage') || 'Are you sure you want to clear the entire canvas? This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tControls('cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearCanvas}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {tControls('clear') || 'Clear'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

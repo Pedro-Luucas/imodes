@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useCardsData } from '@/hooks/useCardsData';
 import { CardCategory, Gender } from '@/types/canvas';
+import { trackCardUsage, getFrequentlyUsedCards, type CardUsage } from '@/lib/cardUsageTracker';
 
 interface ToolsPanelProps {
   isOpen: boolean;
@@ -53,6 +54,19 @@ function CardsGrid({
   const categoryGender = category === 'boat' || category === 'wave' ? undefined : genderFilter;
   const { cards, loading, error } = useCardsData(category, categoryGender, locale);
 
+  const handleCardClick = useCallback((card: {
+    imageUrl?: string;
+    title: string;
+    description: string;
+    category: CardCategory;
+    cardNumber: number;
+  }) => {
+    // Track card usage
+    trackCardUsage(card);
+    // Call the original onCardSelect callback
+    onCardSelect?.(card);
+  }, [onCardSelect]);
+
   return (
     <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
       {loading ? (
@@ -69,7 +83,7 @@ function CardsGrid({
             <div
               key={card.path}
               className="aspect-square rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100"
-              onClick={() => onCardSelect?.({
+              onClick={() => handleCardClick({
                 imageUrl: card.imageUrl,
                 title: card.name,
                 description: card.description,
@@ -101,6 +115,115 @@ function CardsGrid({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Component to display frequently used cards
+function FrequentlyUsedCards({ 
+  onCardSelect,
+  isExpanded
+}: { 
+  onCardSelect?: (card: {
+    imageUrl?: string;
+    title: string;
+    description: string;
+    category: CardCategory;
+    cardNumber: number;
+  }) => void;
+  isExpanded?: boolean;
+}) {
+  const t = useTranslations('canvas.tools');
+  const [frequentCards, setFrequentCards] = useState<CardUsage[]>([]);
+
+  const refreshCards = useCallback(() => {
+    const cards = getFrequentlyUsedCards();
+    setFrequentCards(cards);
+  }, []);
+
+  useEffect(() => {
+    // Load frequently used cards
+    refreshCards();
+  }, [refreshCards]);
+
+  // Refresh when section is expanded
+  useEffect(() => {
+    if (isExpanded) {
+      refreshCards();
+    }
+  }, [isExpanded, refreshCards]);
+
+  // Listen for storage changes to update the list when cards are used
+  useEffect(() => {
+    // Listen for custom event that we'll dispatch when tracking usage
+    window.addEventListener('cardUsageUpdated', refreshCards);
+
+    return () => {
+      window.removeEventListener('cardUsageUpdated', refreshCards);
+    };
+  }, [refreshCards]);
+
+  const handleCardClick = useCallback((cardUsage: CardUsage) => {
+    // Track card usage again (increment count)
+    trackCardUsage({
+      cardNumber: cardUsage.cardNumber,
+      category: cardUsage.category,
+      imageUrl: cardUsage.imageUrl,
+      title: cardUsage.title,
+      description: cardUsage.description,
+    });
+    // Dispatch event to update the list
+    window.dispatchEvent(new Event('cardUsageUpdated'));
+    // Call the original onCardSelect callback
+    onCardSelect?.({
+      imageUrl: cardUsage.imageUrl,
+      title: cardUsage.title,
+      description: cardUsage.description,
+      category: cardUsage.category,
+      cardNumber: cardUsage.cardNumber,
+    });
+  }, [onCardSelect]);
+
+  if (frequentCards.length === 0) {
+    return (
+      <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
+        <div className="text-sm text-gray-500 text-center py-8">{t('noFrequentlyUsed')}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
+      <div className="grid grid-cols-3 gap-3">
+        {frequentCards.map((cardUsage) => (
+          <div
+            key={`${cardUsage.category}-${cardUsage.cardNumber}`}
+            className="aspect-square rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100"
+            onClick={() => handleCardClick(cardUsage)}
+          >
+            {cardUsage.imageUrl ? (
+              <Image
+                src={cardUsage.imageUrl}
+                alt={cardUsage.title}
+                width={160}
+                height={160}
+                className="w-full h-full object-cover"
+                style={{
+                  imageRendering: 'auto',
+                  transform: 'translateZ(0)',
+                  backfaceVisibility: 'hidden',
+                }}
+                loading="lazy"
+                unoptimized
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
+                {cardUsage.title}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -238,9 +361,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
             )}
           </button>
           {expandedSection === 'frequent' && (
-            <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
-              <div className="text-sm text-gray-500 text-center py-8">{t('noFrequentlyUsed')}</div>
-            </div>
+            <FrequentlyUsedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'frequent'} />
           )}
         </div>
 

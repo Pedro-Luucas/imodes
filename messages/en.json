@@ -327,7 +327,12 @@
       "undo": "Undo",
       "redo": "Redo",
       "zoomIn": "Zoom In",
-      "zoomOut": "Zoom Out"
+      "zoomOut": "Zoom Out",
+      "clearCanvas": "Clear Canvas",
+      "clearCanvasTitle": "Clear Canvas",
+      "clearCanvasMessage": "Are you sure you want to clear the entire canvas?.",
+      "cancel": "Cancel",
+      "clear": "Clear"
     },
     "page": {
       "tools": "Tools"

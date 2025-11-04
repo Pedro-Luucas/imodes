@@ -32,6 +32,7 @@ interface WindowWithCanvasCard extends Window {
     category: CardCategory;
     cardNumber: number;
   }) => void;
+  _clearCanvas?: () => void;
 }
 
 const CARD_COLORS = [
@@ -263,6 +264,7 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
         color: CARD_COLORS[colorIndex],
         width: cardWidth,
         height: cardHeight,
+        rotation: 0,
         imageUrl: cardData?.imageUrl,
         category: cardData?.category,
         cardNumber: cardData?.cardNumber,
@@ -270,7 +272,7 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
       };
 
       setCards((prev) => [...prev, newCard]);
-      setSelectedCardId(cardId);
+      // Don't auto-select newly spawned cards
       // TODO: Supabase Realtime - broadcast card creation event
     };
 
@@ -282,6 +284,25 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
       delete win._addCanvasCard;
     };
   }, [cards.length, gender, dimensions.width, dimensions.height, displayScale, t]);
+
+  // Clear canvas functionality - exposed via global method
+  useEffect(() => {
+    const handleClearCanvas = () => {
+      setCards([]);
+      setNotes([]);
+      setSelectedCardId(null);
+      setSelectedNoteId(null);
+      // TODO: Supabase Realtime - broadcast canvas clear event
+    };
+
+    // Expose method globally for parent to call
+    const win = window as WindowWithCanvasCard;
+    win._clearCanvas = handleClearCanvas;
+
+    return () => {
+      delete win._clearCanvas;
+    };
+  }, []);
 
   const handleCardDragEnd = useCallback((id: string, x: number, y: number) => {
     setCards((prev) =>
@@ -314,6 +335,15 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
       )
     );
     // TODO: Supabase Realtime - broadcast card size update event
+  }, []);
+
+  const handleCardRotationChange = useCallback((id: string, rotation: number) => {
+    setCards((prev) =>
+      prev.map((card) => 
+        card.id === id ? { ...card, rotation } : card
+      )
+    );
+    // TODO: Supabase Realtime - broadcast card rotation update event
   }, []);
 
   const handleCardSelect = useCallback((id: string) => {
@@ -462,6 +492,7 @@ export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }:
                 onDelete={handleCardDelete}
                 onLockToggle={handleCardLockToggle}
                 onSizeChange={handleCardSizeChange}
+                onRotationChange={handleCardRotationChange}
               />
             ))}
             {notes.map((note) => (
