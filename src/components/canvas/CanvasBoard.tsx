@@ -43,7 +43,7 @@ const CARD_COLORS = [
   '#6366f1', // indigo
 ];
 
-export function CanvasBoard({ onAddCard: _onAddCard, scale = 1, gender = 'male', toolMode = 'select' }: CanvasBoardProps) {
+export function CanvasBoard({ scale = 1, gender = 'male', toolMode = 'select' }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const [cards, setCards] = useState<CanvasCardType[]>([]);
   const [notes, setNotes] = useState<PostItNote[]>([]);
@@ -112,7 +112,7 @@ export function CanvasBoard({ onAddCard: _onAddCard, scale = 1, gender = 'male',
     const originalError = console.error;
     
     // Override console.error to intercept errors
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       // Call original console.error first
       originalError.apply(console, args);
       

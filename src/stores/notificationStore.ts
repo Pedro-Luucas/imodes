@@ -58,7 +58,7 @@ const useNotificationStore = create<NotificationState & { actions: NotificationA
         }
       },
 
-      subscribeToNotifications: (userId: string) => {
+      subscribeToNotifications: () => {
         // Close existing connection if any
         if (eventSource) {
           eventSource.close();

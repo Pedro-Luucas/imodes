@@ -106,7 +106,7 @@ export interface NotificationActions {
     offset?: number;
     unreadOnly?: boolean;
   }) => Promise<void>;
-  subscribeToNotifications: (userId: string) => void;
+  subscribeToNotifications: () => void;
   unsubscribe: () => void;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;

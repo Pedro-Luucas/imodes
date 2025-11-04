@@ -35,7 +35,7 @@ export function NotificationInitializer() {
   useEffect(() => {
     if (profile?.id) {
       // Initialize notification subscription
-      subscribeToNotifications(profile.id);
+      subscribeToNotifications();
 
       // Fetch existing notifications
       fetchNotifications();
