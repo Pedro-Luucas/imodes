@@ -95,7 +95,8 @@ export function CanvasHeader({
       toast.success('Canvas saved successfully');
     } catch (error) {
       console.error('Error saving canvas:', error);
-      toast.error('Failed to save canvas');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save canvas';
+      toast.error(errorMessage);
     }
   };
 

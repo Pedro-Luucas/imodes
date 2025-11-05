@@ -30,6 +30,11 @@ interface CanvasBoardProps {
   onZoomChange?: (zoomLevel: number) => void;
 }
 
+interface CanvasStateSnapshot {
+  cards: CanvasCardType[];
+  notes: PostItNote[];
+}
+
 interface WindowWithCanvasCard extends Window {
   _addCanvasCard?: (card?: {
     imageUrl?: string;
@@ -40,6 +45,8 @@ interface WindowWithCanvasCard extends Window {
   }) => void;
   _clearCanvas?: () => void;
   _manualSaveCanvas?: () => Promise<void>;
+  _undoCanvas?: () => void;
+  _redoCanvas?: () => void;
 }
 
 const CARD_COLORS = [
@@ -77,6 +84,84 @@ export function CanvasBoard({
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const patientZoomRef = useRef<number>(100);
   const therapistZoomRef = useRef<number>(100);
+  const historyRef = useRef<CanvasStateSnapshot[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+  const isUndoRedoRef = useRef<boolean>(false);
+  const dragDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cardsRef = useRef<CanvasCardType[]>([]);
+  const notesRef = useRef<PostItNote[]>([]);
+  const MAX_HISTORY_SIZE = 50;
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
+
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+
+  // Save current state to history
+  const saveToHistory = useCallback(() => {
+    if (isUndoRedoRef.current) return; // Don't save during undo/redo operations
+
+    const snapshot: CanvasStateSnapshot = {
+      cards: cardsRef.current.map(card => ({ ...card })),
+      notes: notesRef.current.map(note => ({ ...note })),
+    };
+
+    // Remove any history after current index (when user did new action after undo)
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex < historyRef.current.length - 1) {
+      historyRef.current = historyRef.current.slice(0, currentIndex + 1);
+    }
+
+    // Add new snapshot
+    historyRef.current.push(snapshot);
+    historyIndexRef.current = historyRef.current.length - 1;
+
+    // Limit history size
+    if (historyRef.current.length > MAX_HISTORY_SIZE) {
+      historyRef.current.shift();
+      historyIndexRef.current = historyRef.current.length - 1;
+    }
+  }, []);
+
+  // Restore state from history
+  const restoreFromHistory = useCallback((snapshot: CanvasStateSnapshot) => {
+    isUndoRedoRef.current = true;
+    setCards(snapshot.cards.map(card => ({ ...card })));
+    setNotes(snapshot.notes.map(note => ({ ...note })));
+    setSelectedCardId(null);
+    setSelectedNoteId(null);
+    
+    // Reset flag after state update
+    setTimeout(() => {
+      isUndoRedoRef.current = false;
+    }, 0);
+  }, []);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current--;
+      const snapshot = historyRef.current[historyIndexRef.current];
+      if (snapshot) {
+        restoreFromHistory(snapshot);
+      }
+    }
+  }, [restoreFromHistory]);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current++;
+      const snapshot = historyRef.current[historyIndexRef.current];
+      if (snapshot) {
+        restoreFromHistory(snapshot);
+      }
+    }
+  }, [restoreFromHistory]);
 
   // Update gender state when prop changes
   useEffect(() => {
@@ -126,6 +211,14 @@ export function CanvasBoard({
           setCurrentGender(loadedGender);
           patientZoomRef.current = patientZoomLevel;
           therapistZoomRef.current = therapistZoomLevel;
+
+          // Reset history when loading a session - initialize with loaded state
+          const initialSnapshot: CanvasStateSnapshot = {
+            cards: loadedCards.map(card => ({ ...card })),
+            notes: [],
+          };
+          historyRef.current = [initialSnapshot];
+          historyIndexRef.current = 0;
 
           // Set zoom level based on user role
           let zoomToSet: number;
@@ -181,6 +274,13 @@ export function CanvasBoard({
     if (!sessionId && !isLoadingSession) {
       const timer = setTimeout(() => {
         setIsInitialized(true);
+        // Initialize history with empty state
+        const initialSnapshot: CanvasStateSnapshot = {
+          cards: [],
+          notes: [],
+        };
+        historyRef.current = [initialSnapshot];
+        historyIndexRef.current = 0;
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -379,7 +479,12 @@ export function CanvasBoard({
         gender: currentGender,
       };
 
-      setCards((prev) => [...prev, newCard]);
+      setCards((prev) => {
+        const newCards = [...prev, newCard];
+        // Save to history after state update
+        setTimeout(() => saveToHistory(), 0);
+        return newCards;
+      });
       // Don't auto-select newly spawned cards
       // TODO: Supabase Realtime - broadcast card creation event
     };
@@ -396,6 +501,8 @@ export function CanvasBoard({
   // Clear canvas functionality - exposed via global method
   useEffect(() => {
     const handleClearCanvas = () => {
+      // Save current state before clearing
+      saveToHistory();
       setCards([]);
       setNotes([]);
       setSelectedCardId(null);
@@ -410,49 +517,93 @@ export function CanvasBoard({
     return () => {
       delete win._clearCanvas;
     };
-  }, []);
+  }, [saveToHistory]);
+
+  // Expose undo/redo functions via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._undoCanvas = handleUndo;
+    win._redoCanvas = handleRedo;
+
+    return () => {
+      delete win._undoCanvas;
+      delete win._redoCanvas;
+    };
+  }, [handleUndo, handleRedo]);
 
   const handleCardDragEnd = useCallback((id: string, x: number, y: number) => {
-    setCards((prev) =>
-      prev.map((card) => (card.id === id ? { ...card, x, y } : card))
-    );
+    setCards((prev) => {
+      const updated = prev.map((card) => (card.id === id ? { ...card, x, y } : card));
+      // Debounce history save for drag operations to avoid too many snapshots
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveToHistory();
+      }, 300);
+      return updated;
+    });
     // TODO: Supabase Realtime - broadcast card position update event
-  }, []);
+  }, [saveToHistory]);
 
   const handleCardDelete = useCallback((id: string) => {
-    setCards((prev) => prev.filter((card) => card.id !== id));
+    setCards((prev) => {
+      const updated = prev.filter((card) => card.id !== id);
+      // Save to history after state update
+      setTimeout(() => saveToHistory(), 0);
+      return updated;
+    });
     if (selectedCardId === id) {
       setSelectedCardId(null);
     }
     // TODO: Supabase Realtime - broadcast card deletion event
-  }, [selectedCardId]);
+  }, [selectedCardId, saveToHistory]);
 
   const handleCardLockToggle = useCallback((id: string) => {
-    setCards((prev) =>
-      prev.map((card) => 
+    setCards((prev) => {
+      const updated = prev.map((card) => 
         card.id === id ? { ...card, locked: !card.locked } : card
-      )
-    );
+      );
+      // Save to history after state update
+      setTimeout(() => saveToHistory(), 0);
+      return updated;
+    });
     // TODO: Supabase Realtime - broadcast card lock update event
-  }, []);
+  }, [saveToHistory]);
 
   const handleCardSizeChange = useCallback((id: string, width: number, height: number) => {
-    setCards((prev) =>
-      prev.map((card) => 
+    setCards((prev) => {
+      const updated = prev.map((card) => 
         card.id === id ? { ...card, width, height } : card
-      )
-    );
+      );
+      // Debounce history save for resize operations
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveToHistory();
+      }, 300);
+      return updated;
+    });
     // TODO: Supabase Realtime - broadcast card size update event
-  }, []);
+  }, [saveToHistory]);
 
   const handleCardRotationChange = useCallback((id: string, rotation: number) => {
-    setCards((prev) =>
-      prev.map((card) => 
+    setCards((prev) => {
+      const updated = prev.map((card) => 
         card.id === id ? { ...card, rotation } : card
-      )
-    );
+      );
+      // Debounce history save for rotation operations
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveToHistory();
+      }, 300);
+      return updated;
+    });
     // TODO: Supabase Realtime - broadcast card rotation update event
-  }, []);
+  }, [saveToHistory]);
 
   const handleCardSelect = useCallback((id: string) => {
     setSelectedCardId(id);
@@ -493,7 +644,12 @@ export function CanvasBoard({
         isEditing: true,
       };
       
-      setNotes((prev) => [...prev, newNote]);
+      setNotes((prev) => {
+        const updated = [...prev, newNote];
+        // Save to history after state update
+        setTimeout(() => saveToHistory(), 0);
+        return updated;
+      });
       setSelectedNoteId(newNote.id);
       setSelectedCardId(null);
       return;
@@ -523,16 +679,32 @@ export function CanvasBoard({
   }, []);
 
   const handleNoteDragEnd = useCallback((id: string, x: number, y: number) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, x, y } : note))
-    );
-  }, []);
+    setNotes((prev) => {
+      const updated = prev.map((note) => (note.id === id ? { ...note, x, y } : note));
+      // Debounce history save for drag operations
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveToHistory();
+      }, 300);
+      return updated;
+    });
+  }, [saveToHistory]);
 
   const handleNoteTextChange = useCallback((id: string, text: string) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, text } : note))
-    );
-  }, []);
+    setNotes((prev) => {
+      const updated = prev.map((note) => (note.id === id ? { ...note, text } : note));
+      // Debounce history save for text changes
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveToHistory();
+      }, 500);
+      return updated;
+    });
+  }, [saveToHistory]);
 
   const handleNoteEditStateChange = useCallback((id: string, isEditing: boolean) => {
     setNotes((prev) =>
@@ -541,10 +713,18 @@ export function CanvasBoard({
   }, []);
 
   const handleNoteSizeChange = useCallback((id: string, width: number, height: number) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, width, height } : note))
-    );
-  }, []);
+    setNotes((prev) => {
+      const updated = prev.map((note) => (note.id === id ? { ...note, width, height } : note));
+      // Debounce history save for resize operations
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveToHistory();
+      }, 300);
+      return updated;
+    });
+  }, [saveToHistory]);
 
   // Auto-save every 5 seconds
   useEffect(() => {
@@ -576,7 +756,9 @@ export function CanvasBoard({
         });
 
         if (!response.ok) {
-          throw new Error('Failed to save session');
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Auto-save session error:', errorData);
+          throw new Error(errorData.error || 'Failed to save session');
         }
       } catch (error) {
         console.error('Error auto-saving session:', error);
@@ -624,7 +806,9 @@ export function CanvasBoard({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save session');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Save session error:', errorData);
+        throw new Error(errorData.error || 'Failed to save session');
       }
     };
 
@@ -647,14 +831,19 @@ export function CanvasBoard({
         if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
           return;
         }
-        setNotes((prev) => prev.filter((note) => note.id !== selectedNoteId));
+        setNotes((prev) => {
+          const updated = prev.filter((note) => note.id !== selectedNoteId);
+          // Save to history after state update
+          setTimeout(() => saveToHistory(), 0);
+          return updated;
+        });
         setSelectedNoteId(null);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCardId, selectedNoteId]);
+  }, [selectedCardId, selectedNoteId, cards, saveToHistory]);
 
   return (
     <div 

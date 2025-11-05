@@ -236,8 +236,8 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
         height={cardHeight}
         fill="white"
         cornerRadius={16}
-        stroke={isSelected ? card.color : 'transparent'}
-        strokeWidth={isSelected ? 3 : 0}
+        stroke={isSelected ? card.color : '#e5e7eb'}
+        strokeWidth={isSelected ? 3 : 1}
       />
 
       {/* Card Image or Placeholder */}

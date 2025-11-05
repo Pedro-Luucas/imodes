@@ -39,6 +39,8 @@ interface WindowWithCanvasCard extends Window {
     cardNumber: number;
   }) => void;
   _clearCanvas?: () => void;
+  _undoCanvas?: () => void;
+  _redoCanvas?: () => void;
 }
 
 export default function CanvasPage() {
@@ -267,6 +269,12 @@ export default function CanvasPage() {
               size="icon"
               className="size-10"
               title={tControls('undo')}
+              onClick={() => {
+                const win = window as WindowWithCanvasCard;
+                if (win._undoCanvas) {
+                  win._undoCanvas();
+                }
+              }}
             >
               <Undo2 className="w-5 h-5" />
             </Button>
@@ -275,6 +283,12 @@ export default function CanvasPage() {
               size="icon"
               className="size-10"
               title={tControls('redo')}
+              onClick={() => {
+                const win = window as WindowWithCanvasCard;
+                if (win._redoCanvas) {
+                  win._redoCanvas();
+                }
+              }}
             >
               <Redo2 className="w-5 h-5" />
             </Button>

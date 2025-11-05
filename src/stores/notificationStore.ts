@@ -84,14 +84,38 @@ const useNotificationStore = create<NotificationState & { actions: NotificationA
               // Refetch notifications when we receive an update
               await get().actions.fetchNotifications();
             }
+
+            if (data.type === 'error') {
+              console.error('SSE error from server:', data.message || 'Unknown error');
+            }
           } catch (error) {
             console.error('Error parsing SSE message:', error);
           }
         };
 
-        eventSource.onerror = (error) => {
-          console.error('SSE connection error:', error);
-          // EventSource will automatically reconnect
+        eventSource.onerror = () => {
+          // EventSource error event doesn't provide detailed error info (it's just an empty object {})
+          // The error event fires during normal reconnection attempts, so we don't log it
+          // to avoid noise in the console. Actual errors from the server are handled via
+          // the onmessage handler when data.type === 'error'
+          
+          // Check readyState to understand the connection status:
+          // 0 = CONNECTING (reconnecting), 1 = OPEN (connected), 2 = CLOSED (failed)
+          // EventSource automatically handles reconnection for CONNECTING state
+          
+          // Only manually intervene if the connection is truly closed and won't reconnect
+          if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+            // Connection was closed and may need manual reconnection
+            // Try to reconnect after a delay
+            setTimeout(() => {
+              // Only reconnect if the connection is still closed
+              // (avoid reconnecting if it already reconnected)
+              if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+                console.warn('SSE connection failed. Attempting to reconnect...');
+                get().actions.subscribeToNotifications();
+              }
+            }, 3000);
+          }
         };
       },
 
