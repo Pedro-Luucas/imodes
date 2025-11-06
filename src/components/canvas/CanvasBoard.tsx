@@ -511,7 +511,7 @@ export function CanvasBoard({
     return () => {
       delete win._addCanvasCard;
     };
-  }, [cards.length, currentGender, dimensions.width, dimensions.height, displayScale, t]);
+  }, [cards.length, currentGender, dimensions.width, dimensions.height, displayScale, t, saveToHistory]);
 
   // Clear canvas functionality - exposed via global method
   useEffect(() => {
@@ -698,7 +698,7 @@ export function CanvasBoard({
       setSelectedCardId(null);
       setSelectedNoteId(null);
     }
-  }, [toolMode, displayScale]);
+  }, [toolMode, displayScale, saveToHistory]);
 
   const handleNoteSelect = useCallback((id: string) => {
     setSelectedNoteId(id);

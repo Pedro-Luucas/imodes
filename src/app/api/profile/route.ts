@@ -65,6 +65,19 @@ export async function GET() {
       }
     }
 
+    // Fetch therapist_id from patients table if user is a patient
+    if (profile.role === 'patient') {
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('therapist_id')
+        .eq('id', userId)
+        .single();
+
+      if (patientData) {
+        profile.therapist_id = patientData.therapist_id;
+      }
+    }
+
     // Return profile data
     return NextResponse.json(
       { profile },
@@ -177,6 +190,19 @@ export async function PATCH(
 
       if (therapistData) {
         updatedProfile.phone = therapistData.phone;
+      }
+    }
+
+    // Fetch therapist_id from patients table if user is a patient
+    if (updatedProfile.role === 'patient') {
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('therapist_id')
+        .eq('id', user.id)
+        .single();
+
+      if (patientData) {
+        updatedProfile.therapist_id = patientData.therapist_id;
       }
     }
 

@@ -11,7 +11,6 @@ import {
   UserRound,
   Save,
   Calendar,
-  ArrowLeft,
   Camera,
   Undo2,
   Redo2,

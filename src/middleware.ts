@@ -57,6 +57,36 @@ export default async function middleware(request: NextRequest) {
           loginUrl.searchParams.set('redirect', pathname);
           return NextResponse.redirect(loginUrl);
         }
+
+        // Get user profile for role-based routing
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          // Check if patient is trying to access therapist dashboard
+          if (profile.role === 'patient' && pathname.includes('/dashboard') && !pathname.includes('/dashboard-patient')) {
+            const dashboardUrl = new URL(`/${locale}/dashboard-patient`, request.url);
+            return NextResponse.redirect(dashboardUrl);
+          }
+
+          // Check if patient with therapist is trying to access no-therapist page
+          if (profile.role === 'patient' && pathname.includes('/dashboard-patient/no-therapist')) {
+            const { data: patientData } = await supabase
+              .from('patients')
+              .select('therapist_id')
+              .eq('id', user.id)
+              .single();
+
+            if (patientData?.therapist_id) {
+              // Patient has a therapist, redirect to dashboard
+              const dashboardUrl = new URL(`/${locale}/dashboard-patient`, request.url);
+              return NextResponse.redirect(dashboardUrl);
+            }
+          }
+        }
       }
     } catch (error) {
       // If validation fails, redirect to login

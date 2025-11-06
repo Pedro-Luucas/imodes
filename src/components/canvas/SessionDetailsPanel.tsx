@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { X, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import type { Profile } from '@/types/auth';
 import { toast } from 'sonner';
@@ -117,23 +116,13 @@ export function SessionDetailsPanel({
 
   if (!isOpen) return null;
 
-  const getInitials = (profile?: Profile | null) => {
-    if (profile?.first_name) {
-      return profile.first_name.charAt(0).toUpperCase();
-    }
-    if (profile?.email) {
-      return profile.email.charAt(0).toUpperCase();
-    }
-    return 'U';
-  };
-
   const getDisplayName = (profile?: Profile | null) => {
     if (profile?.full_name) return profile.full_name;
     if (profile?.first_name) return profile.first_name;
     return 'Unknown';
   };
 
-  const getDisplayId = (profile?: Profile | null) => {
+  const getDisplayId = () => {
     if (isTherapist && patientProfile) {
       return `Patient ID: #P-${patientProfile.id.slice(0, 8).toUpperCase()}`;
     }
@@ -171,7 +160,7 @@ export function SessionDetailsPanel({
                   {getDisplayName(patientProfile)}
                 </span>
                 <span className="text-sm text-stone-500">
-                  {getDisplayId(patientProfile)}
+                  {getDisplayId()}
                 </span>
               </div>
             </div>
@@ -190,7 +179,7 @@ export function SessionDetailsPanel({
                   {getDisplayName(therapistProfile)}
                 </span>
                 <span className="text-sm text-stone-500">
-                  {getDisplayId(therapistProfile)}
+                  {getDisplayId()}
                 </span>
               </div>
             </div>
