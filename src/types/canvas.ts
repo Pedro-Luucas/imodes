@@ -44,23 +44,35 @@ export interface PostItNote {
   isEditing?: boolean;
 }
 
-export interface PersonalSettings {
+export interface PatientSettings {
   zoomLevel: number;
+}
+
+export interface TherapistSettings {
+  zoomLevel: number;
+  notes?: string;
+}
+
+export interface TimeSpentEntry {
+  timestamp: string; // ISO timestamp of when the session started
+  timeSpent: number; // Time spent in seconds
 }
 
 export interface CanvasState {
   cards: CanvasCard[];
   gender: Gender;
-  patientSettings: PersonalSettings;
-  therapistSettings: PersonalSettings;
+  patientSettings: PatientSettings;
+  therapistSettings: TherapistSettings;
+  timeSpent?: TimeSpentEntry[]; // Array of time spent entries
 }
 
 export interface CanvasSession {
   id: string;
-  patient_id: string;
+  patient_id?: string | null;
   therapist_id: string;
   name: string | null;
   status: string | null;
+  type?: string | null;
   data: CanvasState | null;
   created_at: string;
   updated_at: string;

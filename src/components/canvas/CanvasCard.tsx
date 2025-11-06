@@ -12,20 +12,23 @@ interface CanvasCardProps {
   onDragEnd: (id: string, x: number, y: number) => void;
   onDelete: (id: string) => void;
   onLockToggle: (id: string) => void;
+  onAddToFrequentlyUsed?: (id: string) => void;
   onSizeChange?: (id: string, width: number, height: number) => void;
   onRotationChange?: (id: string, rotation: number) => void;
 }
 
-export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, onLockToggle, onSizeChange, onRotationChange }: CanvasCardProps) {
+export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, onLockToggle, onAddToFrequentlyUsed, onSizeChange, onRotationChange }: CanvasCardProps) {
   const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [deleteHovered, setDeleteHovered] = useState(false);
   const [lockHovered, setLockHovered] = useState(false);
+  const [starHovered, setStarHovered] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [trashIcon, setTrashIcon] = useState<HTMLImageElement | null>(null);
   const [lockIcon, setLockIcon] = useState<HTMLImageElement | null>(null);
   const [unlockIcon, setUnlockIcon] = useState<HTMLImageElement | null>(null);
+  const [starIcon, setStarIcon] = useState<HTMLImageElement | null>(null);
 
   // Track if we've auto-resized this card (to prevent overriding saved dimensions)
   const hasAutoResizedRef = useRef(false);
@@ -105,6 +108,9 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
     // Unlock icon SVG
     const unlockSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="#6b7280" stroke-width="2"/><path d="M7 11V7C7 5.93913 7.42143 4.92172 8.17157 4.17157C8.92172 3.42143 9.93913 3 11 3H13C14.0609 3 15.0783 3.42143 15.8284 4.17157C16.5786 4.92172 17 5.93913 17 7V10" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     
+    // Star icon SVG
+    const starSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    
     const loadSvgAsImage = (svgString: string): Promise<HTMLImageElement> => {
       return new Promise((resolve, reject) => {
         const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
@@ -122,11 +128,13 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
     Promise.all([
       loadSvgAsImage(trashSvg),
       loadSvgAsImage(lockSvg),
-      loadSvgAsImage(unlockSvg)
-    ]).then(([trash, lock, unlock]) => {
+      loadSvgAsImage(unlockSvg),
+      loadSvgAsImage(starSvg)
+    ]).then(([trash, lock, unlock, star]) => {
       setTrashIcon(trash);
       setLockIcon(lock);
       setUnlockIcon(unlock);
+      setStarIcon(star);
     }).catch(console.error);
   }, []);
 
@@ -405,6 +413,43 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
               />
             )}
           </Group>
+
+          {/* Add to Frequently Used Button */}
+          {onAddToFrequentlyUsed && card.category && card.cardNumber !== undefined && (
+            <Group
+              x={cardWidth - 120}
+              y={8}
+              onClick={(e) => {
+                e.cancelBubble = true;
+                onAddToFrequentlyUsed(card.id);
+              }}
+              onTap={(e) => {
+                e.cancelBubble = true;
+                onAddToFrequentlyUsed(card.id);
+              }}
+              onMouseEnter={() => setStarHovered(true)}
+              onMouseLeave={() => setStarHovered(false)}
+            >
+              <Rect
+                width={32}
+                height={32}
+                fill={starHovered ? "#fef3c7" : "white"}
+                stroke="#e5e7eb"
+                strokeWidth={1}
+                cornerRadius={6}
+              />
+              {/* Star icon */}
+              {starIcon && (
+                <KonvaImage
+                  x={4}
+                  y={4}
+                  image={starIcon}
+                  width={24}
+                  height={24}
+                />
+              )}
+            </Group>
+          )}
         </Group>
       )}
       </Group>

@@ -305,7 +305,12 @@
       "clickToEdit": "Clique para editar"
     },
     "card": {
-      "newCard": "Novo Card"
+      "newCard": "Novo Card",
+      "addToSavedCards": "Salvar Card",
+      "addToSavedCardsConfirm": "Tem certeza de que deseja salvar este card na pasta de cards salvos?",
+      "addedToSavedCards": "Card salvo",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar"
     },
     "loading": {
       "loadingCards": "Carregando cards..."
@@ -316,10 +321,11 @@
       "needs": "Necessidades",
       "strengths": "Forças",
       "boatAndWave": "Barco e Onda",
-      "frequentlyUsed": "Frequentemente Usados",
-      "savedWork": "Trabalhos Salvos",
-      "noFrequentlyUsed": "Ainda não há cards frequentemente usados",
-      "noSavedWork": "Ainda não há trabalhos salvos"
+      "frequentlyUsed": "Frequentemente Usadas",
+      "savedCards": "Cards Salvos",
+      "noFrequentlyUsed": "Ainda não há cartas frequentemente usadas",
+      "noSavedCards": "Ainda não há cartas salvas",
+      "removeFromSaved": "Remover dos salvos"
     },
     "controls": {
       "cursorTool": "Ferramenta de Cursor",

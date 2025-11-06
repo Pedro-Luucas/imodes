@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { usePageMetadata } from '@/hooks/usePageMetadata';
+import { useAuthProfile } from '@/stores/authStore';
 import { Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -17,19 +18,51 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import type { CanvasSession } from '@/types/canvas';
+import { SelectPatientDialog } from '@/components/canvas/SelectPatientDialog';
+import type { Profile } from '@/types/auth';
 
 export default function CanvasSelectionPage() {
   usePageMetadata('Canvas Selection', 'Select or create a canvas session.');
   const router = useRouter();
+  const profile = useAuthProfile();
   const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPatientDialog, setShowPatientDialog] = useState(false);
+  const [therapistPatients, setTherapistPatients] = useState<Profile[]>([]);
+  const [checkingPatients, setCheckingPatients] = useState(false);
 
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  const checkTherapistPatients = useCallback(async () => {
+    if (!profile?.id) return;
+    
+    try {
+      setCheckingPatients(true);
+      const response = await fetch(`/api/therapists/${profile.id}/patients`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTherapistPatients(data.patients || []);
+      }
+    } catch (error) {
+      console.error('Error checking therapist patients:', error);
+      setTherapistPatients([]);
+    } finally {
+      setCheckingPatients(false);
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    // Check if therapist has patients when component mounts
+    if (profile?.role === 'therapist' && profile?.id) {
+      void checkTherapistPatients();
+    }
+  }, [profile, checkTherapistPatients]);
 
   const fetchSessions = async () => {
     try {
@@ -47,7 +80,7 @@ export default function CanvasSelectionPage() {
     }
   };
 
-  const handleCreateSession = async () => {
+  const handleCreateSession = async (patientId: string | null, type: string) => {
     try {
       setCreating(true);
       const response = await fetch('/api/sessions', {
@@ -55,7 +88,10 @@ export default function CanvasSelectionPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          patient_id: patientId,
+          type: type,
+        }),
       });
 
       if (!response.ok) {
@@ -67,9 +103,22 @@ export default function CanvasSelectionPage() {
       router.push(`/canvas?sessionId=${data.session.id}`);
     } catch (error) {
       console.error('Error creating session:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create session');
+      toast.error(error instanceof Error ? error.message : 'Failed to create session');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleCreateClick = () => {
+    // If therapist has no patients, create playground session directly
+    if (profile?.role === 'therapist' && therapistPatients.length === 0 && !checkingPatients) {
+      handleCreateSession(null, 'playground');
+    } else if (profile?.role === 'therapist') {
+      // Show patient selection dialog
+      setShowPatientDialog(true);
+    } else {
+      // For patients, create session directly
+      handleCreateSession(null, 'session');
     }
   };
 
@@ -128,8 +177,8 @@ export default function CanvasSelectionPage() {
 
       <div className="mb-6">
         <Button
-          onClick={handleCreateSession}
-          disabled={creating}
+          onClick={handleCreateClick}
+          disabled={creating || checkingPatients}
           className="w-full sm:w-auto"
         >
           {creating ? 'Creating...' : 'Create New Session'}
@@ -154,7 +203,7 @@ export default function CanvasSelectionPage() {
                     {session.name || 'Unnamed Session'}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Status: {session.status || 'N/A'}
+                    Type: {session.type || 'N/A'} | Status: {session.status || 'N/A'}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
                     Updated: {formatDate(session.updated_at)}
@@ -183,6 +232,16 @@ export default function CanvasSelectionPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Patient Selection Dialog */}
+      {profile?.role === 'therapist' && profile?.id && (
+        <SelectPatientDialog
+          open={showPatientDialog}
+          onOpenChange={setShowPatientDialog}
+          therapistId={profile.id}
+          onSelect={handleCreateSession}
+        />
       )}
 
       {/* Delete Confirmation Dialog */}

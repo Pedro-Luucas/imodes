@@ -36,32 +36,19 @@ export async function GET(): Promise<NextResponse<GetSessionsResponse | ErrorRes
 
     const supabase = createSupabaseServerClient();
 
-    // Select all columns - name will be included if it exists in the schema
+    // Select all columns including type
     let query = supabase
       .from('imodes_session')
-      .select('id, patient_id, therapist_id, name, status, created_at, updated_at')
+      .select('id, patient_id, therapist_id, name, status, type, created_at, updated_at')
       .order('updated_at', { ascending: false });
 
     if (profile.role === 'patient') {
       // Patients see their own sessions
       query = query.eq('patient_id', profile.id);
     } else if (profile.role === 'therapist') {
-      // Therapists see sessions for their patients
-      // First get all patient IDs for this therapist
-      const { data: patientAssignments } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('therapist_id', profile.id);
-
-      if (!patientAssignments || patientAssignments.length === 0) {
-        return NextResponse.json(
-          { sessions: [] },
-          { status: 200 }
-        );
-      }
-
-      const patientIds = patientAssignments.map(p => p.id);
-      query = query.in('patient_id', patientIds).eq('therapist_id', profile.id);
+      // Therapists see sessions where they are the therapist
+      // This includes sessions with patients AND playground sessions (no patient)
+      query = query.eq('therapist_id', profile.id);
     }
     // Admins can see all sessions (no filter)
 
@@ -110,11 +97,12 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, patient_id, type } = body;
 
     const supabase = createSupabaseServerClient();
-    let patientId: string;
+    let patientId: string | null | undefined;
     let therapistId: string;
+    let sessionType: string;
 
     if (profile.role === 'patient') {
       // Patients: fetch therapist_id from their assigned therapist
@@ -134,35 +122,29 @@ export async function POST(
       }
 
       therapistId = patientData.therapist_id;
+      sessionType = type || 'session';
     } else if (profile.role === 'therapist') {
-      // Therapists: use first patient from their patients list (temporary)
+      // Therapists: patient_id is optional, can be provided in body or null
       therapistId = profile.id;
+      patientId = patient_id !== undefined ? patient_id : null;
       
-      const { data: patientAssignments } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('therapist_id', therapistId)
-        .limit(1)
-        .single();
-
-      if (!patientAssignments) {
-        return NextResponse.json(
-          { error: 'No patients assigned. Please assign a patient first.' },
-          { status: 400 }
-        );
+      // Auto-set type based on whether patient is selected
+      if (patientId === null || patientId === undefined) {
+        sessionType = 'playground';
+      } else {
+        sessionType = type || 'session';
       }
-
-      patientId = patientAssignments.id;
     } else {
       // Admin - would need patient_id and therapist_id in body
-      if (!body.patient_id || !body.therapist_id) {
+      if (!body.therapist_id) {
         return NextResponse.json(
-          { error: 'patient_id and therapist_id are required for admin users' },
+          { error: 'therapist_id is required for admin users' },
           { status: 400 }
         );
       }
-      patientId = body.patient_id;
+      patientId = body.patient_id || null;
       therapistId = body.therapist_id;
+      sessionType = type || (patientId ? 'session' : 'playground');
     }
 
     // Auto-generate name if not provided
@@ -180,21 +162,27 @@ export async function POST(
       },
     };
 
-    // Create session - handle name column gracefully
+    // Create session - handle name and type columns gracefully
     const insertData: {
-      patient_id: string;
+      patient_id?: string | null;
       therapist_id: string;
       status: string;
+      type: string;
       data: CanvasState;
       name?: string;
     } = {
-      patient_id: patientId,
       therapist_id: therapistId,
-      status: 'playground',
+      status: 'active',
+      type: sessionType,
       data: emptyState,
     };
     
-    // Only include name if provided (column might not exist yet)
+    // Include patient_id only if provided (can be null for playground sessions)
+    if (patientId !== undefined) {
+      insertData.patient_id = patientId;
+    }
+    
+    // Only include name if provided
     if (sessionName) {
       insertData.name = sessionName;
     }

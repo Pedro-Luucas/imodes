@@ -11,6 +11,17 @@ import { CanvasLoading } from './CanvasLoading';
 import { PostItNoteComponent } from './PostItNote';
 import { serializeCanvasState, deserializeCanvasState } from '@/lib/canvasSerialization';
 import { preloadImagesWithPriority } from '@/lib/imagePreloader';
+import { saveCard } from '@/lib/savedCardsTracker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CanvasBoardProps {
   onAddCard?: (card?: {
@@ -77,6 +88,8 @@ export function CanvasBoard({
   const [currentGender, setCurrentGender] = useState<Gender>(gender);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [showAddToFrequentlyUsedDialog, setShowAddToFrequentlyUsedDialog] = useState(false);
+  const [cardToAddToFrequentlyUsed, setCardToAddToFrequentlyUsed] = useState<CanvasCardType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevScaleRef = useRef<number>(scale);
   const stagePositionRef = useRef({ x: 0, y: 0 });
@@ -84,6 +97,7 @@ export function CanvasBoard({
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const patientZoomRef = useRef<number>(100);
   const therapistZoomRef = useRef<number>(100);
+  const therapistNotesRef = useRef<string | undefined>(undefined);
   const historyRef = useRef<CanvasStateSnapshot[]>([]);
   const historyIndexRef = useRef<number>(-1);
   const isUndoRedoRef = useRef<boolean>(false);
@@ -203,7 +217,7 @@ export function CanvasBoard({
         const session = data.session;
 
         if (session?.data) {
-          const { cards: loadedCards, gender: loadedGender, patientZoomLevel, therapistZoomLevel } = 
+          const { cards: loadedCards, gender: loadedGender, patientZoomLevel, therapistZoomLevel, therapistNotes } = 
             deserializeCanvasState(session.data);
 
           // Set cards immediately so they can start rendering
@@ -211,6 +225,7 @@ export function CanvasBoard({
           setCurrentGender(loadedGender);
           patientZoomRef.current = patientZoomLevel;
           therapistZoomRef.current = therapistZoomLevel;
+          therapistNotesRef.current = therapistNotes;
 
           // Reset history when loading a session - initialize with loaded state
           const initialSnapshot: CanvasStateSnapshot = {
@@ -605,6 +620,29 @@ export function CanvasBoard({
     // TODO: Supabase Realtime - broadcast card rotation update event
   }, [saveToHistory]);
 
+  const handleAddToSavedCards = useCallback((id: string) => {
+    const card = cards.find((c) => c.id === id);
+    if (card && card.category && card.cardNumber !== undefined) {
+      setCardToAddToFrequentlyUsed(card);
+      setShowAddToFrequentlyUsedDialog(true);
+    }
+  }, [cards]);
+
+  const handleConfirmAddToSavedCards = useCallback(() => {
+    if (cardToAddToFrequentlyUsed && cardToAddToFrequentlyUsed.category && cardToAddToFrequentlyUsed.cardNumber !== undefined) {
+      saveCard({
+        cardNumber: cardToAddToFrequentlyUsed.cardNumber,
+        category: cardToAddToFrequentlyUsed.category,
+        imageUrl: cardToAddToFrequentlyUsed.imageUrl,
+        title: cardToAddToFrequentlyUsed.title,
+        description: cardToAddToFrequentlyUsed.description,
+      });
+      toast.success(t('addedToSavedCards') || 'Card saved');
+      setShowAddToFrequentlyUsedDialog(false);
+      setCardToAddToFrequentlyUsed(null);
+    }
+  }, [cardToAddToFrequentlyUsed, t]);
+
   const handleCardSelect = useCallback((id: string) => {
     setSelectedCardId(id);
     
@@ -744,7 +782,8 @@ export function CanvasBoard({
           cards,
           currentGender,
           patientZoomRef.current,
-          therapistZoomRef.current
+          therapistZoomRef.current,
+          therapistNotesRef.current
         );
 
         const response = await fetch(`/api/sessions/${sessionId}`, {
@@ -879,6 +918,7 @@ export function CanvasBoard({
                 onDragEnd={handleCardDragEnd}
                 onDelete={handleCardDelete}
                 onLockToggle={handleCardLockToggle}
+                onAddToFrequentlyUsed={handleAddToSavedCards}
                 onSizeChange={handleCardSizeChange}
                 onRotationChange={handleCardRotationChange}
               />
@@ -898,6 +938,29 @@ export function CanvasBoard({
           </Layer>
         </Stage>
       )}
+
+      {/* Add to Saved Cards Confirmation Dialog */}
+      <AlertDialog open={showAddToFrequentlyUsedDialog} onOpenChange={setShowAddToFrequentlyUsedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('addToSavedCards') || 'Save Card'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('addToSavedCardsConfirm') || 'Are you sure you want to save this card to your saved cards folder?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowAddToFrequentlyUsedDialog(false);
+              setCardToAddToFrequentlyUsed(null);
+            }}>
+              {t('cancel') || 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAddToSavedCards}>
+              {t('confirm') || 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

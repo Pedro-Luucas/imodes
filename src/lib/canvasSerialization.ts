@@ -1,4 +1,4 @@
-import type { CanvasState, CanvasCard, Gender } from '@/types/canvas';
+import type { CanvasState, CanvasCard, Gender, TherapistSettings } from '@/types/canvas';
 
 /**
  * Serialize canvas state to JSON format for storage
@@ -8,7 +8,8 @@ export function serializeCanvasState(
   cards: CanvasCard[],
   gender: Gender,
   patientZoomLevel: number,
-  therapistZoomLevel: number
+  therapistZoomLevel: number,
+  therapistNotes?: string
 ): CanvasState {
   // Ensure all cards have width and height explicitly set
   const serializedCards: CanvasCard[] = cards.map((card) => ({
@@ -17,15 +18,21 @@ export function serializeCanvasState(
     height: typeof card.height === 'number' && card.height > 0 ? card.height : 320,
   }));
 
+  const therapistSettings: TherapistSettings = {
+    zoomLevel: therapistZoomLevel,
+  };
+  
+  if (therapistNotes !== undefined) {
+    therapistSettings.notes = therapistNotes;
+  }
+
   return {
     cards: serializedCards,
     gender,
     patientSettings: {
       zoomLevel: patientZoomLevel,
     },
-    therapistSettings: {
-      zoomLevel: therapistZoomLevel,
-    },
+    therapistSettings,
   };
 }
 
@@ -39,6 +46,7 @@ export function deserializeCanvasState(data: CanvasState | null): {
   gender: Gender;
   patientZoomLevel: number;
   therapistZoomLevel: number;
+  therapistNotes?: string;
 } {
   if (!data) {
     return {
@@ -74,6 +82,7 @@ export function deserializeCanvasState(data: CanvasState | null): {
     gender: data.gender === 'female' ? 'female' : 'male',
     patientZoomLevel: data.patientSettings?.zoomLevel ?? 100,
     therapistZoomLevel: data.therapistSettings?.zoomLevel ?? 100,
+    therapistNotes: data.therapistSettings?.notes,
   };
 }
 

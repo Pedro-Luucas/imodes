@@ -91,32 +91,36 @@ export async function GET(
         );
       }
 
-      // Verify therapist has access to the patient
-      const { data: patientAssignment, error: patientError } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('id', sessionPatientId)
-        .eq('therapist_id', profileId)
-        .single();
+      // If patient_id is null, it's a playground session - therapist can always access
+      if (sessionPatientId && sessionPatientId !== '') {
+        // Verify therapist has access to the patient (only if patient_id is set)
+        const { data: patientAssignment, error: patientError } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('id', sessionPatientId)
+          .eq('therapist_id', profileId)
+          .single();
 
-      if (patientError) {
-        console.error('GET: Patient assignment query error:', patientError, {
-          sessionPatientId,
-          therapistId: profileId,
-        });
-      }
+        if (patientError) {
+          console.error('GET: Patient assignment query error:', patientError, {
+            sessionPatientId,
+            therapistId: profileId,
+          });
+        }
 
-      if (!patientAssignment) {
-        console.error('GET: Patient assignment check failed:', {
-          sessionPatientId,
-          therapistId: profileId,
-          patientAssignment: patientAssignment,
-        });
-        return NextResponse.json(
-          { error: 'Unauthorized - Patient is not assigned to you' },
-          { status: 403 }
-        );
+        if (!patientAssignment) {
+          console.error('GET: Patient assignment check failed:', {
+            sessionPatientId,
+            therapistId: profileId,
+            patientAssignment: patientAssignment,
+          });
+          return NextResponse.json(
+            { error: 'Unauthorized - Patient is not assigned to you' },
+            { status: 403 }
+          );
+        }
       }
+      // If patient_id is null, allow access (playground session)
     }
     // Admins can access all sessions
 
@@ -205,41 +209,45 @@ export async function PUT(
         );
       }
 
-      const { data: patientAssignment, error: patientError } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('id', sessionPatientId)
-        .eq('therapist_id', profileId)
-        .single();
-
-      if (patientError) {
-        console.error('Patient assignment query error:', patientError, {
-          sessionPatientId,
-          therapistId: profileId,
-        });
-      }
-
-      if (!patientAssignment) {
-        // Check if patient exists at all
-        const { data: patientExists } = await supabase
+      // If patient_id is null, it's a playground session - therapist can always access
+      if (sessionPatientId && sessionPatientId !== '') {
+        const { data: patientAssignment, error: patientError } = await supabase
           .from('patients')
-          .select('id, therapist_id')
+          .select('id')
           .eq('id', sessionPatientId)
+          .eq('therapist_id', profileId)
           .single();
 
-        console.error('PUT: Patient assignment check failed:', {
-          sessionPatientId,
-          therapistId: profileId,
-          patientAssignment: patientAssignment,
-          patientExists: patientExists,
-          patientTherapistId: patientExists?.therapist_id,
-          patientError: patientError,
-        });
-        return NextResponse.json(
-          { error: 'Unauthorized - Patient is not assigned to you' },
-          { status: 403 }
-        );
+        if (patientError) {
+          console.error('Patient assignment query error:', patientError, {
+            sessionPatientId,
+            therapistId: profileId,
+          });
+        }
+
+        if (!patientAssignment) {
+          // Check if patient exists at all
+          const { data: patientExists } = await supabase
+            .from('patients')
+            .select('id, therapist_id')
+            .eq('id', sessionPatientId)
+            .single();
+
+          console.error('PUT: Patient assignment check failed:', {
+            sessionPatientId,
+            therapistId: profileId,
+            patientAssignment: patientAssignment,
+            patientExists: patientExists,
+            patientTherapistId: patientExists?.therapist_id,
+            patientError: patientError,
+          });
+          return NextResponse.json(
+            { error: 'Unauthorized - Patient is not assigned to you' },
+            { status: 403 }
+          );
+        }
       }
+      // If patient_id is null, allow access (playground session)
     }
 
     // Update session data
@@ -329,19 +337,23 @@ export async function DELETE(
         );
       }
 
-      const { data: patientAssignment } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('id', existingSession.patient_id)
-        .eq('therapist_id', profile.id)
-        .single();
+      // If patient_id is null, it's a playground session - therapist can always access
+      if (existingSession.patient_id) {
+        const { data: patientAssignment } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('id', existingSession.patient_id)
+          .eq('therapist_id', profile.id)
+          .single();
 
-      if (!patientAssignment) {
-        return NextResponse.json(
-          { error: 'Unauthorized - Patient is not assigned to you' },
-          { status: 403 }
-        );
+        if (!patientAssignment) {
+          return NextResponse.json(
+            { error: 'Unauthorized - Patient is not assigned to you' },
+            { status: 403 }
+          );
+        }
       }
+      // If patient_id is null, allow access (playground session)
     }
     // Admins can delete all sessions
 

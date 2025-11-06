@@ -18,6 +18,7 @@ import {
 import { useCardsData } from '@/hooks/useCardsData';
 import { CardCategory, Gender } from '@/types/canvas';
 import { trackCardUsage, getFrequentlyUsedCards, type CardUsage } from '@/lib/cardUsageTracker';
+import { getSavedCards, removeSavedCard, type SavedCard } from '@/lib/savedCardsTracker';
 
 interface ToolsPanelProps {
   isOpen: boolean;
@@ -228,6 +229,126 @@ function FrequentlyUsedCards({
   );
 }
 
+// Component to display saved cards
+function SavedCards({ 
+  onCardSelect,
+  isExpanded
+}: { 
+  onCardSelect?: (card: {
+    imageUrl?: string;
+    title: string;
+    description: string;
+    category: CardCategory;
+    cardNumber: number;
+  }) => void;
+  isExpanded?: boolean;
+}) {
+  const t = useTranslations('canvas.tools');
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+
+  const refreshCards = useCallback(() => {
+    const cards = getSavedCards();
+    setSavedCards(cards);
+  }, []);
+
+  useEffect(() => {
+    // Load saved cards
+    refreshCards();
+  }, [refreshCards]);
+
+  // Refresh when section is expanded
+  useEffect(() => {
+    if (isExpanded) {
+      refreshCards();
+    }
+  }, [isExpanded, refreshCards]);
+
+  // Listen for storage changes to update the list when cards are saved
+  useEffect(() => {
+    // Listen for custom event that we'll dispatch when saving cards
+    window.addEventListener('savedCardsUpdated', refreshCards);
+
+    return () => {
+      window.removeEventListener('savedCardsUpdated', refreshCards);
+    };
+  }, [refreshCards]);
+
+  const handleCardClick = useCallback((savedCard: SavedCard) => {
+    // Track card usage when clicking from saved cards
+    trackCardUsage({
+      cardNumber: savedCard.cardNumber,
+      category: savedCard.category,
+      imageUrl: savedCard.imageUrl,
+      title: savedCard.title,
+      description: savedCard.description,
+    });
+    // Call the original onCardSelect callback
+    onCardSelect?.({
+      imageUrl: savedCard.imageUrl,
+      title: savedCard.title,
+      description: savedCard.description,
+      category: savedCard.category,
+      cardNumber: savedCard.cardNumber,
+    });
+  }, [onCardSelect]);
+
+  if (savedCards.length === 0) {
+    return (
+      <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
+        <div className="text-sm text-gray-500 text-center py-8">{t('noSavedCards')}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
+      <div className="grid grid-cols-3 gap-3">
+        {savedCards.map((savedCard) => (
+          <div
+            key={`${savedCard.category}-${savedCard.cardNumber}`}
+            className="aspect-square rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100 relative group"
+            onClick={() => handleCardClick(savedCard)}
+          >
+            {savedCard.imageUrl ? (
+              <Image
+                src={savedCard.imageUrl}
+                alt={savedCard.title}
+                width={160}
+                height={160}
+                className="w-full h-full object-cover"
+                style={{
+                  imageRendering: 'auto',
+                  transform: 'translateZ(0)',
+                  backfaceVisibility: 'hidden',
+                }}
+                loading="lazy"
+                unoptimized
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
+                {savedCard.title}
+              </div>
+            )}
+            {/* Remove button on hover */}
+            <button
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeSavedCard(savedCard.cardNumber, savedCard.category);
+              }}
+              title={t('removeFromSaved') || 'Remove from saved'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: ToolsPanelProps) {
   const t = useTranslations('canvas.tools');
   const [expandedSection, setExpandedSection] = useState<string | null>('modes');
@@ -365,7 +486,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
           )}
         </div>
 
-        {/* Saved Work Section */}
+        {/* Saved Cards Section */}
         <div className="mb-4">
           <button
             onClick={() => toggleSection('saved')}
@@ -373,7 +494,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
           >
             <div className="flex items-center gap-2">
               <FolderOpen className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium">{t('savedWork')}</span>
+              <span className="text-sm font-medium">{t('savedCards')}</span>
             </div>
             {expandedSection === 'saved' ? (
               <ChevronDown className="w-4 h-4" />
@@ -382,9 +503,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
             )}
           </button>
           {expandedSection === 'saved' && (
-            <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
-              <div className="text-sm text-gray-500 text-center py-8">{t('noSavedWork')}</div>
-            </div>
+            <SavedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'saved'} />
           )}
         </div>
       </div>

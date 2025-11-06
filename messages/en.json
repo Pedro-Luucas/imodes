@@ -305,7 +305,12 @@
       "clickToEdit": "Click to edit"
     },
     "card": {
-      "newCard": "New Card"
+      "newCard": "New Card",
+      "addToSavedCards": "Save Card",
+      "addToSavedCardsConfirm": "Are you sure you want to save this card to your saved cards folder?",
+      "addedToSavedCards": "Card saved",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     },
     "loading": {
       "loadingCards": "Loading cards..."
@@ -317,9 +322,10 @@
       "strengths": "Strengths",
       "boatAndWave": "Boat & Wave",
       "frequentlyUsed": "Frequently Used",
-      "savedWork": "Saved Work",
+      "savedCards": "Saved Cards",
       "noFrequentlyUsed": "No frequently used cards yet",
-      "noSavedWork": "No saved work yet"
+      "noSavedCards": "No saved cards yet",
+      "removeFromSaved": "Remove from saved"
     },
     "controls": {
       "cursorTool": "Cursor Tool",

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { CanvasBoard } from '@/components/canvas/CanvasBoard';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { ToolsPanel } from '@/components/canvas/ToolsPanel';
+import { SelectPatientDialog } from '@/components/canvas/SelectPatientDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ import {
   Minus,
   Trash2,
 } from 'lucide-react';
+import type { Profile } from '@/types/auth';
 
 interface WindowWithCanvasCard extends Window {
   _addCanvasCard?: (card?: {
@@ -62,6 +64,14 @@ export default function CanvasPage() {
   const [sessionName, setSessionName] = useState<string | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const creatingSessionRef = useRef(false);
+  const [patientProfile, setPatientProfile] = useState<Profile | null>(null);
+  const [therapistProfile, setTherapistProfile] = useState<Profile | null>(null);
+  const [sessionNotes, setSessionNotes] = useState<string>('');
+  const [sessionType, setSessionType] = useState<string>('Individual');
+  const [showPatientDialog, setShowPatientDialog] = useState(false);
+  const [currentDuration, setCurrentDuration] = useState<number>(0); // Current session duration in seconds
+  const sessionStartTimeRef = useRef<Date | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAddCard = useCallback((card?: {
     imageUrl?: string;
@@ -95,9 +105,9 @@ export default function CanvasPage() {
   useEffect(() => {
     // Check searchParams directly to avoid race condition with state update
     const sessionIdFromUrl = searchParams.get('sessionId');
-    if (sessionIdFromUrl || !profile || creatingSessionRef.current) return;
+    if (sessionIdFromUrl || !profile || creatingSessionRef.current || showPatientDialog) return;
 
-    const createSession = async () => {
+    const createSession = async (patientId: string | null = null, type: string = 'session') => {
       creatingSessionRef.current = true;
       setIsCreatingSession(true);
       try {
@@ -106,7 +116,10 @@ export default function CanvasPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            patient_id: patientId,
+            type: type,
+          }),
         });
 
         if (!response.ok) {
@@ -119,6 +132,9 @@ export default function CanvasPage() {
         router.replace(`/canvas?sessionId=${newSessionId}`);
         setSessionId(newSessionId);
         setSessionName(data.session.name);
+        if (data.session.type) {
+          setSessionType(data.session.type);
+        }
       } catch (error) {
         console.error('Error creating session:', error);
         // Don't redirect, let user see error or go back
@@ -128,27 +144,221 @@ export default function CanvasPage() {
       }
     };
 
-    createSession();
-  }, [searchParams, profile, router]);
+    // Check if therapist has patients
+    if (profile.role === 'therapist') {
+      const checkAndCreate = async () => {
+        try {
+          const patientsResponse = await fetch(`/api/therapists/${profile.id}/patients`);
+          if (patientsResponse.ok) {
+            const patientsData = await patientsResponse.json();
+            const patients = patientsData.patients || [];
+            
+            if (patients.length === 0) {
+              // No patients, create playground session directly
+              await createSession(null, 'playground');
+            } else {
+              // Has patients, show dialog
+              setShowPatientDialog(true);
+            }
+          } else {
+            // Error fetching patients, create playground session
+            await createSession(null, 'playground');
+          }
+        } catch (error) {
+          console.error('Error checking patients:', error);
+          // On error, create playground session
+          await createSession(null, 'playground');
+        }
+      };
+      checkAndCreate();
+    } else {
+      // Patient or other role, create session normally
+      createSession();
+    }
+  }, [searchParams, profile, router, showPatientDialog]);
 
-  // Load session name when sessionId changes
+  // Load session data when sessionId changes
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !profile) return;
 
-    const loadSessionName = async () => {
+    const loadSessionData = async () => {
       try {
         const response = await fetch(`/api/sessions/${sessionId}`);
         if (response.ok) {
           const data = await response.json();
-          setSessionName(data.session?.name || null);
+          const session = data.session;
+          setSessionName(session?.name || null);
+          
+          // Load notes from session data
+          if (session?.data?.therapistSettings?.notes) {
+            setSessionNotes(session.data.therapistSettings.notes);
+          }
+
+          // Set session type from session data
+          if (session.type) {
+            setSessionType(session.type);
+          }
+
+          // Fetch patient and therapist profiles
+          if (session.patient_id) {
+            try {
+              const patientResponse = await fetch(`/api/patients/${session.patient_id}`);
+              if (patientResponse.ok) {
+                const patientData = await patientResponse.json();
+                setPatientProfile(patientData.profile);
+              }
+            } catch (error) {
+              console.error('Error loading patient profile:', error);
+            }
+          } else {
+            // No patient_id, clear patient profile
+            setPatientProfile(null);
+          }
+
+          if (session.therapist_id) {
+            try {
+              const therapistResponse = await fetch(`/api/therapists/${session.therapist_id}`);
+              if (therapistResponse.ok) {
+                const therapistData = await therapistResponse.json();
+                setTherapistProfile(therapistData.profile);
+              }
+            } catch (error) {
+              console.error('Error loading therapist profile:', error);
+            }
+          }
         }
       } catch (error) {
-        console.error('Error loading session name:', error);
+        console.error('Error loading session data:', error);
       }
     };
 
-    loadSessionName();
-  }, [sessionId]);
+    loadSessionData();
+  }, [sessionId, profile]);
+
+  // Save timer data to session
+  const saveTimerData = useCallback(async (sessionId: string, startTime: Date, duration: number) => {
+    try {
+      // Fetch current session data
+      const response = await fetch(`/api/sessions/${sessionId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch session');
+      }
+
+      const data = await response.json();
+      const session = data.session;
+
+      // Get existing timeSpent array or create new one
+      const existingTimeSpent = session?.data?.timeSpent || [];
+      
+      // Add new entry
+      const newEntry = {
+        timestamp: startTime.toISOString(),
+        timeSpent: duration,
+      };
+
+      const updatedTimeSpent = [...existingTimeSpent, newEntry];
+
+      // Update session data
+      const updatedData = {
+        ...session.data,
+        timeSpent: updatedTimeSpent,
+      };
+
+      // Save to session
+      const saveResponse = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ data: updatedData }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save timer data');
+      }
+    } catch (error) {
+      console.error('Error saving timer data:', error);
+    }
+  }, []);
+
+  // Start timer when canvas opens (for therapists)
+  useEffect(() => {
+    const isTherapist = profile?.role === 'therapist';
+    if (!isTherapist || !sessionId) return;
+
+    // Start timer when component mounts
+    if (!sessionStartTimeRef.current) {
+      sessionStartTimeRef.current = new Date();
+    }
+
+    // Update timer every second
+    timerIntervalRef.current = setInterval(() => {
+      if (sessionStartTimeRef.current) {
+        const elapsed = Math.floor((new Date().getTime() - sessionStartTimeRef.current.getTime()) / 1000);
+        setCurrentDuration(elapsed);
+      }
+    }, 1000);
+
+    // Handle page unload - save timer data
+    const handleBeforeUnload = () => {
+      if (sessionStartTimeRef.current && sessionId) {
+        const finalDuration = Math.floor((new Date().getTime() - sessionStartTimeRef.current.getTime()) / 1000);
+        if (finalDuration > 0) {
+          // Fetch current session and save timer data
+          // Use keepalive to ensure request completes even after page unload
+          fetch(`/api/sessions/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+              const session = data.session;
+              const existingTimeSpent = session?.data?.timeSpent || [];
+              const newEntry = {
+                timestamp: sessionStartTimeRef.current!.toISOString(),
+                timeSpent: finalDuration,
+              };
+              const updatedTimeSpent = [...existingTimeSpent, newEntry];
+              const updatedData = {
+                ...session.data,
+                timeSpent: updatedTimeSpent,
+              };
+              // Use fetch with keepalive for reliable save on page unload
+              fetch(`/api/sessions/${sessionId}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ data: updatedData }),
+                keepalive: true,
+              }).catch(() => {
+                // Ignore errors on unload
+              });
+            })
+            .catch(() => {
+              // Ignore errors on unload
+            });
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup: Save timer data when leaving canvas
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+
+      // Save timer data when component unmounts
+      if (sessionStartTimeRef.current && sessionId) {
+        const finalDuration = Math.floor((new Date().getTime() - sessionStartTimeRef.current.getTime()) / 1000);
+        if (finalDuration > 0) {
+          saveTimerData(sessionId, sessionStartTimeRef.current, finalDuration);
+        }
+      }
+    };
+  }, [sessionId, profile, saveTimerData]);
 
   // Manual save handler
   const handleManualSave = useCallback(async () => {
@@ -181,6 +391,17 @@ export default function CanvasPage() {
         onGenderChange={setGender}
         sessionTitle={sessionName || undefined}
         onSave={sessionId ? handleManualSave : undefined}
+        sessionId={sessionId}
+        patientProfile={patientProfile}
+        therapistProfile={therapistProfile}
+        sessionType={sessionType}
+        language="English"
+        initialNotes={sessionNotes}
+        onNotesChange={(notes) => {
+          setSessionNotes(notes);
+          // Notes will be auto-saved by SessionDetailsPanel
+        }}
+        currentDuration={currentDuration}
       />
 
       {/* Canvas with Floating Controls */}
@@ -357,6 +578,48 @@ export default function CanvasPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Patient Selection Dialog */}
+      {profile?.role === 'therapist' && profile?.id && (
+        <SelectPatientDialog
+          open={showPatientDialog}
+          onOpenChange={setShowPatientDialog}
+          therapistId={profile.id}
+          onSelect={async (patientId: string | null, type: string) => {
+            try {
+              setIsCreatingSession(true);
+              const response = await fetch('/api/sessions', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  patient_id: patientId,
+                  type: type,
+                }),
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to create session');
+              }
+
+              const data = await response.json();
+              const newSessionId = data.session.id;
+              router.replace(`/canvas?sessionId=${newSessionId}`);
+              setSessionId(newSessionId);
+              setSessionName(data.session.name);
+              if (data.session.type) {
+                setSessionType(data.session.type);
+              }
+            } catch (error) {
+              console.error('Error creating session:', error);
+            } finally {
+              setIsCreatingSession(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
