@@ -532,7 +532,7 @@ export default function CanvasPage() {
               className="h-10 w-[85px]"
               onClick={() => setZoomLevel(100)}
             >
-              {zoomLevel}%
+              {Math.round(zoomLevel)}%
             </Button>
             <Button
               variant="secondary"

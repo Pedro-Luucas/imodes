@@ -69,6 +69,9 @@ const CARD_COLORS = [
   '#6366f1', // indigo
 ];
 
+const MIN_SCALE = 0.4;
+const MAX_SCALE = 2;
+
 export function CanvasBoard({ 
   scale = 1, 
   gender = 'male', 
@@ -93,7 +96,12 @@ export function CanvasBoard({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevScaleRef = useRef<number>(scale);
   const stagePositionRef = useRef({ x: 0, y: 0 });
+  const panStageStartRef = useRef({ x: 0, y: 0 });
+  const panPointerStartRef = useRef({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const hasCenteredRef = useRef(false);
+  const didPanRef = useRef(false);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const patientZoomRef = useRef<number>(100);
   const therapistZoomRef = useRef<number>(100);
@@ -198,6 +206,10 @@ export function CanvasBoard({
   useEffect(() => {
     stagePositionRef.current = stagePosition;
   }, [stagePosition]);
+
+  useEffect(() => {
+    hasCenteredRef.current = false;
+  }, [sessionId]);
 
   // Load session data when sessionId changes
   useEffect(() => {
@@ -386,6 +398,20 @@ export function CanvasBoard({
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
+
+  useEffect(() => {
+    if (!dimensions.width || !dimensions.height) return;
+    if (hasCenteredRef.current) return;
+
+    const centeredPosition = {
+      x: dimensions.width / 2,
+      y: dimensions.height / 2,
+    };
+
+    setStagePosition(centeredPosition);
+    stagePositionRef.current = centeredPosition;
+    hasCenteredRef.current = true;
+  }, [dimensions.width, dimensions.height, sessionId]);
 
   // Handle zoom centering on selected card or viewport center
   useEffect(() => {
@@ -658,7 +684,130 @@ export function CanvasBoard({
     });
   }, []);
 
+  const stopCanvasPan = useCallback(() => {
+    if (!isPanningRef.current) return;
+    isPanningRef.current = false;
+    if (containerRef.current) {
+      containerRef.current.style.cursor = '';
+    }
+  }, []);
+
+  const startCanvasPan = useCallback((clientX: number, clientY: number) => {
+    isPanningRef.current = true;
+    didPanRef.current = false;
+    panPointerStartRef.current = { x: clientX, y: clientY };
+    panStageStartRef.current = { ...stagePositionRef.current };
+    if (containerRef.current) {
+      containerRef.current.style.cursor = 'grabbing';
+    }
+  }, []);
+
+  const moveCanvasPan = useCallback((clientX: number, clientY: number) => {
+    if (!isPanningRef.current) return;
+    const deltaX = clientX - panPointerStartRef.current.x;
+    const deltaY = clientY - panPointerStartRef.current.y;
+
+    if (!didPanRef.current && (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)) {
+      didPanRef.current = true;
+    }
+
+    const newPosition = {
+      x: panStageStartRef.current.x + deltaX,
+      y: panStageStartRef.current.y + deltaY,
+    };
+
+    setStagePosition(newPosition);
+    stagePositionRef.current = newPosition;
+  }, []);
+
+  const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (e.target !== e.target.getStage()) return;
+    if (e.evt.button !== 0) return;
+    e.evt.preventDefault();
+    startCanvasPan(e.evt.clientX, e.evt.clientY);
+  }, [startCanvasPan]);
+
+  const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (!isPanningRef.current) return;
+    moveCanvasPan(e.evt.clientX, e.evt.clientY);
+  }, [moveCanvasPan]);
+
+  const handleStageMouseUp = useCallback(() => {
+    stopCanvasPan();
+  }, [stopCanvasPan]);
+
+  const handleStageMouseLeave = useCallback(() => {
+    stopCanvasPan();
+  }, [stopCanvasPan]);
+
+  const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (e.target !== e.target.getStage()) return;
+    if (e.evt.touches.length !== 1) return;
+    e.evt.preventDefault();
+    const touch = e.evt.touches[0];
+    startCanvasPan(touch.clientX, touch.clientY);
+  }, [startCanvasPan]);
+
+  const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (!isPanningRef.current) return;
+    const touch = e.evt.touches[0] || e.evt.changedTouches[0];
+    if (!touch) return;
+    e.evt.preventDefault();
+    moveCanvasPan(touch.clientX, touch.clientY);
+  }, [moveCanvasPan]);
+
+  const handleStageTouchEnd = useCallback(() => {
+    stopCanvasPan();
+  }, [stopCanvasPan]);
+
+  const handleStageTouchCancel = useCallback(() => {
+    stopCanvasPan();
+  }, [stopCanvasPan]);
+
+  const handleStageWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
+    if (!e.evt.ctrlKey) return;
+    e.evt.preventDefault();
+
+    const scaleBy = 1.05;
+    const direction = e.evt.deltaY > 0 ? -1 : 1;
+
+    let newScale = displayScale * (direction > 0 ? scaleBy : 1 / scaleBy);
+    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+    if (newScale === displayScale) return;
+
+    const viewportCenterX = dimensions.width / 2;
+    const viewportCenterY = dimensions.height / 2;
+
+    const centerX = (viewportCenterX - stagePositionRef.current.x) / displayScale;
+    const centerY = (viewportCenterY - stagePositionRef.current.y) / displayScale;
+
+    const newPosition = {
+      x: stagePositionRef.current.x + centerX * (displayScale - newScale),
+      y: stagePositionRef.current.y + centerY * (displayScale - newScale),
+    };
+
+    setDisplayScale(newScale);
+    setStagePosition(newPosition);
+    stagePositionRef.current = newPosition;
+    prevScaleRef.current = newScale;
+
+    if (onZoomChange) {
+      onZoomChange(newScale * 100);
+    }
+    const zoomPercent = newScale * 100;
+    if (userRole === 'patient') {
+      patientZoomRef.current = zoomPercent;
+    } else if (userRole === 'therapist') {
+      therapistZoomRef.current = zoomPercent;
+    }
+  }, [displayScale, dimensions.width, dimensions.height, onZoomChange, userRole]);
+
   const handleStageClick = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (didPanRef.current) {
+      didPanRef.current = false;
+      return;
+    }
     const stage = e.target.getStage();
     if (!stage) return;
     
@@ -699,6 +848,21 @@ export function CanvasBoard({
       setSelectedNoteId(null);
     }
   }, [toolMode, displayScale, saveToHistory]);
+
+  useEffect(() => {
+    const handleWindowMouseUp = () => stopCanvasPan();
+    const handleWindowTouchEnd = () => stopCanvasPan();
+
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    window.addEventListener('touchend', handleWindowTouchEnd);
+    window.addEventListener('touchcancel', handleWindowTouchEnd);
+
+    return () => {
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+      window.removeEventListener('touchend', handleWindowTouchEnd);
+      window.removeEventListener('touchcancel', handleWindowTouchEnd);
+    };
+  }, [stopCanvasPan]);
 
   const handleNoteSelect = useCallback((id: string) => {
     setSelectedNoteId(id);
@@ -905,6 +1069,15 @@ export function CanvasBoard({
           y={stagePosition.y}
           scaleX={displayScale}
           scaleY={displayScale}
+          onMouseDown={handleStageMouseDown}
+          onMouseMove={handleStageMouseMove}
+          onMouseUp={handleStageMouseUp}
+          onMouseLeave={handleStageMouseLeave}
+          onTouchStart={handleStageTouchStart}
+          onTouchMove={handleStageTouchMove}
+          onTouchEnd={handleStageTouchEnd}
+          onTouchCancel={handleStageTouchCancel}
+          onWheel={handleStageWheel}
           onClick={handleStageClick}
           onTap={handleStageClick}
         >
