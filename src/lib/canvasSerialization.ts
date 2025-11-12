@@ -1,16 +1,36 @@
-import type { CanvasState, CanvasCard, Gender, TherapistSettings } from '@/types/canvas';
+import type {
+  CanvasState,
+  CanvasCard,
+  Gender,
+  PostItNote,
+  TherapistSettings,
+} from '@/types/canvas';
 
 /**
  * Serialize canvas state to JSON format for storage
  * Ensures all card properties including width and height are included
  */
-export function serializeCanvasState(
-  cards: CanvasCard[],
-  gender: Gender,
-  patientZoomLevel: number,
-  therapistZoomLevel: number,
-  therapistNotes?: string
-): CanvasState {
+export interface SerializeCanvasStateOptions {
+  cards: CanvasCard[];
+  notes: PostItNote[];
+  gender: Gender;
+  patientZoomLevel: number;
+  therapistZoomLevel: number;
+  therapistNotes?: string;
+  version?: number;
+  updatedAt?: string;
+}
+
+export function serializeCanvasState({
+  cards,
+  notes,
+  gender,
+  patientZoomLevel,
+  therapistZoomLevel,
+  therapistNotes,
+  version,
+  updatedAt,
+}: SerializeCanvasStateOptions): CanvasState {
   // Ensure all cards have width and height explicitly set
   const serializedCards: CanvasCard[] = cards.map((card) => ({
     ...card,
@@ -28,11 +48,18 @@ export function serializeCanvasState(
 
   return {
     cards: serializedCards,
+    notes: notes.map((note) => ({
+      ...note,
+      width: typeof note.width === 'number' && note.width > 0 ? note.width : 142,
+      height: typeof note.height === 'number' && note.height > 0 ? note.height : 100,
+    })),
     gender,
     patientSettings: {
       zoomLevel: patientZoomLevel,
     },
     therapistSettings,
+    version,
+    updatedAt,
   };
 }
 
@@ -41,16 +68,22 @@ export function serializeCanvasState(
  * Returns default values if data is missing or invalid
  * Ensures all card properties including width and height are preserved
  */
-export function deserializeCanvasState(data: CanvasState | null): {
+export interface DeserializedCanvasState {
   cards: CanvasCard[];
+  notes: PostItNote[];
   gender: Gender;
   patientZoomLevel: number;
   therapistZoomLevel: number;
   therapistNotes?: string;
-} {
+  version?: number;
+  updatedAt?: string;
+}
+
+export function deserializeCanvasState(data: CanvasState | null): DeserializedCanvasState {
   if (!data) {
     return {
       cards: [],
+      notes: [],
       gender: 'male',
       patientZoomLevel: 100,
       therapistZoomLevel: 100,
@@ -59,7 +92,7 @@ export function deserializeCanvasState(data: CanvasState | null): {
 
   // Ensure cards have all required properties, especially width and height
   const cards: CanvasCard[] = Array.isArray(data.cards)
-    ? data.cards.map((card: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+    ? data.cards.map((card) => ({
         id: String(card?.id || ''),
         x: typeof card?.x === 'number' ? card.x : 0,
         y: typeof card?.y === 'number' ? card.y : 0,
@@ -77,12 +110,26 @@ export function deserializeCanvasState(data: CanvasState | null): {
       }))
     : [];
 
+  const rawNotes = Array.isArray(data.notes) ? data.notes : [];
+  const notes: PostItNote[] = rawNotes.map((note) => ({
+    id: String(note?.id || ''),
+    x: typeof note?.x === 'number' ? note.x : 0,
+    y: typeof note?.y === 'number' ? note.y : 0,
+    text: typeof note?.text === 'string' ? note.text : '',
+    width: typeof note?.width === 'number' && note.width > 0 ? note.width : 142,
+    height: typeof note?.height === 'number' && note.height > 0 ? note.height : 100,
+    isEditing: Boolean(note?.isEditing || false),
+  }));
+
   return {
     cards,
+    notes,
     gender: data.gender === 'female' ? 'female' : 'male',
     patientZoomLevel: data.patientSettings?.zoomLevel ?? 100,
     therapistZoomLevel: data.therapistSettings?.zoomLevel ?? 100,
     therapistNotes: data.therapistSettings?.notes,
+    version: typeof data.version === 'number' ? data.version : undefined,
+    updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
   };
 }
 

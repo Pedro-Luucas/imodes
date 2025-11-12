@@ -60,10 +60,13 @@ export interface TimeSpentEntry {
 
 export interface CanvasState {
   cards: CanvasCard[];
+  notes: PostItNote[];
   gender: Gender;
   patientSettings: PatientSettings;
   therapistSettings: TherapistSettings;
   timeSpent?: TimeSpentEntry[]; // Array of time spent entries
+  version?: number; // Incremented on each persisted update
+  updatedAt?: string; // ISO timestamp of last persisted update
 }
 
 export interface CanvasSession {

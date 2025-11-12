@@ -31,6 +31,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
+import { canvasStore, type CanvasSaveReason } from '@/stores/canvasStore';
+import { startCanvasAutosave, flushCanvasChanges } from '@/lib/canvasPersistence';
 
 interface WindowWithCanvasCard extends Window {
   _addCanvasCard?: (card?: {
@@ -72,6 +74,7 @@ export default function CanvasPage() {
   const [currentDuration, setCurrentDuration] = useState<number>(0); // Current session duration in seconds
   const sessionStartTimeRef = useRef<Date | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+const storeSessionRef = useRef<string | null>(null);
 
   const handleAddCard = useCallback((card?: {
     imageUrl?: string;
@@ -226,6 +229,22 @@ export default function CanvasPage() {
               console.error('Error loading therapist profile:', error);
             }
           }
+
+          const roleForHydration =
+            profile.role === 'patient'
+              ? 'patient'
+              : profile.role === 'therapist'
+                ? 'therapist'
+                : null;
+
+          if (roleForHydration) {
+            canvasStore.getState().hydrateFromServer({
+              sessionId,
+              role: roleForHydration,
+              state: session?.data ?? null,
+              updatedAt: session?.updated_at,
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading session data:', error);
@@ -234,6 +253,22 @@ export default function CanvasPage() {
 
     loadSessionData();
   }, [sessionId, profile]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const stopAutosave = startCanvasAutosave({
+      sessionId,
+      enabled: true,
+      onError: (error) => {
+        console.error('Autosave error:', error);
+      },
+    });
+
+    return () => {
+      stopAutosave();
+    };
+  }, [sessionId]);
 
   // Save timer data to session
   const saveTimerData = useCallback(async (sessionId: string, startTime: Date, duration: number) => {
@@ -362,18 +397,34 @@ export default function CanvasPage() {
 
   // Manual save handler
   const handleManualSave = useCallback(async () => {
-    interface WindowWithManualSave extends Window {
-      _manualSaveCanvas?: () => Promise<void>;
+    if (!sessionId) {
+      throw new Error('No session to save');
     }
-    const win = window as WindowWithManualSave;
-    if (win._manualSaveCanvas) {
-      await win._manualSaveCanvas();
-    } else {
-      throw new Error('Save function not available');
+
+    try {
+      await flushCanvasChanges(sessionId, {
+        force: true,
+        extraReasons: ['manual' as CanvasSaveReason],
+      });
+    } catch (error) {
+      console.error('Manual save error:', error);
+      throw error;
     }
-  }, []);
+  }, [sessionId]);
 
   const userRole = profile?.role === 'patient' ? 'patient' : profile?.role === 'therapist' ? 'therapist' : undefined;
+
+  useEffect(() => {
+    const storeApi = canvasStore.getState();
+    if (sessionId !== storeSessionRef.current) {
+      storeApi.reset();
+      storeSessionRef.current = sessionId;
+    }
+    storeApi.setSessionMetadata({
+      sessionId,
+      role: userRole ?? null,
+    });
+  }, [sessionId, userRole]);
 
   if (isCreatingSession) {
     return (

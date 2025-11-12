@@ -9,9 +9,11 @@ import { CanvasCard as CanvasCardType, Gender, CardCategory, ToolMode, PostItNot
 import { CanvasCard } from './CanvasCard';
 import { CanvasLoading } from './CanvasLoading';
 import { PostItNoteComponent } from './PostItNote';
-import { serializeCanvasState, deserializeCanvasState } from '@/lib/canvasSerialization';
 import { preloadImagesWithPriority } from '@/lib/imagePreloader';
 import { saveCard } from '@/lib/savedCardsTracker';
+import { useCanvasStore, canvasStore } from '@/stores/canvasStore';
+import { useCanvasRealtime } from '@/hooks/useCanvasRealtime';
+import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,11 +41,6 @@ interface CanvasBoardProps {
   userRole?: 'patient' | 'therapist';
   onSave?: () => Promise<void>;
   onZoomChange?: (zoomLevel: number) => void;
-}
-
-interface CanvasStateSnapshot {
-  cards: CanvasCardType[];
-  notes: PostItNote[];
 }
 
 interface WindowWithCanvasCard extends Window {
@@ -81,114 +78,101 @@ export function CanvasBoard({
   onZoomChange,
 }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
-  const [cards, setCards] = useState<CanvasCardType[]>([]);
-  const [notes, setNotes] = useState<PostItNote[]>([]);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const cards = useCanvasStore((state) => state.cards);
+  const notes = useCanvasStore((state) => state.notes);
+  const selectedCardId = useCanvasStore((state) => state.selectedCardId);
+  const selectedNoteId = useCanvasStore((state) => state.selectedNoteId);
+  const displayScale = useCanvasStore((state) => state.displayScale);
+  const stagePosition = useCanvasStore((state) => state.stagePosition);
+  const currentGender = useCanvasStore((state) => state.gender);
+  const isHydrated = useCanvasStore((state) => state.isHydrated);
+  const lastSavedVersion = useCanvasStore((state) => state.lastSavedVersion);
+
+  const storeActionsRef = useRef(canvasStore.getState());
+  const {
+    addCard,
+    updateCard,
+    removeCard,
+    addNote,
+    updateNote,
+    removeNote,
+    bringNoteToFront,
+    clearCanvas,
+    bringCardToFront,
+    selectCard,
+    selectNote,
+    setDisplayScale,
+    setStagePosition,
+    setZoomLevel,
+    setGender,
+    saveHistorySnapshot,
+    undo,
+    redo,
+    markDirty,
+  } = storeActionsRef.current;
+
+  const { publish } = useCanvasRealtime({
+    sessionId: sessionId ?? undefined,
+    enabled: Boolean(sessionId),
+  });
+
+  const showLoading = Boolean(sessionId) && !isHydrated;
+
+  useEffect(() => {
+    if (!isHydrated) {
+      lastBroadcastVersionRef.current = lastSavedVersion ?? 0;
+    }
+  }, [isHydrated, lastSavedVersion]);
+
+  useEffect(() => {
+    if (!sessionId || !isHydrated) return;
+    if (typeof lastSavedVersion !== 'number' || lastSavedVersion <= 0) {
+      return;
+    }
+    if (lastSavedVersion === lastBroadcastVersionRef.current) {
+      return;
+    }
+
+    const snapshot = buildSerializableCanvasState();
+    void publish(
+      'state.snapshot',
+      {
+        state: snapshot,
+        origin: 'autosave',
+      },
+      { version: lastSavedVersion }
+    );
+    lastBroadcastVersionRef.current = lastSavedVersion;
+  }, [isHydrated, lastSavedVersion, publish, sessionId]);
+
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
-  const [displayScale, setDisplayScale] = useState(scale);
-  const [currentGender, setCurrentGender] = useState<Gender>(gender);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [showAddToFrequentlyUsedDialog, setShowAddToFrequentlyUsedDialog] = useState(false);
-  const [cardToAddToFrequentlyUsed, setCardToAddToFrequentlyUsed] = useState<CanvasCardType | null>(null);
+  const [cardToAddToFrequentlyUsed, setCardToAddToFrequentlyUsed] =
+    useState<CanvasCardType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevScaleRef = useRef<number>(scale);
-  const stagePositionRef = useRef({ x: 0, y: 0 });
+  const stagePositionRef = useRef(stagePosition);
   const panStageStartRef = useRef({ x: 0, y: 0 });
   const panPointerStartRef = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const hasCenteredRef = useRef(false);
   const didPanRef = useRef(false);
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const patientZoomRef = useRef<number>(100);
-  const therapistZoomRef = useRef<number>(100);
-  const therapistNotesRef = useRef<string | undefined>(undefined);
-  const historyRef = useRef<CanvasStateSnapshot[]>([]);
-  const historyIndexRef = useRef<number>(-1);
-  const isUndoRedoRef = useRef<boolean>(false);
   const dragDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const cardsRef = useRef<CanvasCardType[]>([]);
-  const notesRef = useRef<PostItNote[]>([]);
-  const MAX_HISTORY_SIZE = 50;
+  const lastBroadcastVersionRef = useRef<number>(lastSavedVersion ?? 0);
 
-  // Keep refs in sync with state
-  useEffect(() => {
-    cardsRef.current = cards;
-  }, [cards]);
-
-  useEffect(() => {
-    notesRef.current = notes;
-  }, [notes]);
-
-  // Save current state to history
-  const saveToHistory = useCallback(() => {
-    if (isUndoRedoRef.current) return; // Don't save during undo/redo operations
-
-    const snapshot: CanvasStateSnapshot = {
-      cards: cardsRef.current.map(card => ({ ...card })),
-      notes: notesRef.current.map(note => ({ ...note })),
-    };
-
-    // Remove any history after current index (when user did new action after undo)
-    const currentIndex = historyIndexRef.current;
-    if (currentIndex < historyRef.current.length - 1) {
-      historyRef.current = historyRef.current.slice(0, currentIndex + 1);
-    }
-
-    // Add new snapshot
-    historyRef.current.push(snapshot);
-    historyIndexRef.current = historyRef.current.length - 1;
-
-    // Limit history size
-    if (historyRef.current.length > MAX_HISTORY_SIZE) {
-      historyRef.current.shift();
-      historyIndexRef.current = historyRef.current.length - 1;
-    }
-  }, []);
-
-  // Restore state from history
-  const restoreFromHistory = useCallback((snapshot: CanvasStateSnapshot) => {
-    isUndoRedoRef.current = true;
-    setCards(snapshot.cards.map(card => ({ ...card })));
-    setNotes(snapshot.notes.map(note => ({ ...note })));
-    setSelectedCardId(null);
-    setSelectedNoteId(null);
-    
-    // Reset flag after state update
-    setTimeout(() => {
-      isUndoRedoRef.current = false;
-    }, 0);
-  }, []);
-
-  // Undo function
   const handleUndo = useCallback(() => {
-    if (historyIndexRef.current > 0) {
-      historyIndexRef.current--;
-      const snapshot = historyRef.current[historyIndexRef.current];
-      if (snapshot) {
-        restoreFromHistory(snapshot);
-      }
-    }
-  }, [restoreFromHistory]);
+    undo();
+  }, [undo]);
 
-  // Redo function
   const handleRedo = useCallback(() => {
-    if (historyIndexRef.current < historyRef.current.length - 1) {
-      historyIndexRef.current++;
-      const snapshot = historyRef.current[historyIndexRef.current];
-      if (snapshot) {
-        restoreFromHistory(snapshot);
-      }
-    }
-  }, [restoreFromHistory]);
+    redo();
+  }, [redo]);
 
   // Update gender state when prop changes
   useEffect(() => {
-    setCurrentGender(gender);
-  }, [gender]);
+    setGender(gender);
+  }, [gender, setGender]);
 
   // Initialize prevScaleRef on mount
   useEffect(() => {
@@ -196,11 +180,11 @@ export function CanvasBoard({
     setDisplayScale(scale);
     // Update zoom refs based on user role
     if (userRole === 'patient') {
-      patientZoomRef.current = scale * 100;
+      setZoomLevel('patient', scale * 100);
     } else if (userRole === 'therapist') {
-      therapistZoomRef.current = scale * 100;
+      setZoomLevel('therapist', scale * 100);
     }
-  }, [scale, userRole]);
+  }, [scale, setDisplayScale, setZoomLevel, userRole]);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -210,108 +194,6 @@ export function CanvasBoard({
   useEffect(() => {
     hasCenteredRef.current = false;
   }, [sessionId]);
-
-  // Load session data when sessionId changes
-  useEffect(() => {
-    if (!sessionId) {
-      setIsInitialized(true);
-      return;
-    }
-
-    const loadSession = async () => {
-      setIsLoadingSession(true);
-      try {
-        const response = await fetch(`/api/sessions/${sessionId}`);
-        if (!response.ok) {
-          throw new Error('Failed to load session');
-        }
-        const data = await response.json();
-        const session = data.session;
-
-        if (session?.data) {
-          const { cards: loadedCards, gender: loadedGender, patientZoomLevel, therapistZoomLevel, therapistNotes } = 
-            deserializeCanvasState(session.data);
-
-          // Set cards immediately so they can start rendering
-          setCards(loadedCards);
-          setCurrentGender(loadedGender);
-          patientZoomRef.current = patientZoomLevel;
-          therapistZoomRef.current = therapistZoomLevel;
-          therapistNotesRef.current = therapistNotes;
-
-          // Reset history when loading a session - initialize with loaded state
-          const initialSnapshot: CanvasStateSnapshot = {
-            cards: loadedCards.map(card => ({ ...card })),
-            notes: [],
-          };
-          historyRef.current = [initialSnapshot];
-          historyIndexRef.current = 0;
-
-          // Set zoom level based on user role
-          let zoomToSet: number;
-          if (userRole === 'patient') {
-            zoomToSet = patientZoomLevel;
-            setDisplayScale(patientZoomLevel / 100);
-            prevScaleRef.current = patientZoomLevel / 100;
-          } else if (userRole === 'therapist') {
-            zoomToSet = therapistZoomLevel;
-            setDisplayScale(therapistZoomLevel / 100);
-            prevScaleRef.current = therapistZoomLevel / 100;
-          } else {
-            zoomToSet = 100;
-          }
-
-          // Notify parent of zoom change
-          if (onZoomChange && zoomToSet) {
-            onZoomChange(zoomToSet);
-          }
-
-          // Extract image URLs from cards on canvas and preload them (priority)
-          // This happens after setting cards so canvas renders immediately
-          const canvasImageUrls = loadedCards
-            .map(card => card.imageUrl)
-            .filter((url): url is string => !!url);
-
-          // Preload canvas images in the background (don't await - let them load while canvas renders)
-          // Browser will prioritize these requests over other requests
-          preloadImagesWithPriority(canvasImageUrls).catch(() => {
-            // Ignore errors - images will load naturally when CanvasCard components request them
-          });
-        }
-      } catch (error) {
-        console.error('Error loading session:', error);
-        toast.error('Failed to load session');
-        setIsLoadingSession(false);
-        setIsInitialized(true);
-      } finally {
-        setIsLoadingSession(false);
-        // Set initialized after loading
-        setTimeout(() => {
-          setIsInitialized(true);
-        }, 500);
-      }
-    };
-
-    loadSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, userRole]);
-
-  // Set initialized after a short delay to show loading screen (if no session to load)
-  useEffect(() => {
-    if (!sessionId && !isLoadingSession) {
-      const timer = setTimeout(() => {
-        setIsInitialized(true);
-        // Initialize history with empty state
-        const initialSnapshot: CanvasStateSnapshot = {
-          cards: [],
-          notes: [],
-        };
-        historyRef.current = [initialSnapshot];
-        historyIndexRef.current = 0;
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [sessionId, isLoadingSession]);
 
   // Monitor console errors for Konva/Brave shield issues
   useEffect(() => {
@@ -408,10 +290,19 @@ export function CanvasBoard({
       y: dimensions.height / 2,
     };
 
+    if (
+      stagePosition &&
+      Math.abs(stagePosition.x - centeredPosition.x) < 0.5 &&
+      Math.abs(stagePosition.y - centeredPosition.y) < 0.5
+    ) {
+      hasCenteredRef.current = true;
+      return;
+    }
+
     setStagePosition(centeredPosition);
     stagePositionRef.current = centeredPosition;
     hasCenteredRef.current = true;
-  }, [dimensions.width, dimensions.height, sessionId]);
+  }, [dimensions.width, dimensions.height, sessionId, stagePosition, setStagePosition]);
 
   // Handle zoom centering on selected card or viewport center
   useEffect(() => {
@@ -472,7 +363,7 @@ export function CanvasBoard({
         rafRef.current = null;
       }
     };
-  }, [scale, selectedCardId, cards, dimensions.width, dimensions.height]);
+  }, [scale, selectedCardId, cards, dimensions.width, dimensions.height, setDisplayScale, setStagePosition]);
 
   // Add card functionality - exposed via global method
   useEffect(() => {
@@ -520,14 +411,16 @@ export function CanvasBoard({
         gender: currentGender,
       };
 
-      setCards((prev) => {
-        const newCards = [...prev, newCard];
-        // Save to history after state update
-        setTimeout(() => saveToHistory(), 0);
-        return newCards;
-      });
-      // Don't auto-select newly spawned cards
-      // TODO: Supabase Realtime - broadcast card creation event
+      addCard(newCard);
+      markDirty('interaction');
+
+      if (newCard.imageUrl) {
+        preloadImagesWithPriority([newCard.imageUrl]).catch(() => undefined);
+      }
+
+      if (sessionId) {
+        void publish('card.add', { card: newCard });
+      }
     };
 
     // Expose method globally for parent to call
@@ -537,18 +430,32 @@ export function CanvasBoard({
     return () => {
       delete win._addCanvasCard;
     };
-  }, [cards.length, currentGender, dimensions.width, dimensions.height, displayScale, t, saveToHistory]);
+  }, [
+    addCard,
+    cards.length,
+    currentGender,
+    dimensions.height,
+    dimensions.width,
+    displayScale,
+    markDirty,
+    publish,
+    sessionId,
+    t,
+  ]);
 
   // Clear canvas functionality - exposed via global method
   useEffect(() => {
     const handleClearCanvas = () => {
-      // Save current state before clearing
-      saveToHistory();
-      setCards([]);
-      setNotes([]);
-      setSelectedCardId(null);
-      setSelectedNoteId(null);
-      // TODO: Supabase Realtime - broadcast canvas clear event
+      clearCanvas();
+      markDirty('interaction');
+
+      if (sessionId) {
+        const snapshot = buildSerializableCanvasState();
+        void publish('state.snapshot', {
+          state: snapshot,
+          origin: 'manual',
+        });
+      }
     };
 
     // Expose method globally for parent to call
@@ -558,7 +465,7 @@ export function CanvasBoard({
     return () => {
       delete win._clearCanvas;
     };
-  }, [saveToHistory]);
+  }, [clearCanvas, markDirty, publish, sessionId]);
 
   // Expose undo/redo functions via window object
   useEffect(() => {
@@ -572,79 +479,102 @@ export function CanvasBoard({
     };
   }, [handleUndo, handleRedo]);
 
-  const handleCardDragEnd = useCallback((id: string, x: number, y: number) => {
-    setCards((prev) => {
-      const updated = prev.map((card) => (card.id === id ? { ...card, x, y } : card));
-      // Debounce history save for drag operations to avoid too many snapshots
+  const handleCardDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      updateCard(id, { x, y }, { skipHistory: true });
+
       if (dragDebounceTimerRef.current) {
         clearTimeout(dragDebounceTimerRef.current);
       }
       dragDebounceTimerRef.current = setTimeout(() => {
-        saveToHistory();
+        saveHistorySnapshot();
       }, 300);
-      return updated;
-    });
-    // TODO: Supabase Realtime - broadcast card position update event
-  }, [saveToHistory]);
 
-  const handleCardDelete = useCallback((id: string) => {
-    setCards((prev) => {
-      const updated = prev.filter((card) => card.id !== id);
-      // Save to history after state update
-      setTimeout(() => saveToHistory(), 0);
-      return updated;
-    });
-    if (selectedCardId === id) {
-      setSelectedCardId(null);
-    }
-    // TODO: Supabase Realtime - broadcast card deletion event
-  }, [selectedCardId, saveToHistory]);
+      markDirty('interaction');
 
-  const handleCardLockToggle = useCallback((id: string) => {
-    setCards((prev) => {
-      const updated = prev.map((card) => 
-        card.id === id ? { ...card, locked: !card.locked } : card
-      );
-      // Save to history after state update
-      setTimeout(() => saveToHistory(), 0);
-      return updated;
-    });
-    // TODO: Supabase Realtime - broadcast card lock update event
-  }, [saveToHistory]);
+      if (sessionId) {
+        void publish('card.patch', {
+          id,
+          patch: { x, y },
+        });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
+  );
 
-  const handleCardSizeChange = useCallback((id: string, width: number, height: number) => {
-    setCards((prev) => {
-      const updated = prev.map((card) => 
-        card.id === id ? { ...card, width, height } : card
-      );
-      // Debounce history save for resize operations
+  const handleCardDelete = useCallback(
+    (id: string) => {
+      removeCard(id);
+      if (selectedCardId === id) {
+        selectCard(null);
+      }
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('card.remove', { id });
+      }
+    },
+    [markDirty, publish, removeCard, selectCard, selectedCardId, sessionId]
+  );
+
+  const handleCardLockToggle = useCallback(
+    (id: string) => {
+      const card = canvasStore.getState().cards.find((c) => c.id === id);
+      if (!card) {
+        return;
+      }
+
+      const locked = !(card.locked ?? false);
+      updateCard(id, { locked });
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('card.patch', { id, patch: { locked } });
+      }
+    },
+    [markDirty, publish, sessionId, updateCard]
+  );
+
+  const handleCardSizeChange = useCallback(
+    (id: string, width: number, height: number) => {
+      updateCard(id, { width, height }, { skipHistory: true });
+
       if (dragDebounceTimerRef.current) {
         clearTimeout(dragDebounceTimerRef.current);
       }
       dragDebounceTimerRef.current = setTimeout(() => {
-        saveToHistory();
+        saveHistorySnapshot();
       }, 300);
-      return updated;
-    });
-    // TODO: Supabase Realtime - broadcast card size update event
-  }, [saveToHistory]);
 
-  const handleCardRotationChange = useCallback((id: string, rotation: number) => {
-    setCards((prev) => {
-      const updated = prev.map((card) => 
-        card.id === id ? { ...card, rotation } : card
-      );
-      // Debounce history save for rotation operations
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('card.patch', { id, patch: { width, height } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
+  );
+
+  const handleCardRotationChange = useCallback(
+    (id: string, rotation: number) => {
+      updateCard(id, { rotation }, { skipHistory: true });
+
       if (dragDebounceTimerRef.current) {
         clearTimeout(dragDebounceTimerRef.current);
       }
       dragDebounceTimerRef.current = setTimeout(() => {
-        saveToHistory();
+        saveHistorySnapshot();
       }, 300);
-      return updated;
-    });
-    // TODO: Supabase Realtime - broadcast card rotation update event
-  }, [saveToHistory]);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('card.patch', { id, patch: { rotation } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
+  );
 
   const handleAddToSavedCards = useCallback((id: string) => {
     const card = cards.find((c) => c.id === id);
@@ -669,20 +599,13 @@ export function CanvasBoard({
     }
   }, [cardToAddToFrequentlyUsed, t]);
 
-  const handleCardSelect = useCallback((id: string) => {
-    setSelectedCardId(id);
-    
-    // Bring selected card to front by moving it to end of array
-    setCards((prev) => {
-      const cardIndex = prev.findIndex((card) => card.id === id);
-      if (cardIndex === -1 || cardIndex === prev.length - 1) return prev;
-      
-      const newCards = [...prev];
-      const [selectedCard] = newCards.splice(cardIndex, 1);
-      newCards.push(selectedCard);
-      return newCards;
-    });
-  }, []);
+  const handleCardSelect = useCallback(
+    (id: string) => {
+      selectCard(id);
+      bringCardToFront(id, { skipHistory: true });
+    },
+    [bringCardToFront, selectCard]
+  );
 
   const stopCanvasPan = useCallback(() => {
     if (!isPanningRef.current) return;
@@ -718,7 +641,7 @@ export function CanvasBoard({
 
     setStagePosition(newPosition);
     stagePositionRef.current = newPosition;
-  }, []);
+  }, [setStagePosition]);
 
   const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     if (e.target !== e.target.getStage()) return;
@@ -797,57 +720,58 @@ export function CanvasBoard({
     }
     const zoomPercent = newScale * 100;
     if (userRole === 'patient') {
-      patientZoomRef.current = zoomPercent;
+      setZoomLevel('patient', zoomPercent);
     } else if (userRole === 'therapist') {
-      therapistZoomRef.current = zoomPercent;
+      setZoomLevel('therapist', zoomPercent);
     }
-  }, [displayScale, dimensions.width, dimensions.height, onZoomChange, userRole]);
+  }, [displayScale, dimensions.width, dimensions.height, onZoomChange, setStagePosition, setDisplayScale, setZoomLevel, userRole]);
 
-  const handleStageClick = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    if (didPanRef.current) {
-      didPanRef.current = false;
-      return;
-    }
-    const stage = e.target.getStage();
-    if (!stage) return;
-    
-    // Handle text tool - create new post-it note
-    if (toolMode === 'text' && e.target === stage) {
-      const pointerPos = stage.getPointerPosition();
-      if (!pointerPos) return;
-      const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
-      const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
-      
-      const noteWidth = 142;
-      const noteHeight = 100; // Initial height, will adjust with content
-      
-      const newNote: PostItNote = {
-        id: Date.now().toString(),
-        x: stageX - noteWidth / 2, // Center at click position
-        y: stageY - noteHeight / 2,
-        text: '',
-        width: noteWidth,
-        height: noteHeight,
-        isEditing: true,
-      };
-      
-      setNotes((prev) => {
-        const updated = [...prev, newNote];
-        // Save to history after state update
-        setTimeout(() => saveToHistory(), 0);
-        return updated;
-      });
-      setSelectedNoteId(newNote.id);
-      setSelectedCardId(null);
-      return;
-    }
-    
-    // Deselect when clicking on empty canvas
-    if (e.target === stage) {
-      setSelectedCardId(null);
-      setSelectedNoteId(null);
-    }
-  }, [toolMode, displayScale, saveToHistory]);
+  const handleStageClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (didPanRef.current) {
+        didPanRef.current = false;
+        return;
+      }
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      if (toolMode === 'text' && e.target === stage) {
+        const pointerPos = stage.getPointerPosition();
+        if (!pointerPos) return;
+        const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
+        const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
+
+        const noteWidth = 142;
+        const noteHeight = 100;
+
+        const newNote: PostItNote = {
+          id: Date.now().toString(),
+          x: stageX - noteWidth / 2,
+          y: stageY - noteHeight / 2,
+          text: '',
+          width: noteWidth,
+          height: noteHeight,
+          isEditing: true,
+        };
+
+        addNote(newNote);
+        selectNote(newNote.id);
+        selectCard(null);
+        markDirty('interaction');
+
+        if (sessionId) {
+          void publish('note.add', { note: newNote });
+        }
+        return;
+      }
+
+      if (e.target === stage) {
+        selectCard(null);
+        selectNote(null);
+      }
+    },
+    [addNote, displayScale, markDirty, publish, selectCard, selectNote, sessionId, toolMode]
+  );
 
   useEffect(() => {
     const handleWindowMouseUp = () => stopCanvasPan();
@@ -864,165 +788,81 @@ export function CanvasBoard({
     };
   }, [stopCanvasPan]);
 
-  const handleNoteSelect = useCallback((id: string) => {
-    setSelectedNoteId(id);
-    setSelectedCardId(null);
-    
-    // Bring selected note to front
-    setNotes((prev) => {
-      const noteIndex = prev.findIndex((note) => note.id === id);
-      if (noteIndex === -1 || noteIndex === prev.length - 1) return prev;
-      
-      const newNotes = [...prev];
-      const [selectedNote] = newNotes.splice(noteIndex, 1);
-      newNotes.push(selectedNote);
-      return newNotes;
-    });
-  }, []);
+  const handleNoteSelect = useCallback(
+    (id: string) => {
+      selectNote(id);
+      selectCard(null);
+      bringNoteToFront(id, { skipHistory: true });
+    },
+    [bringNoteToFront, selectCard, selectNote]
+  );
 
-  const handleNoteDragEnd = useCallback((id: string, x: number, y: number) => {
-    setNotes((prev) => {
-      const updated = prev.map((note) => (note.id === id ? { ...note, x, y } : note));
-      // Debounce history save for drag operations
+  const handleNoteDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      updateNote(id, { x, y }, { skipHistory: true });
+
       if (dragDebounceTimerRef.current) {
         clearTimeout(dragDebounceTimerRef.current);
       }
       dragDebounceTimerRef.current = setTimeout(() => {
-        saveToHistory();
+        saveHistorySnapshot();
       }, 300);
-      return updated;
-    });
-  }, [saveToHistory]);
 
-  const handleNoteTextChange = useCallback((id: string, text: string) => {
-    setNotes((prev) => {
-      const updated = prev.map((note) => (note.id === id ? { ...note, text } : note));
-      // Debounce history save for text changes
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('note.patch', { id, patch: { x, y } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
+  );
+
+  const handleNoteTextChange = useCallback(
+    (id: string, text: string) => {
+      updateNote(id, { text }, { skipHistory: true });
+
       if (dragDebounceTimerRef.current) {
         clearTimeout(dragDebounceTimerRef.current);
       }
       dragDebounceTimerRef.current = setTimeout(() => {
-        saveToHistory();
+        saveHistorySnapshot();
       }, 500);
-      return updated;
-    });
-  }, [saveToHistory]);
 
-  const handleNoteEditStateChange = useCallback((id: string, isEditing: boolean) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, isEditing } : note))
-    );
-  }, []);
+      markDirty('interaction');
 
-  const handleNoteSizeChange = useCallback((id: string, width: number, height: number) => {
-    setNotes((prev) => {
-      const updated = prev.map((note) => (note.id === id ? { ...note, width, height } : note));
-      // Debounce history save for resize operations
+      if (sessionId) {
+        void publish('note.patch', { id, patch: { text } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
+  );
+
+  const handleNoteEditStateChange = useCallback(
+    (id: string, isEditing: boolean) => {
+      updateNote(id, { isEditing }, { skipHistory: true });
+    },
+    [updateNote]
+  );
+
+  const handleNoteSizeChange = useCallback(
+    (id: string, width: number, height: number) => {
+      updateNote(id, { width, height }, { skipHistory: true });
+
       if (dragDebounceTimerRef.current) {
         clearTimeout(dragDebounceTimerRef.current);
       }
       dragDebounceTimerRef.current = setTimeout(() => {
-        saveToHistory();
+        saveHistorySnapshot();
       }, 300);
-      return updated;
-    });
-  }, [saveToHistory]);
 
-  // Auto-save every 5 seconds
-  useEffect(() => {
-    if (!sessionId) return;
+      markDirty('interaction');
 
-    const saveSession = async () => {
-      try {
-        const currentZoom = displayScale * 100;
-        // Update zoom refs based on user role
-        if (userRole === 'patient') {
-          patientZoomRef.current = currentZoom;
-        } else if (userRole === 'therapist') {
-          therapistZoomRef.current = currentZoom;
-        }
-
-        const canvasState = serializeCanvasState(
-          cards,
-          currentGender,
-          patientZoomRef.current,
-          therapistZoomRef.current,
-          therapistNotesRef.current
-        );
-
-        const response = await fetch(`/api/sessions/${sessionId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ data: canvasState }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('Auto-save session error:', errorData);
-          throw new Error(errorData.error || 'Failed to save session');
-        }
-      } catch (error) {
-        console.error('Error auto-saving session:', error);
-        // Don't show toast for auto-save errors to avoid spam
+      if (sessionId) {
+        void publish('note.patch', { id, patch: { width, height } });
       }
-    };
-
-    autoSaveIntervalRef.current = setInterval(saveSession, 5000);
-
-    return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-      }
-    };
-  }, [sessionId, cards, currentGender, displayScale, userRole]);
-
-  // Expose manual save function via window object for parent to call
-  useEffect(() => {
-    const manualSave = async () => {
-      if (!sessionId) {
-        throw new Error('No session to save');
-      }
-
-      const currentZoom = displayScale * 100;
-      // Update zoom refs based on user role
-      if (userRole === 'patient') {
-        patientZoomRef.current = currentZoom;
-      } else if (userRole === 'therapist') {
-        therapistZoomRef.current = currentZoom;
-      }
-
-      const canvasState = serializeCanvasState(
-        cards,
-        currentGender,
-        patientZoomRef.current,
-        therapistZoomRef.current
-      );
-
-      const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: canvasState }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Save session error:', errorData);
-        throw new Error(errorData.error || 'Failed to save session');
-      }
-    };
-
-    // Store the function so parent can access it
-    const win = window as WindowWithCanvasCard;
-    win._manualSaveCanvas = manualSave;
-
-    return () => {
-      delete win._manualSaveCanvas;
-    };
-  }, [sessionId, cards, currentGender, displayScale, userRole]);
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
+  );
 
   // Delete selected note on Delete/Backspace key (but not cards)
   useEffect(() => {
@@ -1034,19 +874,27 @@ export function CanvasBoard({
         if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
           return;
         }
-        setNotes((prev) => {
-          const updated = prev.filter((note) => note.id !== selectedNoteId);
-          // Save to history after state update
-          setTimeout(() => saveToHistory(), 0);
-          return updated;
-        });
-        setSelectedNoteId(null);
+        removeNote(selectedNoteId);
+        selectNote(null);
+        markDirty('interaction');
+
+        if (sessionId) {
+          void publish('note.remove', { id: selectedNoteId });
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCardId, selectedNoteId, cards, saveToHistory]);
+  }, [
+    markDirty,
+    publish,
+    removeNote,
+    selectedCardId,
+    selectedNoteId,
+    selectNote,
+    sessionId,
+  ]);
 
   return (
     <div 
@@ -1060,8 +908,8 @@ export function CanvasBoard({
         backgroundSize: '32px 32px',
       }}
     >
-      {(!isInitialized || isLoadingSession) && <CanvasLoading />}
-      {isInitialized && dimensions.width > 0 && (
+      {showLoading && <CanvasLoading />}
+      {!showLoading && dimensions.width > 0 && (
         <Stage
           width={dimensions.width}
           height={dimensions.height}

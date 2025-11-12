@@ -153,6 +153,7 @@ export async function POST(
     // Initialize empty canvas state
     const emptyState: CanvasState = {
       cards: [],
+      notes: [],
       gender: 'male',
       patientSettings: {
         zoomLevel: 100,
@@ -160,6 +161,8 @@ export async function POST(
       therapistSettings: {
         zoomLevel: 100,
       },
+      version: 0,
+      updatedAt: new Date().toISOString(),
     };
 
     // Create session - handle name and type columns gracefully
