@@ -22,8 +22,19 @@ type CreateSessionResponse = {
  * Patients see their own sessions
  * Therapists see sessions for their patients
  */
-export async function GET(): Promise<NextResponse<GetSessionsResponse | ErrorResponse>> {
+export async function GET(
+  request: NextRequest
+): Promise<NextResponse<GetSessionsResponse | ErrorResponse>> {
   try {
+    const { searchParams } = new URL(request.url);
+    const requestedType = searchParams.get('type')?.trim() || null;
+    const limitParam = searchParams.get('limit');
+    const parsedLimit = limitParam ? Number.parseInt(limitParam, 10) : undefined;
+    const limit =
+      parsedLimit && Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : undefined;
+
     // Check authorization
     const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
     
@@ -43,14 +54,25 @@ export async function GET(): Promise<NextResponse<GetSessionsResponse | ErrorRes
       .order('updated_at', { ascending: false });
 
     if (profile.role === 'patient') {
-      // Patients see their own sessions
-      query = query.eq('patient_id', profile.id);
+      // Patients see their own therapy sessions only
+      query = query.eq('patient_id', profile.id).eq('type', 'session');
     } else if (profile.role === 'therapist') {
       // Therapists see sessions where they are the therapist
       // This includes sessions with patients AND playground sessions (no patient)
       query = query.eq('therapist_id', profile.id);
+
+      if (requestedType) {
+        query = query.eq('type', requestedType);
+      }
+    } else if (requestedType) {
+      // Admin filtering by type when requested
+      query = query.eq('type', requestedType);
     }
-    // Admins can see all sessions (no filter)
+    // Admins can see all sessions (no filter otherwise)
+
+    if (limit) {
+      query = query.limit(limit);
+    }
 
     const { data: sessions, error } = await query;
 

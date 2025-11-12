@@ -67,11 +67,11 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   const getDisplayName = () => {
-    if (profile?.full_name) {
-      return profile.full_name;
-    }
     if (profile?.first_name) {
       return profile.first_name;
+    }
+    if (profile?.full_name) {
+      return profile.full_name;
     }
     return profile?.email || 'User';
   };

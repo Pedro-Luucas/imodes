@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useRouter } from '@/i18n/navigation';
 import { useAuthProfile } from '@/stores/authStore';
-import { useTherapistActions } from '@/stores/therapistStore';
+import { useCurrentTherapist, useTherapistActions } from '@/stores/therapistStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -16,18 +17,7 @@ import {
   Timer,
   Loader2 
 } from 'lucide-react';
-
-// Mock data types
-interface Session {
-  id: string;
-  title: string;
-  therapist: string;
-  date: string;
-  schedule?: string;
-  duration?: string;
-  status: 'upcoming' | 'completed';
-  icon: 'smile' | 'wrench';
-}
+import type { CanvasSession } from '@/types/canvas';
 
 interface Assignment {
   id: string;
@@ -41,39 +31,13 @@ export default function DashboardPatientPage() {
   usePageMetadata('Patient Dashboard', 'View your therapy sessions, assignments, and progress.');
   const router = useRouter();
   const profile = useAuthProfile();
+  const currentTherapist = useCurrentTherapist();
   const { getPatientTherapist } = useTherapistActions();
+  const t = useTranslations('dashboardPatient');
   const [loading, setLoading] = useState(true);
-
-  // Mock data - replace with real API calls later
-  const [sessions] = useState<Session[]>([
-    {
-      id: '1',
-      title: 'Progress Review Session',
-      therapist: 'Dr. Sarah Johnson',
-      date: 'Dec 22, 2025',
-      schedule: '2:00 PM - 2:50 PM',
-      status: 'upcoming',
-      icon: 'smile',
-    },
-    {
-      id: '2',
-      title: 'Cognitive Behavioral Therapy',
-      therapist: 'Dr. Sarah Johnson',
-      date: 'Dec 22, 2025',
-      duration: '50m',
-      status: 'completed',
-      icon: 'wrench',
-    },
-    {
-      id: '3',
-      title: 'Cognitive Behavioral Therapy',
-      therapist: 'Dr. Sarah Johnson',
-      date: 'Dec 22, 2025',
-      duration: '50m',
-      status: 'completed',
-      icon: 'wrench',
-    },
-  ]);
+  const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
 
   const [assignments] = useState<Assignment[]>([
     {
@@ -123,19 +87,68 @@ export default function DashboardPatientPage() {
     checkTherapist();
   }, [profile, getPatientTherapist, router]);
 
-  const getSessionIcon = (icon: string) => {
-    switch (icon) {
-      case 'smile':
-        return Smile;
-      case 'wrench':
+  const fetchSessions = useCallback(async () => {
+    if (loading) {
+      return;
+    }
+
+    const profileId = profile?.id;
+    const profileRole = profile?.role;
+
+    if (!profileId || profileRole !== 'patient') {
+      setSessions([]);
+      setSessionsLoading(false);
+      return;
+    }
+
+    try {
+      setSessionsLoading(true);
+      setSessionsError(null);
+      const response = await fetch('/api/sessions?limit=3', {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || t('sessionsError'));
+      }
+
+      const data = await response.json();
+      setSessions(
+        Array.isArray(data.sessions)
+          ? (data.sessions as Omit<CanvasSession, 'data'>[])
+          : []
+      );
+    } catch (error) {
+      console.error('Error fetching recent sessions:', error);
+      setSessions([]);
+      setSessionsError(
+        error instanceof Error ? error.message : t('sessionsError')
+      );
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, [loading, profile?.id, profile?.role, t]);
+
+  useEffect(() => {
+    void fetchSessions();
+  }, [fetchSessions]);
+
+  const getSessionIcon = (type?: string | null) => {
+    switch (type) {
+      case 'playground':
         return Wrench;
+      case 'session':
       default:
         return Smile;
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (status?: string | null) => {
+    const normalized = status?.toLowerCase();
+
+    switch (normalized) {
+      case 'active':
       case 'upcoming':
         return 'bg-sky-50 text-sky-600 border-transparent';
       case 'in-progress':
@@ -143,24 +156,48 @@ export default function DashboardPatientPage() {
       case 'completed':
         return 'bg-neutral-200 text-muted-foreground border-transparent';
       case 'overdue':
+      case 'archived':
         return 'bg-red-50 text-red-500 border-transparent';
       default:
         return 'bg-neutral-200 text-muted-foreground border-transparent';
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
+  const getStatusLabel = (status?: string | null) => {
+    if (!status) {
+      return t('unknownStatus');
+    }
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        return t('activeStatus');
       case 'upcoming':
-        return 'Upcoming';
+        return t('upcoming');
       case 'in-progress':
-        return 'In Progress';
+        return t('inProgress');
       case 'completed':
-        return 'Completed';
+        return t('completed');
       case 'overdue':
-        return 'Overdue';
+        return t('overdue');
+      case 'archived':
+        return t('archivedStatus');
       default:
         return status;
+    }
+  };
+
+  const formatDateTime = (isoDate?: string | null) => {
+    if (!isoDate) {
+      return 'Date unavailable';
+    }
+
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(isoDate));
+    } catch {
+      return isoDate;
     }
   };
 
@@ -183,16 +220,16 @@ export default function DashboardPatientPage() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-2">
             <h1 className="text-xl font-medium text-foreground">
-              Welcome back, {profile.first_name}!
+              {t('welcome', { firstName: profile.first_name || profile.full_name || 'Paciente' })}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Heres your therapy progress overview
+              {t('progressOverview')}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <span className="text-4xl font-bold text-orange-400">12</span>
             <p className="text-sm text-muted-foreground">
-              Heres your therapy progress overview
+              {t('progressOverview')}
             </p>
           </div>
         </div>
@@ -207,7 +244,7 @@ export default function DashboardPatientPage() {
               <Calendar className="w-6 h-6 text-stone-600" />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-base font-medium text-foreground">Next Session</h3>
+              <h3 className="text-base font-medium text-foreground">{t('nextSession')}</h3>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
                 <span>Dec 22, 2025</span>
@@ -223,10 +260,10 @@ export default function DashboardPatientPage() {
               <PencilLine className="w-6 h-6 text-stone-600" />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-base font-medium text-foreground">Active Assignment</h3>
+              <h3 className="text-base font-medium text-foreground">{t('activeAssignment')}</h3>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                <span>3 pending</span>
+                <span>3 {t('pending')}</span>
               </div>
             </div>
           </div>
@@ -239,10 +276,10 @@ export default function DashboardPatientPage() {
               <Clock className="w-6 h-6 text-stone-600" />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-base font-medium text-foreground">Days Since Last Session</h3>
+              <h3 className="text-base font-medium text-foreground">{t('daysSinceLastSession')}</h3>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                <span>3 days</span>
+                <span>3 {t('days')}</span>
               </div>
             </div>
           </div>
@@ -256,57 +293,87 @@ export default function DashboardPatientPage() {
           <div className="flex flex-col gap-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">Recent Sessions</h2>
-              <button className="text-sm text-sky-600 hover:underline">View all</button>
+              <h2 className="text-xl font-semibold text-foreground">{t('recentSessions')}</h2>
+              <button
+                className="text-sm text-sky-600 hover:underline"
+                onClick={() => router.push('/dashboard-patient/sessions')}
+              >
+                {t('viewAll')}
+              </button>
             </div>
 
             {/* Sessions List */}
             <div className="flex flex-col gap-2 flex-1">
-              {sessions.map((session) => {
-                const Icon = getSessionIcon(session.icon);
-                const bgColor = session.icon === 'smile' ? 'bg-sky-50' : 'bg-yellow-50';
-                const iconColor = session.icon === 'smile' ? 'text-sky-600' : 'text-yellow-600';
+              {sessionsLoading ? (
+                <div className="flex flex-1 items-center justify-center py-6 text-sm text-muted-foreground">
+                  {t('loadingSessions')}
+                </div>
+              ) : sessionsError ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-6 text-center text-sm text-muted-foreground">
+                  <span>{t('sessionsError')}</span>
+                  <span className="text-xs text-muted-foreground/80">{sessionsError}</span>
+                  <button
+                    className="text-sm text-sky-600 hover:underline"
+                    onClick={() => void fetchSessions()}
+                  >
+                    {t('tryAgain')}
+                  </button>
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center py-6 text-sm text-muted-foreground">
+                  {t('noSessions')}
+                </div>
+              ) : (
+                sessions.map((session) => {
+                  const Icon = getSessionIcon(session.type);
+                  const isTherapySession = session.type === 'session';
+                  const bgColor = isTherapySession ? 'bg-sky-50' : 'bg-yellow-50';
+                  const iconColor = isTherapySession ? 'text-sky-600' : 'text-yellow-600';
 
-                return (
-                  <Card key={session.id} className="border border-input rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`${bgColor} rounded-lg p-6 flex items-center justify-center`}>
-                          <Icon className={`w-6 h-6 ${iconColor}`} />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <h3 className="text-base font-medium text-foreground">
-                            {session.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">{session.therapist}</p>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              {session.schedule 
-                                ? `Schedule: ${session.schedule}` 
-                                : session.date}
-                            </span>
+                  return (
+                    <Card key={session.id} className="border border-input rounded-2xl p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`${bgColor} rounded-lg p-6 flex items-center justify-center`}>
+                            <Icon className={`w-6 h-6 ${iconColor}`} />
                           </div>
-                          {session.duration && (
+                          <div className="flex flex-col gap-2">
+                            <h3 className="text-base font-medium text-foreground">
+                              {session.name || t('sessionFallback')}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {currentTherapist?.full_name || currentTherapist?.first_name
+                                ? t('withTherapist', {
+                                    name: currentTherapist.full_name || currentTherapist.first_name,
+                                  })
+                                : t('assignedTherapist')}
+                            </p>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Calendar className="w-4 h-4" />
+                              <span>{t('updatedAt', { date: formatDateTime(session.updated_at) })}</span>
+                            </div>
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Timer className="w-4 h-4" />
-                              <span>{session.duration}</span>
+                              <span>{t('createdAt', { date: formatDateTime(session.created_at) })}</span>
                             </div>
-                          )}
+                          </div>
                         </div>
+                        <Badge className={`${getStatusBadge(session.status)} h-8 px-4 rounded-lg font-semibold`}>
+                          {getStatusLabel(session.status)}
+                        </Badge>
                       </div>
-                      <Badge className={`${getStatusBadge(session.status)} h-8 px-4 rounded-lg font-semibold`}>
-                        {getStatusLabel(session.status)}
-                      </Badge>
-                    </div>
-                  </Card>
-                );
-              })}
+                    </Card>
+                  );
+                })
+              )}
             </div>
 
             {/* Load More */}
-            <button className="text-sm text-sky-600 hover:underline text-center">
-              Load More Sessions
+            <button
+              className="text-sm text-sky-600 hover:underline text-center"
+              onClick={() => router.push('/dashboard-patient/sessions')}
+            >
+              {t('viewAllSessions')}
             </button>
           </div>
         </Card>
@@ -316,8 +383,10 @@ export default function DashboardPatientPage() {
           <div className="flex flex-col gap-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">My Assignments</h2>
-              <button className="text-sm text-sky-600 hover:underline">View all</button>
+              <h2 className="text-xl font-semibold text-foreground">{t('myAssignments')}</h2>
+              <button className="text-sm text-sky-600 hover:underline">
+                {t('viewAll')}
+              </button>
             </div>
 
             {/* Assignments List */}
@@ -350,7 +419,7 @@ export default function DashboardPatientPage() {
 
             {/* Load More */}
             <button className="text-sm text-sky-600 hover:underline text-center">
-              Load More Assignments
+              {t('loadMoreAssignments')}
             </button>
           </div>
         </Card>
