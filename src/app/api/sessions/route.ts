@@ -34,6 +34,7 @@ export async function GET(
       parsedLimit && Number.isFinite(parsedLimit) && parsedLimit > 0
         ? Math.min(parsedLimit, 100)
         : undefined;
+        
 
     // Check authorization
     const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);

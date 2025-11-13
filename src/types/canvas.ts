@@ -24,6 +24,7 @@ export interface CardMetadata {
   category: CardCategory;
   cardNumber: number;
   gender?: Gender;
+  publicUrl?: string;
 }
 
 export interface ParsedCardData {

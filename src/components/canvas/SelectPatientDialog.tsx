@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { KeyboardEvent } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -18,14 +20,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil, Check, X } from 'lucide-react';
 import type { Profile } from '@/types/auth';
+
+const buildDefaultSessionName = () => {
+  const now = new Date();
+  return `Session - ${now.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })}`;
+};
 
 interface SelectPatientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   therapistId: string;
-  onSelect: (patientId: string | null, type: string) => void;
+  onSelect: (patientId: string | null, type: string, name?: string) => Promise<void> | void;
 }
 
 export function SelectPatientDialog({
@@ -36,6 +46,10 @@ export function SelectPatientDialog({
 }: SelectPatientDialogProps) {
   const [patients, setPatients] = useState<Profile[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const initialSessionName = buildDefaultSessionName();
+  const [sessionName, setSessionName] = useState(initialSessionName);
+  const [sessionNameDraft, setSessionNameDraft] = useState(initialSessionName);
+  const [editingName, setEditingName] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingPatients, setLoadingPatients] = useState(true);
 
@@ -64,20 +78,73 @@ export function SelectPatientDialog({
     }
   }, [open, therapistId, fetchPatients]);
 
-  const handleSubmit = () => {
-    setLoading(true);
-    const type = selectedPatientId === null ? 'playground' : 'session';
-    onSelect(selectedPatientId, type);
-    setLoading(false);
-    onOpenChange(false);
+  const resetDialogState = () => {
+    const defaultName = buildDefaultSessionName();
+    setSessionName(defaultName);
+    setSessionNameDraft(defaultName);
+    setEditingName(false);
+    setSelectedPatientId(null);
   };
 
-  const handleClose = () => {
-    if (!loading) {
-      setSelectedPatientId(null);
-      onOpenChange(false);
+  const handleClose = (nextOpen = false, force = false) => {
+    if (!loading || force) {
+      if (!nextOpen) {
+        resetDialogState();
+      }
+      onOpenChange(nextOpen);
     }
   };
+
+  const handleSubmit = async () => {
+    const trimmedName = sessionName.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    setLoading(true);
+    const type = selectedPatientId === null ? 'playground' : 'session';
+    try {
+      await onSelect(selectedPatientId, type, trimmedName);
+      handleClose(false, true);
+    } catch (error) {
+      console.error('Error creating session:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartEditingName = () => {
+    setSessionNameDraft(sessionName);
+    setEditingName(true);
+  };
+
+  const handleCancelEditingName = () => {
+    setSessionNameDraft(sessionName);
+    setEditingName(false);
+  };
+
+  const handleConfirmEditingName = () => {
+    const trimmed = sessionNameDraft.trim();
+    if (!trimmed) {
+      setSessionNameDraft(sessionName);
+      setEditingName(false);
+      return;
+    }
+    setSessionName(trimmed);
+    setEditingName(false);
+  };
+
+  const handleNameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleConfirmEditingName();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCancelEditingName();
+    }
+  };
+
+  const isCreateDisabled = loading || loadingPatients || sessionName.trim().length === 0;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -90,6 +157,53 @@ export function SelectPatientDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="session-name">Session name</Label>
+            {editingName ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  id="session-name"
+                  value={sessionNameDraft}
+                  onChange={(event) => setSessionNameDraft(event.target.value)}
+                  onKeyDown={handleNameKeyDown}
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCancelEditingName}
+                    aria-label="Cancel session name edit"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={handleConfirmEditingName}
+                    aria-label="Save session name"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+                <span className="font-medium text-foreground">{sessionName}</span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  onClick={handleStartEditingName}
+                  aria-label="Edit session name"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="patient">Patient</Label>
             {loadingPatients ? (
@@ -121,7 +235,7 @@ export function SelectPatientDialog({
             <Button
               type="button"
               variant="secondary"
-              onClick={handleClose}
+              onClick={() => handleClose(false)}
               disabled={loading}
             >
               Cancel
@@ -129,7 +243,7 @@ export function SelectPatientDialog({
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={loading || loadingPatients}
+              disabled={isCreateDisabled}
             >
               {loading ? (
                 <>

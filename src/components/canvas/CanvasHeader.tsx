@@ -11,11 +11,11 @@ import {
   UserRound,
   Save,
   Calendar,
-  Camera,
-  Undo2,
-  Redo2,
-  User,
-  CalendarCheck,
+//  Camera,
+//  Undo2,
+//  Redo2,
+//  User,
+//  CalendarCheck,
   LogOut,
   X,
 } from 'lucide-react';
@@ -26,16 +26,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
+//  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Gender } from '@/types/canvas';
 import { SessionDetailsPanel } from './SessionDetailsPanel';
 import type { Profile } from '@/types/auth';
 
-interface WindowWithCanvasCard extends Window {
-  _undoCanvas?: () => void;
-  _redoCanvas?: () => void;
-}
+//interface WindowWithCanvasCard extends Window {
+//  _undoCanvas?: () => void;
+//  _redoCanvas?: () => void;
+//}
 
 interface CanvasHeaderProps {
   sessionTitle?: string;
@@ -48,8 +48,8 @@ interface CanvasHeaderProps {
   therapistProfile?: Profile | null;
   sessionType?: string;
   language?: string;
-  initialNotes?: string;
-  onNotesChange?: (notes: string) => void;
+//  initialNotes?: string;
+//  onNotesChange?: (notes: string) => void;
   currentDuration?: number; // Current session duration in seconds
 }
 
@@ -64,8 +64,8 @@ export function CanvasHeader({
   therapistProfile,
   sessionType = 'Individual',
   language = 'English',
-  initialNotes = '',
-  onNotesChange,
+//  initialNotes = '',
+//  onNotesChange,
   currentDuration = 0,
 }: CanvasHeaderProps) {
   const t = useTranslations('canvas.header');
@@ -136,43 +136,43 @@ export function CanvasHeader({
     }
   };
 
-  const handleUndo = () => {
-    const win = window as WindowWithCanvasCard;
-    if (win._undoCanvas) {
-      win._undoCanvas();
-    }
-    setIsMenuOpen(false);
-  };
-
-  const handleRedo = () => {
-    const win = window as WindowWithCanvasCard;
-    if (win._redoCanvas) {
-      win._redoCanvas();
-    }
-    setIsMenuOpen(false);
-  };
+//  const handleUndo = () => {
+//    const win = window as WindowWithCanvasCard;
+//    if (win._undoCanvas) {
+//      win._undoCanvas();
+//    }
+//    setIsMenuOpen(false);
+//  };
+//
+//  const handleRedo = () => {
+//    const win = window as WindowWithCanvasCard;
+//    if (win._redoCanvas) {
+//      win._redoCanvas();
+//    }
+//    setIsMenuOpen(false);
+//  };
 
   const handleLeaveSession = () => {
     handleGoToDashboard();
     setIsMenuOpen(false);
   };
 
-  const handleShowDetails = () => {
-    setShowDetailsDialog(true);
-    setIsMenuOpen(false);
-  };
-
-  const handleTakeScreenshot = () => {
-    // Placeholder
-    toast.info('Screenshot feature coming soon');
-    setIsMenuOpen(false);
-  };
-
-  const handleScheduleFollowUp = () => {
-    // Placeholder
-    toast.info('Schedule follow-up feature coming soon');
-    setIsMenuOpen(false);
-  };
+//  const handleShowDetails = () => {
+//    setShowDetailsDialog(true);
+//    setIsMenuOpen(false);
+//  };
+//
+//  const handleTakeScreenshot = () => {
+//    // Placeholder
+//    toast.info('Screenshot feature coming soon');
+//    setIsMenuOpen(false);
+//  };
+//
+//  const handleScheduleFollowUp = () => {
+//    // Placeholder
+//    toast.info('Schedule follow-up feature coming soon');
+//    setIsMenuOpen(false);
+//  };
 
   const toggleSessionPanel = () => {
     setIsSessionPanelOpen(!isSessionPanelOpen);
@@ -202,7 +202,7 @@ export function CanvasHeader({
                   <Save className="w-4 h-4 mr-2" />
                   Save
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleTakeScreenshot}>
+                {/* <DropdownMenuItem onClick={handleTakeScreenshot}>
                   <Camera className="w-4 h-4 mr-2" />
                   Take Screenshot
                 </DropdownMenuItem>
@@ -218,14 +218,14 @@ export function CanvasHeader({
                 <DropdownMenuItem onClick={handleShowDetails}>
                   <User className="w-4 h-4 mr-2" />
                   {isTherapist ? 'Patient Details' : 'Therapist Details'}
-                </DropdownMenuItem>
+                </DropdownMenuItem> 
                 {isTherapist && (
                   <DropdownMenuItem onClick={handleScheduleFollowUp}>
                     <CalendarCheck className="w-4 h-4 mr-2" />
                     Schedule Follow Up
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator />*/}
                 <DropdownMenuItem onClick={handleLeaveSession}>
                   <LogOut className="w-4 h-4 mr-2" />
                   Leave Session
@@ -310,8 +310,8 @@ export function CanvasHeader({
         therapistProfile={therapistProfile}
         sessionType={sessionType}
         language={language}
-        initialNotes={initialNotes}
-        onNotesChange={onNotesChange}
+//        initialNotes={initialNotes}
+//        onNotesChange={onNotesChange}
         currentDuration={currentDuration}
       />
     )}

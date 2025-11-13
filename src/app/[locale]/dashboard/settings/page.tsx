@@ -632,6 +632,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Danger Zone Section */}
+        {/*
         <div className="bg-destructive/10 rounded-lg border border-destructive/20 p-6">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-destructive">{t('dangerZone')}</h2>
@@ -651,7 +652,7 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
-
+        */}
         {/* Save Changes Button */}
         <div className="flex justify-end pt-4">
           <Button
@@ -673,6 +674,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Delete Account Confirmation Dialog */}
+      {/*
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -712,6 +714,7 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      */}
     </div>
   );
 }

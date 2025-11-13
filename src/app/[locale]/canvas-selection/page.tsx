@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useAuthProfile } from '@/stores/authStore';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil, Check, X, UserCircle2, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +35,11 @@ export default function CanvasSelectionPage() {
   const [showPatientDialog, setShowPatientDialog] = useState(false);
   const [therapistPatients, setTherapistPatients] = useState<Profile[]>([]);
   const [checkingPatients, setCheckingPatients] = useState(false);
+  const [profileCache, setProfileCache] = useState<Record<string, Profile>>({});
+  const [profilesLoading, setProfilesLoading] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   useEffect(() => {
     fetchSessions();
@@ -64,6 +71,96 @@ export default function CanvasSelectionPage() {
     }
   }, [profile, checkTherapistPatients]);
 
+  const therapistPatientMap = useMemo(() => {
+    if (!therapistPatients || therapistPatients.length === 0) {
+      return {};
+    }
+    return therapistPatients.reduce<Record<string, Profile>>((acc, patient) => {
+      acc[patient.id] = patient;
+      return acc;
+    }, {});
+  }, [therapistPatients]);
+
+  useEffect(() => {
+    if (sessions.length === 0) return;
+
+    const missingProfileIds = new Set<string>();
+
+    sessions.forEach((session) => {
+      if (session.therapist_id && session.therapist_id !== profile?.id && !profileCache[session.therapist_id]) {
+        missingProfileIds.add(session.therapist_id);
+      }
+
+      if (session.patient_id) {
+        if (session.patient_id === profile?.id) {
+          return;
+        }
+
+        if (profile?.role === 'therapist' && therapistPatientMap[session.patient_id]) {
+          return;
+        }
+
+        if (!profileCache[session.patient_id]) {
+          missingProfileIds.add(session.patient_id);
+        }
+      }
+    });
+
+    if (missingProfileIds.size === 0) return;
+
+    let cancelled = false;
+    setProfilesLoading(true);
+
+    const fetchProfiles = async () => {
+      try {
+        const entries = await Promise.all(
+          Array.from(missingProfileIds).map(async (id) => {
+            try {
+              const response = await fetch(`/api/profiles/${id}`);
+              if (!response.ok) {
+                console.debug(`Profile ${id} responded with ${response.status}, skipping cache update.`);
+                return [id, null] as const;
+              }
+              const data = await response.json().catch(() => null);
+              if (!data?.profile) {
+                console.debug(`Profile ${id} payload missing profile data, skipping cache update.`);
+                return [id, null] as const;
+              }
+              return [id, data.profile as Profile] as const;
+            } catch (error) {
+              console.debug(`Non-blocking profile fetch error for ${id}:`, error);
+              return [id, null] as const;
+            }
+          })
+        );
+
+        if (!cancelled) {
+          setProfileCache((prev) => {
+            const next = { ...prev };
+            entries.forEach(([id, fetchedProfile]) => {
+              if (fetchedProfile) {
+                next[id] = fetchedProfile;
+              }
+            });
+            return next;
+          });
+        }
+      } catch (error) {
+        console.debug('Non-blocking profile sync error:', error);
+      } finally {
+        if (!cancelled) {
+          setProfilesLoading(false);
+        }
+      }
+    };
+
+    void fetchProfiles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessions, profileCache, profile?.id, profile?.role, therapistPatientMap]);
+
   const fetchSessions = async () => {
     try {
       setLoading(true);
@@ -80,18 +177,29 @@ export default function CanvasSelectionPage() {
     }
   };
 
-  const handleCreateSession = async (patientId: string | null, type: string) => {
+  const handleCreateSession = async (patientId: string | null, type: string, sessionName?: string) => {
     try {
       setCreating(true);
+      const trimmedName = sessionName?.trim();
+      const payload: {
+        patient_id: string | null;
+        type: string;
+        name?: string;
+      } = {
+        patient_id: patientId,
+        type: type,
+      };
+
+      if (trimmedName) {
+        payload.name = trimmedName;
+      }
+
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          patient_id: patientId,
-          type: type,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -124,6 +232,93 @@ export default function CanvasSelectionPage() {
 
   const handleOpenSession = (sessionId: string) => {
     router.push(`/canvas?sessionId=${sessionId}`);
+  };
+
+  const getSessionDisplayName = (session: Omit<CanvasSession, 'data'>) => {
+    if (session.name && session.name.trim().length > 0) {
+      return session.name.trim();
+    }
+    return session.type === 'playground' ? 'Playground Session' : 'Untitled Session';
+  };
+
+  const startRenamingSession = (event: React.MouseEvent, session: Omit<CanvasSession, 'data'>) => {
+    event.stopPropagation();
+    setEditingSessionId(session.id);
+    setRenameValue(getSessionDisplayName(session));
+  };
+
+  const cancelRenamingSession = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    setEditingSessionId(null);
+    setRenameValue('');
+  };
+
+  const submitRename = async (sessionId: string) => {
+    if (renaming) return;
+
+    const nextName = renameValue.trim();
+    if (!nextName) {
+      toast.error('Session name cannot be empty');
+      return;
+    }
+
+    try {
+      setRenaming(true);
+      const response = await fetch(`/api/sessions/${sessionId}/rename`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: nextName }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to rename session');
+      }
+
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                name: data.session?.name ?? nextName,
+                updated_at: data.session?.updated_at ?? new Date().toISOString(),
+              }
+            : session
+        )
+      );
+      toast.success('Session renamed');
+      setEditingSessionId(null);
+      setRenameValue('');
+    } catch (error) {
+      console.error('Error renaming session:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to rename session');
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const getParticipantDisplayName = (participant?: Profile | null, fallback?: string) => {
+    return (
+      participant?.full_name ||
+      participant?.first_name ||
+      participant?.email ||
+      fallback ||
+      'Not available'
+    );
+  };
+
+  const handleRenameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, sessionId: string) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      void submitRename(sessionId);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      cancelRenamingSession();
+    }
   };
 
   const handleDeleteClick = (e: React.MouseEvent, sessionId: string) => {
@@ -186,52 +381,197 @@ export default function CanvasSelectionPage() {
       </div>
 
       {sessions.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="py-12 text-center text-muted-foreground">
           <p>No sessions found. Create a new session to get started.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-              onClick={() => handleOpenSession(session.id)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">
-                    {session.name || 'Unnamed Session'}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Type: {session.type || 'N/A'} | Status: {session.status || 'N/A'}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Updated: {formatDate(session.updated_at)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenSession(session.id);
-                    }}
-                  >
-                    Open
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e) => handleDeleteClick(e, session.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+        <>
+         {/* {profilesLoading && (
+            <div className="mb-4 flex items-center text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Syncing participant details...
             </div>
-          ))}
-        </div>
+          )} */}
+          <div className="space-y-5">
+            {sessions.map((session) => {
+              const isEditing = editingSessionId === session.id;
+              const isPlayground = session.type === 'playground';
+              const therapistIsCurrentUser = session.therapist_id === profile?.id;
+
+              const therapistProfile = therapistIsCurrentUser
+                ? profile
+                : session.therapist_id
+                  ? profileCache[session.therapist_id] || null
+                  : null;
+
+              const therapistName = therapistIsCurrentUser
+                ? 'You'
+                : getParticipantDisplayName(therapistProfile, 'Therapist');
+
+              const therapistEmail = therapistIsCurrentUser ? profile?.email : therapistProfile?.email;
+
+              let patientProfile: Profile | null = null;
+              if (session.patient_id) {
+                if (session.patient_id === profile?.id) {
+                  patientProfile = profile;
+                } else if (profile?.role === 'therapist') {
+                  patientProfile =
+                    therapistPatientMap[session.patient_id] ??
+                    profileCache[session.patient_id] ??
+                    null;
+                } else {
+                  patientProfile = profileCache[session.patient_id] ?? null;
+                }
+              }
+
+              const patientName = session.patient_id
+                ? session.patient_id === profile?.id
+                  ? 'You'
+                  : getParticipantDisplayName(
+                      patientProfile,
+                      profilesLoading ? 'Loading participant...' : 'Awaiting assignment'
+                    )
+                : 'No patient (therapist playground)';
+
+              const patientEmail =
+                session.patient_id && session.patient_id === profile?.id
+                  ? profile?.email
+                  : patientProfile?.email;
+
+              return (
+                <div
+                  key={session.id}
+                  className="cursor-pointer rounded-xl border border-stroke bg-card/60 p-5 shadow-sm transition hover:border-primary/60 hover:bg-card"
+                  onClick={() => handleOpenSession(session.id)}
+                >
+                  <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-3">
+                      {isEditing ? (
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                          <Input
+                            value={renameValue}
+                            onChange={(event) => setRenameValue(event.target.value)}
+                            onKeyDown={(event) => handleRenameKeyDown(event, session.id)}
+                            onClick={(event) => event.stopPropagation()}
+                            autoFocus
+                            placeholder="Session name"
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={(event) => cancelRenamingSession(event)}
+                              aria-label="Cancel rename"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void submitRename(session.id);
+                              }}
+                              disabled={renaming}
+                              aria-label="Save session name"
+                            >
+                              {renaming ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-semibold leading-none">
+                            {getSessionDisplayName(session)}
+                          </h3>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground"
+                            onClick={(event) => startRenamingSession(event, session)}
+                            aria-label="Rename session"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                        <Badge variant={isPlayground ? 'secondary' : 'outline'}>
+                          {isPlayground ? 'Playground' : 'Session'}
+                        </Badge>
+                        <span>Updated {formatDate(session.updated_at)}</span>
+                        <span aria-hidden="true">•</span>
+                        <span>Status: {session.status || 'Active'}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="flex items-start gap-3 rounded-lg border border-stroke bg-muted/40 p-3">
+                        <UserCircle2 className="h-8 w-8 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Therapist
+                          </p>
+                          <p className="font-medium">
+                            {therapistName}
+                            {therapistName === 'You' && therapistProfile?.full_name
+                              ? ` (${therapistProfile.full_name})`
+                              : ''}
+                          </p>
+                          {therapistEmail && (
+                            <p className="text-xs text-muted-foreground">{therapistEmail}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 rounded-lg border border-stroke bg-muted/40 p-3">
+                        <UserCircle2 className="h-8 w-8 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {isPlayground ? 'Playground Mode' : 'Patient'}
+                          </p>
+                          <p className="font-medium">
+                            {patientName}
+                          </p>
+                          {!isPlayground && patientEmail && (
+                            <p className="text-xs text-muted-foreground">{patientEmail}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOpenSession(session.id);
+                        }}
+                      >
+                        Open Canvas
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={(event) => handleDeleteClick(event, session.id)}
+                        className="text-destructive hover:text-destructive"
+                        aria-label="Delete session"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Patient Selection Dialog */}

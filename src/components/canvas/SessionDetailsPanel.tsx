@@ -209,7 +209,7 @@ export function SessionDetailsPanel({
           </div>
         </div>
 
-        {/* Notes - Only for therapist */}
+        {/* Notes - Only for therapist 
         {isTherapist && (
           <div className="flex flex-col gap-2">
             <label className="text-sm text-foreground">Notes</label>
@@ -220,7 +220,7 @@ export function SessionDetailsPanel({
               className="min-h-[80px] resize-none"
             />
           </div>
-        )}
+        )}     PUT IT BACK IN IF YOU WANT TO ENABLE NOTES           */}
       </div>
     </div>
   );
