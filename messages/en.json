@@ -344,6 +344,76 @@
       "tools": "Tools"
     }
   },
+  "canvasSelection": {
+    "pageTitle": "Canvas Selection",
+    "pageDescription": "Select or create a canvas session.",
+    "loading": "Loading sessions...",
+    "title": "Canvas Sessions",
+    "subtitle": "Select an existing session or create a new one",
+    "createButton": "Create New Session",
+    "creatingButton": "Creating...",
+    "emptyState": "No sessions found. Create a new session to get started.",
+    "sessionNamePlaceholder": "Session name",
+    "defaultNames": {
+      "playground": "Playground Session",
+      "untitled": "Untitled Session"
+    },
+    "types": {
+      "playground": "Playground",
+      "session": "Session"
+    },
+    "card": {
+      "updated": "Updated {date}",
+      "status": "Status: {status}"
+    },
+    "participants": {
+      "therapist": "Therapist",
+      "patient": "Patient",
+      "playgroundMode": "Playground Mode",
+      "noPatient": "No patient (therapist playground)",
+      "loading": "Loading participant...",
+      "awaitingAssignment": "Awaiting assignment",
+      "notAvailable": "Not available"
+    },
+    "labels": {
+      "you": "You"
+    },
+    "actions": {
+      "openCanvas": "Open Canvas",
+      "delete": "Delete",
+      "cancel": "Cancel"
+    },
+    "aria": {
+      "renameSession": "Rename session",
+      "cancelRename": "Cancel rename",
+      "saveSessionName": "Save session name",
+      "deleteSession": "Delete session"
+    },
+    "dialog": {
+      "deleteTitle": "Delete Session",
+      "deleteDescription": "Are you sure you want to delete this session? This action cannot be undone."
+    },
+    "toasts": {
+      "renamed": "Session renamed",
+      "deleted": "Session deleted successfully"
+    },
+    "errors": {
+      "fetchSessions": "Failed to fetch sessions",
+      "createSession": "Failed to create session",
+      "renameSession": "Failed to rename session",
+      "deleteSession": "Failed to delete session",
+      "emptySessionName": "Session name cannot be empty"
+    },
+    "statuses": {
+      "active": "Active",
+      "upcoming": "Upcoming",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "archived": "Archived"
+    }
+  },
   "dashboard": {
     "header": {
       "goToCanvas": "GO TO CANVAS (test)",
@@ -360,7 +430,20 @@
       "settings": "Settings"
     },
     "page": {
+      "pageTitle": "Dashboard",
+      "pageDescription": "Snapshot of your account while the product is under active development.",
       "title": "Dashboard",
+      "workspaceReady": "Your workspace is getting ready",
+      "underConstructionMessage": "Website is under development and construction.",
+      "signedInAs": "Signed in as",
+      "loadingUser": "Loading user...",
+      "memberSince": "Member since {date}",
+      "noEmailAvailable": "No email available",
+      "quickActions": "Quick actions",
+      "canvasSelection": "Canvas Selection",
+      "developmentTitle": "Website under development",
+      "developmentDescription": "Website is under development and construction. Some areas are not ready yet, but these quick links help you reach the parts that are available today.",
+      "roleFallback": "—",
       "addPatient": "Add patient",
       "startNewSession": "Start new session",
       "totalPatients": "Total Patients",
@@ -441,6 +524,8 @@
     }
   },
   "dashboardPatient": {
+    "pageTitle": "Patient Dashboard",
+    "pageDescription": "View your therapy sessions, assignments, and progress.",
     "welcome": "Welcome back, {firstName}!",
     "progressOverview": "Heres your therapy progress overview",
     "nextSession": "Next Session",
@@ -467,6 +552,8 @@
     "updatedAt": "Updated {date}",
     "createdAt": "Created {date}",
     "viewAllSessions": "View all sessions",
+    "dateUnavailable": "Date unavailable",
+    "patientFallback": "Patient",
     "unknownStatus": "Unknown",
     "activeStatus": "Active",
     "archivedStatus": "Archived"

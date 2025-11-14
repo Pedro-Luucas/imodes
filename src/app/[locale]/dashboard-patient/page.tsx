@@ -28,12 +28,12 @@ interface Assignment {
 }
 
 export default function DashboardPatientPage() {
-  usePageMetadata('Patient Dashboard', 'View your therapy sessions, assignments, and progress.');
+  const t = useTranslations('dashboardPatient');
+  usePageMetadata(t('pageTitle'), t('pageDescription'));
   const router = useRouter();
   const profile = useAuthProfile();
   const currentTherapist = useCurrentTherapist();
   const { getPatientTherapist } = useTherapistActions();
-  const t = useTranslations('dashboardPatient');
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -188,7 +188,7 @@ export default function DashboardPatientPage() {
 
   const formatDateTime = (isoDate?: string | null) => {
     if (!isoDate) {
-      return 'Date unavailable';
+      return t('dateUnavailable');
     }
 
     try {
@@ -220,7 +220,7 @@ export default function DashboardPatientPage() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-2">
             <h1 className="text-xl font-medium text-foreground">
-              {t('welcome', { firstName: profile.first_name || profile.full_name || 'Paciente' })}
+              {t('welcome', { firstName: profile.first_name || profile.full_name || t('patientFallback') })}
             </h1>
             <p className="text-sm text-muted-foreground">
               {t('progressOverview')}
