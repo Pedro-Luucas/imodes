@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,8 @@ import { SelectPatientDialog } from '@/components/canvas/SelectPatientDialog';
 import type { Profile } from '@/types/auth';
 
 export default function CanvasSelectionPage() {
-  usePageMetadata('Canvas Selection', 'Select or create a canvas session.');
+  const t = useTranslations('canvasSelection');
+  usePageMetadata(t('pageTitle'), t('pageDescription'));
   const router = useRouter();
   const profile = useAuthProfile();
   const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([]);
@@ -40,6 +42,7 @@ export default function CanvasSelectionPage() {
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
+  const youLabel = t('labels.you');
 
   useEffect(() => {
     fetchSessions();
@@ -166,7 +169,7 @@ export default function CanvasSelectionPage() {
       setLoading(true);
       const response = await fetch('/api/sessions');
       if (!response.ok) {
-        throw new Error('Failed to fetch sessions');
+        throw new Error(t('errors.fetchSessions'));
       }
       const data = await response.json();
       setSessions(data.sessions || []);
@@ -204,14 +207,14 @@ export default function CanvasSelectionPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create session');
+        throw new Error(error.error || t('errors.createSession'));
       }
 
       const data = await response.json();
       router.push(`/canvas?sessionId=${data.session.id}`);
     } catch (error) {
       console.error('Error creating session:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create session');
+      toast.error(error instanceof Error ? error.message : t('errors.createSession'));
     } finally {
       setCreating(false);
     }
@@ -238,7 +241,34 @@ export default function CanvasSelectionPage() {
     if (session.name && session.name.trim().length > 0) {
       return session.name.trim();
     }
-    return session.type === 'playground' ? 'Playground Session' : 'Untitled Session';
+    return session.type === 'playground'
+      ? t('defaultNames.playground')
+      : t('defaultNames.untitled');
+  };
+
+  const getStatusLabel = (status?: string | null) => {
+    if (!status) {
+      return t('statuses.active');
+    }
+
+    switch (status.toLowerCase()) {
+      case 'active':
+        return t('statuses.active');
+      case 'upcoming':
+        return t('statuses.upcoming');
+      case 'pending':
+        return t('statuses.pending');
+      case 'in-progress':
+        return t('statuses.inProgress');
+      case 'completed':
+        return t('statuses.completed');
+      case 'overdue':
+        return t('statuses.overdue');
+      case 'archived':
+        return t('statuses.archived');
+      default:
+        return status;
+    }
   };
 
   const startRenamingSession = (event: React.MouseEvent, session: Omit<CanvasSession, 'data'>) => {
@@ -258,7 +288,7 @@ export default function CanvasSelectionPage() {
 
     const nextName = renameValue.trim();
     if (!nextName) {
-      toast.error('Session name cannot be empty');
+      toast.error(t('errors.emptySessionName'));
       return;
     }
 
@@ -274,7 +304,7 @@ export default function CanvasSelectionPage() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to rename session');
+        throw new Error(data.error || t('errors.renameSession'));
       }
 
       setSessions((prev) =>
@@ -288,12 +318,12 @@ export default function CanvasSelectionPage() {
             : session
         )
       );
-      toast.success('Session renamed');
+      toast.success(t('toasts.renamed'));
       setEditingSessionId(null);
       setRenameValue('');
     } catch (error) {
       console.error('Error renaming session:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to rename session');
+      toast.error(error instanceof Error ? error.message : t('errors.renameSession'));
     } finally {
       setRenaming(false);
     }
@@ -305,7 +335,7 @@ export default function CanvasSelectionPage() {
       participant?.first_name ||
       participant?.email ||
       fallback ||
-      'Not available'
+      t('participants.notAvailable')
     );
   };
 
@@ -337,16 +367,16 @@ export default function CanvasSelectionPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to delete session');
+        throw new Error(error.error || t('errors.deleteSession'));
       }
 
-      toast.success('Session deleted successfully');
+      toast.success(t('toasts.deleted'));
       setSessions((prev) => prev.filter((s) => s.id !== deletingSessionId));
       setShowDeleteDialog(false);
       setDeletingSessionId(null);
     } catch (error) {
       console.error('Error deleting session:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete session');
+      toast.error(error instanceof Error ? error.message : t('errors.deleteSession'));
     }
   };
 
@@ -358,7 +388,7 @@ export default function CanvasSelectionPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div>Loading sessions...</div>
+        <div>{t('loading')}</div>
       </div>
     );
   }
@@ -366,8 +396,8 @@ export default function CanvasSelectionPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Canvas Sessions</h1>
-        <p className="text-gray-600">Select an existing session or create a new one</p>
+        <h1 className="text-2xl font-bold mb-2">{t('title')}</h1>
+        <p className="text-gray-600">{t('subtitle')}</p>
       </div>
 
       <div className="mb-6">
@@ -376,13 +406,13 @@ export default function CanvasSelectionPage() {
           disabled={creating || checkingPatients}
           className="w-full sm:w-auto"
         >
-          {creating ? 'Creating...' : 'Create New Session'}
+          {creating ? t('creatingButton') : t('createButton')}
         </Button>
       </div>
 
       {sessions.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
-          <p>No sessions found. Create a new session to get started.</p>
+          <p>{t('emptyState')}</p>
         </div>
       ) : (
         <>
@@ -405,8 +435,8 @@ export default function CanvasSelectionPage() {
                   : null;
 
               const therapistName = therapistIsCurrentUser
-                ? 'You'
-                : getParticipantDisplayName(therapistProfile, 'Therapist');
+                ? youLabel
+                : getParticipantDisplayName(therapistProfile, t('participants.therapist'));
 
               const therapistEmail = therapistIsCurrentUser ? profile?.email : therapistProfile?.email;
 
@@ -426,12 +456,12 @@ export default function CanvasSelectionPage() {
 
               const patientName = session.patient_id
                 ? session.patient_id === profile?.id
-                  ? 'You'
+                  ? youLabel
                   : getParticipantDisplayName(
                       patientProfile,
-                      profilesLoading ? 'Loading participant...' : 'Awaiting assignment'
+                      profilesLoading ? t('participants.loading') : t('participants.awaitingAssignment')
                     )
-                : 'No patient (therapist playground)';
+                : t('participants.noPatient');
 
               const patientEmail =
                 session.patient_id && session.patient_id === profile?.id
@@ -454,7 +484,7 @@ export default function CanvasSelectionPage() {
                             onKeyDown={(event) => handleRenameKeyDown(event, session.id)}
                             onClick={(event) => event.stopPropagation()}
                             autoFocus
-                            placeholder="Session name"
+                            placeholder={t('sessionNamePlaceholder')}
                           />
                           <div className="flex items-center gap-2">
                             <Button
@@ -462,7 +492,7 @@ export default function CanvasSelectionPage() {
                               variant="outline"
                               size="icon"
                               onClick={(event) => cancelRenamingSession(event)}
-                              aria-label="Cancel rename"
+                              aria-label={t('aria.cancelRename')}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -474,7 +504,7 @@ export default function CanvasSelectionPage() {
                                 void submitRename(session.id);
                               }}
                               disabled={renaming}
-                              aria-label="Save session name"
+                              aria-label={t('aria.saveSessionName')}
                             >
                               {renaming ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -495,7 +525,7 @@ export default function CanvasSelectionPage() {
                             variant="ghost"
                             className="text-muted-foreground"
                             onClick={(event) => startRenamingSession(event, session)}
-                            aria-label="Rename session"
+                            aria-label={t('aria.renameSession')}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -503,11 +533,11 @@ export default function CanvasSelectionPage() {
                       )}
                       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         <Badge variant={isPlayground ? 'secondary' : 'outline'}>
-                          {isPlayground ? 'Playground' : 'Session'}
+                          {isPlayground ? t('types.playground') : t('types.session')}
                         </Badge>
-                        <span>Updated {formatDate(session.updated_at)}</span>
+                        <span>{t('card.updated', { date: formatDate(session.updated_at) })}</span>
                         <span aria-hidden="true">•</span>
-                        <span>Status: {session.status || 'Active'}</span>
+                        <span>{t('card.status', { status: getStatusLabel(session.status) })}</span>
                       </div>
                     </div>
 
@@ -516,11 +546,11 @@ export default function CanvasSelectionPage() {
                         <UserCircle2 className="h-8 w-8 text-muted-foreground" />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            Therapist
+                            {t('participants.therapist')}
                           </p>
                           <p className="font-medium">
                             {therapistName}
-                            {therapistName === 'You' && therapistProfile?.full_name
+                            {therapistName === youLabel && therapistProfile?.full_name
                               ? ` (${therapistProfile.full_name})`
                               : ''}
                           </p>
@@ -533,7 +563,7 @@ export default function CanvasSelectionPage() {
                         <UserCircle2 className="h-8 w-8 text-muted-foreground" />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            {isPlayground ? 'Playground Mode' : 'Patient'}
+                            {isPlayground ? t('participants.playgroundMode') : t('participants.patient')}
                           </p>
                           <p className="font-medium">
                             {patientName}
@@ -553,7 +583,7 @@ export default function CanvasSelectionPage() {
                           handleOpenSession(session.id);
                         }}
                       >
-                        Open Canvas
+                        {t('actions.openCanvas')}
                       </Button>
                       <Button
                         type="button"
@@ -561,7 +591,7 @@ export default function CanvasSelectionPage() {
                         size="icon"
                         onClick={(event) => handleDeleteClick(event, session.id)}
                         className="text-destructive hover:text-destructive"
-                        aria-label="Delete session"
+                        aria-label={t('aria.deleteSession')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -588,20 +618,20 @@ export default function CanvasSelectionPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this session? This action cannot be undone.
+              {t('dialog.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeletingSessionId(null)}>
-              Cancel
+              {t('actions.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

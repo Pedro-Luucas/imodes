@@ -344,6 +344,76 @@
       "tools": "Ferramentas"
     }
   },
+  "canvasSelection": {
+    "pageTitle": "Seleção de Canvas",
+    "pageDescription": "Selecione ou crie uma sessão de canvas.",
+    "loading": "Carregando sessões...",
+    "title": "Sessões de Canvas",
+    "subtitle": "Selecione uma sessão existente ou crie uma nova",
+    "createButton": "Criar nova sessão",
+    "creatingButton": "Criando...",
+    "emptyState": "Nenhuma sessão encontrada. Crie uma nova sessão para começar.",
+    "sessionNamePlaceholder": "Nome da sessão",
+    "defaultNames": {
+      "playground": "Sessão Playground",
+      "untitled": "Sessão sem nome"
+    },
+    "types": {
+      "playground": "Playground",
+      "session": "Sessão"
+    },
+    "card": {
+      "updated": "Atualizado {date}",
+      "status": "Status: {status}"
+    },
+    "participants": {
+      "therapist": "Terapeuta",
+      "patient": "Paciente",
+      "playgroundMode": "Modo Playground",
+      "noPatient": "Nenhum paciente (playground do terapeuta)",
+      "loading": "Carregando participante...",
+      "awaitingAssignment": "Aguardando atribuição",
+      "notAvailable": "Não disponível"
+    },
+    "labels": {
+      "you": "Você"
+    },
+    "actions": {
+      "openCanvas": "Abrir Canvas",
+      "delete": "Excluir",
+      "cancel": "Cancelar"
+    },
+    "aria": {
+      "renameSession": "Renomear sessão",
+      "cancelRename": "Cancelar renomeação",
+      "saveSessionName": "Salvar nome da sessão",
+      "deleteSession": "Excluir sessão"
+    },
+    "dialog": {
+      "deleteTitle": "Excluir Sessão",
+      "deleteDescription": "Tem certeza de que deseja excluir esta sessão? Essa ação não pode ser desfeita."
+    },
+    "toasts": {
+      "renamed": "Sessão renomeada",
+      "deleted": "Sessão excluída com sucesso"
+    },
+    "errors": {
+      "fetchSessions": "Falha ao carregar sessões",
+      "createSession": "Falha ao criar sessão",
+      "renameSession": "Falha ao renomear sessão",
+      "deleteSession": "Falha ao excluir sessão",
+      "emptySessionName": "O nome da sessão não pode ficar vazio"
+    },
+    "statuses": {
+      "active": "Ativa",
+      "upcoming": "Próxima",
+      "pending": "Pendente",
+      "inProgress": "Em progresso",
+      "completed": "Concluída",
+      "overdue": "Atrasada",
+      "archived": "Arquivada"
+    }
+  },
   "dashboard": {
     "header": {
       "goToCanvas": "IR PARA CANVAS (teste)",
@@ -360,7 +430,20 @@
       "settings": "Configurações"
     },
     "page": {
+      "pageTitle": "Dashboard",
+      "pageDescription": "Visão geral da sua conta enquanto o produto está em desenvolvimento ativo.",
       "title": "Dashboard",
+      "workspaceReady": "Seu espaço de trabalho está sendo preparado",
+      "underConstructionMessage": "O site está em desenvolvimento e construção.",
+      "signedInAs": "Conectado como",
+      "loadingUser": "Carregando usuário...",
+      "memberSince": "Membro desde {date}",
+      "noEmailAvailable": "Nenhum e-mail disponível",
+      "quickActions": "Ações rápidas",
+      "canvasSelection": "Seleção de Canvas",
+      "developmentTitle": "Site em desenvolvimento",
+      "developmentDescription": "O site está em desenvolvimento e construção. Algumas áreas ainda não estão prontas, mas estes links rápidos ajudam você a acessar as partes que estão disponíveis hoje.",
+      "roleFallback": "—",
       "addPatient": "Adicionar paciente",
       "startNewSession": "Iniciar nova sessão",
       "totalPatients": "Total de Pacientes",
@@ -441,6 +524,8 @@
     }
   },
   "dashboardPatient": {
+    "pageTitle": "Painel do Paciente",
+    "pageDescription": "Veja suas sessões de terapia, tarefas e progresso.",
     "welcome": "Bem-vindo de volta, {firstName}!",
     "progressOverview": "Aqui está o resumo do seu progresso terapêutico",
     "nextSession": "Próxima Sessão",
@@ -467,6 +552,8 @@
     "updatedAt": "Atualizado {date}",
     "createdAt": "Criado {date}",
     "viewAllSessions": "Ver todas as sessões",
+    "dateUnavailable": "Data indisponível",
+    "patientFallback": "Paciente",
     "unknownStatus": "Desconhecido",
     "activeStatus": "Ativa",
     "archivedStatus": "Arquivada"

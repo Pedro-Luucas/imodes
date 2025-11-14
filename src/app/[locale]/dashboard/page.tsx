@@ -12,19 +12,19 @@ import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useAuthProfile } from '@/stores/authStore';
 
 export default function DashboardPage() {
-  usePageMetadata('Dashboard', 'Snapshot of your account while the product is under active development.');
-
   const locale = useLocale();
   const page = useTranslations('dashboard.page');
   const sidebar = useTranslations('dashboard.sidebar');
   const activity = useTranslations('dashboard.activity');
+  
+  usePageMetadata(page('pageTitle'), page('pageDescription'));
 
   const profile = useAuthProfile();
 
   const roleLabel = useMemo(() => {
-    if (!profile?.role) return '—';
+    if (!profile?.role) return page('roleFallback');
     return profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
-  }, [profile?.role]);
+  }, [profile?.role, page]);
 
   const memberSince = useMemo(() => {
     if (!profile?.created_at) return null;
@@ -52,22 +52,22 @@ export default function DashboardPage() {
       },
       {
         id: 'canvas-selection',
-        label: 'Canvas Selection',
+        label: page('canvasSelection'),
         href: `/${locale}/canvas-selection`,
         icon: AppWindow,
         variant: 'secondary' as const,
       },
     ],
-    [locale, sidebar]
+    [locale, sidebar, page]
   );
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-12 lg:px-0">
       <header className="space-y-2 text-center">
         <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">{page('title')}</p>
-        <h1 className="text-3xl font-semibold text-foreground">Your workspace is getting ready</h1>
+        <h1 className="text-3xl font-semibold text-foreground">{page('workspaceReady')}</h1>
         <p className="text-sm text-muted-foreground">
-          {activity('underConstruction')} Website is under development and construction.
+          {page('underConstructionMessage')}
         </p>
       </header>
 
@@ -78,19 +78,19 @@ export default function DashboardPage() {
               <UserRound className="h-6 w-6 text-primary" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Signed in as</p>
+              <p className="text-sm text-muted-foreground">{page('signedInAs')}</p>
               <p className="text-2xl font-semibold text-foreground">
-                {profile?.full_name || profile?.first_name || 'Loading user...'}
+                {profile?.full_name || profile?.first_name || page('loadingUser')}
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs uppercase tracking-wide">
                   {roleLabel}
                 </Badge>
                 {memberSince && (
-                  <span className="text-sm text-muted-foreground">Member since {memberSince}</span>
+                  <span className="text-sm text-muted-foreground">{page('memberSince', { date: memberSince })}</span>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">{profile?.email || 'No email available'}</p>
+              <p className="text-sm text-muted-foreground">{profile?.email || page('noEmailAvailable')}</p>
             </div>
           </div>
           <Button asChild variant="secondary" className="self-start md:self-auto">
@@ -100,7 +100,7 @@ export default function DashboardPage() {
       </Card>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold text-foreground">Quick actions</h2>
+        <h2 className="text-xl font-semibold text-foreground">{page('quickActions')}</h2>
         <div className="flex flex-wrap gap-3">
           {quickLinks.map((link) => {
             const Icon = link.icon;
@@ -125,10 +125,9 @@ export default function DashboardPage() {
         <div className="flex items-start gap-4">
           <AlertTriangle className="h-6 w-6 text-primary" />
           <div className="space-y-1">
-            <p className="text-lg font-semibold text-primary">Website under development</p>
+            <p className="text-lg font-semibold text-primary">{page('developmentTitle')}</p>
             <p className="text-sm text-muted-foreground">
-              Website is under development and construction. Some areas are not ready yet, but these quick links help
-              you reach the parts that are available today.
+              {page('developmentDescription')}
             </p>
           </div>
         </div>
