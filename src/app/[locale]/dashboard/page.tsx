@@ -12,7 +12,7 @@ import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useAuthProfile } from '@/stores/authStore';
 
 export default function DashboardPage() {
-  const locale = useLocale();
+                                                                                                                                                                                                         const locale = useLocale();
   const page = useTranslations('dashboard.page');
   const sidebar = useTranslations('dashboard.sidebar');
   const activity = useTranslations('dashboard.activity');

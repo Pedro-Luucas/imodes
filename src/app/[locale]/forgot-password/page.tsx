@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, ReactNode } from "react";
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -71,10 +71,24 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-page p-16">
-        <div className="relative w-[266px] h-[62px] mb-6">
+  const SuccessContent = () => (
+    <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 text-center shadow-sm sm:p-10">
+      <h1 className="text-lg font-bold leading-7 text-foreground sm:text-xl">
+        {t("checkEmail")}
+      </h1>
+      <p className="text-sm text-muted-foreground">{t("success")}</p>
+      <Link href="/login" className="w-full">
+        <Button className="h-11 w-full text-sm font-medium sm:text-base">
+          {t("backToLogin")}
+        </Button>
+      </Link>
+    </div>
+  );
+
+  const Layout = ({ children }: { children: ReactNode }) => (
+    <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8 sm:gap-10">
+        <div className="relative h-11 w-[186px] sm:h-[62px] sm:w-[266px]">
           <Image
             src="/imodes.png"
             alt="iModes"
@@ -83,90 +97,72 @@ export default function ForgotPasswordPage() {
             priority
           />
         </div>
-
-        <div className="w-full max-w-[450px] bg-background border border-stroke rounded-2xl p-12">
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground leading-7 mb-4">
-              {t("checkEmail")}
-            </h1>
-            <p className="text-muted-foreground mb-6">{t("success")}</p>
-            <Link href="/login">
-              <Button className="w-full">{t("backToLogin")}</Button>
-            </Link>
-          </div>
+        {children}
+        <div className="text-center text-sm text-muted-foreground leading-5">
+          <p>Check your spam folder</p>
+          <p>if you don&apos;t receive the email</p>
         </div>
       </div>
+    </div>
+  );
+
+  if (success) {
+    return (
+      <Layout>
+        <SuccessContent />
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-page p-16">
-      {/* Logo */}
-      <div className="relative w-[266px] h-[62px] mb-6">
-        <Image
-          src="/imodes.png"
-          alt="iModes"
-          fill
-          className="object-contain mix-blend-darken"
-          priority
-        />
-      </div>
-
-      {/* Form Card */}
-      <div className="w-full max-w-[450px] bg-white border border-stroke rounded-2xl p-12 flex flex-col gap-6">
-        {/* Back Button */}
-        <Link href="/login" className="flex items-center gap-2 w-fit">
-          <ArrowLeft className="w-4 h-4 text-foreground" />
-          <span className="text-sm text-foreground">Reset your password</span>
+    <Layout>
+      <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
+        <Link href="/login" className="flex items-center gap-2 text-sm text-foreground">
+          <ArrowLeft className="h-4 w-4 text-foreground" />
+          <span>Reset your password</span>
         </Link>
 
-        {/* Error Message */}
         {apiError && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm text-center">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
             {apiError}
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          {/* Email Field */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">{t("email")}</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-foreground">
+              {t("email")}
+            </Label>
             <Input
               type="email"
               id="email"
               value={email}
               onChange={(e) => handleInputChange(e.target.value)}
               placeholder={t("emailPlaceholder")}
-              className={errors.email ? "border-red-500" : ""}
+              className={`h-10 text-sm ${errors.email ? "border-red-500" : ""}`}
               autoComplete="email"
             />
             {errors.email && (
-              <p className="text-sm text-red-600">{errors.email}</p>
+              <p className="text-xs text-red-600">{errors.email}</p>
             )}
           </div>
 
-          {/* Submit Button */}
-          <Button type="submit" disabled={loading} className="w-full mt-4">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="mt-2 h-11 w-full text-sm font-medium sm:text-base"
+          >
             {loading ? t("submitting") : t("submit")}
           </Button>
         </form>
 
-        {/* Back to Login Link */}
-        <div className="flex items-center justify-center gap-1 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
           <span className="text-foreground">Remember your password?</span>
           <Link href="/login" className="font-medium text-accent hover:underline">
             Back to sign in
           </Link>
         </div>
       </div>
-
-      {/* Footer Text */}
-      <div className="mt-6">
-        <p className="text-sm text-muted-foreground">
-          Check your spam folder if you don&apos;t receive the email
-        </p>
-      </div>
-    </div>
+    </Layout>
   );
 }
