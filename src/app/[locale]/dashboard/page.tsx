@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Smile, Wrench, BrainCircuit, User, UserPlus, Plus } from 'lucide-react';
 
 export default function DashboardPage() {
-  const locale = useLocale();
+                                                                                                                                                                                                         const locale = useLocale();
   const page = useTranslations('dashboard.page');
   const sidebar = useTranslations('dashboard.sidebar');
   const activity = useTranslations('dashboard.activity');

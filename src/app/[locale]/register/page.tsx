@@ -173,211 +173,230 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-page p-16">
-      {/* Logo */}
-      <div className="relative w-[266px] h-[62px] mb-6">
-        <Image
-          src="/imodes.png"
-          alt="iModes"
-          fill
-          className="object-contain mix-blend-darken"
-          priority
-        />
-      </div>
+    <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8 sm:gap-10">
+        {/* Logo */}
+        <div className="relative h-11 w-[186px] sm:h-[62px] sm:w-[266px]">
+          <Image
+            src="/imodes.png"
+            alt="iModes"
+            fill
+            className="object-contain mix-blend-darken"
+            priority
+          />
+        </div>
 
-      {/* Form Card */}
-      <div className="w-full max-w-[450px] bg-white border border-stroke rounded-2xl p-12 flex flex-col gap-6">
-        {/* Back Button */}
-        <Link href="/login" className="flex items-center gap-2 w-fit">
-          <ArrowLeft className="w-4 h-4 text-foreground" />
-          <span className="text-sm text-foreground">Create an account</span>
-        </Link>
+        {/* Form Card */}
+        <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
+          {/* Back Button */}
+          <Link href="/login" className="flex items-center gap-2 text-sm text-foreground">
+            <ArrowLeft className="h-4 w-4 text-foreground" />
+            <span>Create an account</span>
+          </Link>
 
-        {/* Success/Error Messages */}
-        {submitSuccess && (
-          <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm text-center">
-            {apiError || t("success")}
-          </div>
-        )}
-
-        {apiError && !submitSuccess && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm text-center">
-            {apiError}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          {/* First Name & Last Name Row */}
-          <div className="flex gap-2">
-            <div className="flex-1 flex flex-col gap-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                type="text"
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
-                placeholder="John"
-                className={errors.firstName ? "border-red-500" : ""}
-              />
-              {errors.firstName && (
-                <p className="text-sm text-red-600">{errors.firstName}</p>
-              )}
-            </div>
-
-            <div className="flex-1 flex flex-col gap-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                type="text"
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
-                placeholder="Doe"
-                className={errors.lastName ? "border-red-500" : ""}
-              />
-              {errors.lastName && (
-                <p className="text-sm text-red-600">{errors.lastName}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Email Field */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              placeholder={t("emailPlaceholder")}
-              className={errors.email ? "border-red-500" : ""}
-              autoComplete="email"
-            />
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email}</p>
-            )}
-          </div>
-
-          {/* Type Field */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="role">Type</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => handleInputChange("role", value)}
-            >
-              <SelectTrigger 
-                className={`w-full ${errors.role ? "!border-red-500" : ""}`}
-              >
-                <SelectValue placeholder="Select an option" />
-              </SelectTrigger>
-              <SelectContent className={`bg-white border border-stroke ${errors.role ? "!border-red-500" : ""}`}>
-                <SelectItem value="therapist">{t("roleTherapist")}</SelectItem>
-                <SelectItem value="patient">{t("rolePatient")}</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.role && (
-              <p className="text-sm text-red-600">{errors.role}</p>
-            )}
-          </div>
-
-          {/* Phone Field - Only show for therapists */}
-          {formData.role === "therapist" && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+1234567890"
-                className={errors.phone ? "border-red-500" : ""}
-                autoComplete="tel"
-              />
-              {errors.phone && (
-                <p className="text-sm text-red-600">{errors.phone}</p>
-              )}
+          {/* Success/Error Messages */}
+          {submitSuccess && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-center text-sm text-green-700">
+              {apiError || t("success")}
             </div>
           )}
 
-          {/* Password Field */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">{t("password")}</Label>
-            <Input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={(e) => handleInputChange("password", e.target.value)}
-              placeholder={t("passwordPlaceholder")}
-              className={errors.password ? "border-red-500" : ""}
-              autoComplete="new-password"
-            />
-            {errors.password && (
-              <p className="text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
-
-          {/* Confirm Password Field */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-            <Input
-              type="password"
-              id="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-              placeholder={t("confirmPasswordPlaceholder")}
-              className={errors.confirmPassword ? "border-red-500" : ""}
-              autoComplete="new-password"
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-600">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          {/* Terms Checkbox */}
-          <div className="flex flex-col gap-2 mt-4">
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="acceptTerms"
-                checked={formData.acceptTerms}
-                onCheckedChange={(checked) =>
-                  handleInputChange("acceptTerms", checked as boolean)
-                }
-                className={errors.acceptTerms ? "border-red-500" : ""}
-              />
-              <Label
-                htmlFor="acceptTerms"
-                className="font-normal cursor-pointer leading-5 text-foreground"
-              >
-                I agree to{" "}
-                <span className="text-accent hover:underline cursor-pointer">the Terms of Service</span> and{" "}
-                <span className="text-accent hover:underline cursor-pointer">Privacy Policy</span>
-              </Label>
+          {apiError && !submitSuccess && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
+              {apiError}
             </div>
-            {errors.acceptTerms && (
-              <p className="text-sm text-red-600">{errors.acceptTerms}</p>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* First Name & Last Name Row */}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                  First Name
+                </Label>
+                <Input
+                  type="text"
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  placeholder="John"
+                  className={`h-10 text-sm ${errors.firstName ? "border-red-500" : ""}`}
+                />
+                {errors.firstName && (
+                  <p className="text-xs text-red-600">{errors.firstName}</p>
+                )}
+              </div>
+
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                  Last Name
+                </Label>
+                <Input
+                  type="text"
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  placeholder="Doe"
+                  className={`h-10 text-sm ${errors.lastName ? "border-red-500" : ""}`}
+                />
+                {errors.lastName && (
+                  <p className="text-xs text-red-600">{errors.lastName}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Email Field */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                {t("email")}
+              </Label>
+              <Input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder={t("emailPlaceholder")}
+                className={`h-10 text-sm ${errors.email ? "border-red-500" : ""}`}
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p className="text-xs text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Type Field */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="role" className="text-sm font-medium text-foreground">
+                Type
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) => handleInputChange("role", value)}
+              >
+                <SelectTrigger
+                  className={`h-10 w-full text-sm ${errors.role ? "!border-red-500" : ""}`}
+                >
+                  <SelectValue placeholder="Select an option" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="therapist">{t("roleTherapist")}</SelectItem>
+                  <SelectItem value="patient">{t("rolePatient")}</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.role && (
+                <p className="text-xs text-red-600">{errors.role}</p>
+              )}
+            </div>
+
+            {/* Phone Field - Only show for therapists */}
+            {formData.role === "therapist" && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="phone" className="text-sm font-medium text-foreground">
+                  Phone Number
+                </Label>
+                <Input
+                  type="tel"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  placeholder="+1234567890"
+                  className={`h-10 text-sm ${errors.phone ? "border-red-500" : ""}`}
+                  autoComplete="tel"
+                />
+                {errors.phone && (
+                  <p className="text-xs text-red-600">{errors.phone}</p>
+                )}
+              </div>
             )}
+
+            {/* Password Field */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                {t("password")}
+              </Label>
+              <Input
+                type="password"
+                id="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                placeholder={t("passwordPlaceholder")}
+                className={`h-10 text-sm ${errors.password ? "border-red-500" : ""}`}
+                autoComplete="new-password"
+              />
+              {errors.password && (
+                <p className="text-xs text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Confirm Password Field */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+                {t("confirmPassword")}
+              </Label>
+              <Input
+                type="password"
+                id="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                placeholder={t("confirmPasswordPlaceholder")}
+                className={`h-10 text-sm ${errors.confirmPassword ? "border-red-500" : ""}`}
+                autoComplete="new-password"
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-600">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {/* Terms Checkbox */}
+            <div className="mt-1 flex flex-col gap-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="acceptTerms"
+                  checked={formData.acceptTerms}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("acceptTerms", checked as boolean)
+                  }
+                  className={errors.acceptTerms ? "border-red-500" : ""}
+                />
+                <Label
+                  htmlFor="acceptTerms"
+                  className="cursor-pointer text-sm font-medium leading-5 text-foreground"
+                >
+                  I agree to{" "}
+                  <span className="text-accent hover:underline">the Terms of Service</span> and{" "}
+                  <span className="text-accent hover:underline">Privacy Policy</span>
+                </Label>
+              </div>
+              {errors.acceptTerms && (
+                <p className="text-xs text-red-600">{errors.acceptTerms}</p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="mt-2 h-11 w-full text-sm font-medium sm:text-base"
+            >
+              {loading ? t("submitting") : "Create Account"}
+            </Button>
+          </form>
+
+          {/* Login Link */}
+          <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
+            <span className="text-foreground">Already have an account?</span>
+            <Link href="/login" className="font-medium text-accent hover:underline">
+              Sign in
+            </Link>
           </div>
-
-          {/* Submit Button */}
-          <Button type="submit" disabled={loading} className="w-full mt-4">
-            {loading ? t("submitting") : "Create Account"}
-          </Button>
-        </form>
-
-        {/* Login Link */}
-        <div className="flex items-center justify-center gap-1 text-sm">
-          <span className="text-foreground">Already have an account?</span>
-          <Link href="/login" className="font-medium text-accent hover:underline">
-            Sign in
-          </Link>
         </div>
-      </div>
 
-      {/* Footer Text */}
-      <div className="mt-6">
-        <p className="text-sm text-muted-foreground">
-          Secure authentication • GDPR compliant
-        </p>
+        {/* Footer Text */}
+        <div className="text-center text-sm text-muted-foreground leading-5">
+          <p>Your password will be encrypted</p>
+          <p>and stored securely</p>
+        </div>
       </div>
     </div>
   );

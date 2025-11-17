@@ -164,121 +164,125 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-page p-16">
-      {/* Logo */}
-      <div className="relative w-[266px] h-[62px] mb-6">
-        <Image
-          src="/imodes.png" alt="iModes"
-          fill className="object-contain mix-blend-darken"
-          priority
-        />
-      </div>
-
-      {/* Form Card */}
-      <div className="w-full max-w-[450px] bg-white border border-stroke rounded-2xl p-12 flex flex-col gap-6">
-        {/* Title */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold text-foreground leading-7">
-            {t("title")}
-          </h1>
+    <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8 sm:gap-10">
+        {/* Logo */}
+        <div className="relative h-11 w-[186px] sm:h-[62px] sm:w-[266px]">
+          <Image
+            src="/imodes.png" alt="iModes"
+            fill className="object-contain mix-blend-darken"
+            priority
+          />
         </div>
 
-        {/* Error Message */}
-        {apiError && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm text-center">
-            {apiError}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          {/* Email Field */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              placeholder={t("emailPlaceholder")}
-              className={errors.email ? "border-red-500" : ""}
-              autoComplete="email"
-            />
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email}</p>
-            )}
+        {/* Form Card */}
+        <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
+          {/* Title */}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-lg font-bold leading-7 text-foreground sm:text-xl">
+              {t("title")}
+            </h1>
           </div>
 
-          {/* Password Field */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">{t("password")}</Label>
-            <Input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={(e) => handleInputChange("password", e.target.value)}
-              placeholder={t("passwordPlaceholder")}
-              className={errors.password ? "border-red-500" : ""}
-              autoComplete="current-password"
-            />
-            {errors.password && (
-              <p className="text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
+          {/* Error Message */}
+          {apiError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
+              {apiError}
+            </div>
+          )}
 
-          {/* Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="rememberMe"
-                checked={formData.rememberMe}
-                onCheckedChange={(checked) =>
-                  handleInputChange("rememberMe", checked as boolean)
-                }
-              />
-              <Label
-                htmlFor="rememberMe"
-                className="font-medium cursor-pointer"
-              >
-                {t("rememberMe")}
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* Email Field */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                {t("email")}
               </Label>
+              <Input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder={t("emailPlaceholder")}
+                className={`h-10 text-sm ${errors.email ? "border-red-500" : ""}`}
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p className="text-xs text-red-600">{errors.email}</p>
+              )}
             </div>
 
-            <Link
-              href="/forgot-password"
-              className="text-sm font-medium text-accent hover:underline"
+            {/* Password Field */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                {t("password")}
+              </Label>
+              <Input
+                type="password"
+                id="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                placeholder={t("passwordPlaceholder")}
+                className={`h-10 text-sm ${errors.password ? "border-red-500" : ""}`}
+                autoComplete="current-password"
+              />
+              {errors.password && (
+                <p className="text-xs text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={formData.rememberMe}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("rememberMe", checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="rememberMe"
+                  className="cursor-pointer text-sm font-medium text-foreground"
+                >
+                  {t("rememberMe")}
+                </Label>
+              </div>
+
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-accent hover:underline whitespace-nowrap"
+              >
+                {t("forgotPassword")}
+              </Link>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="mt-2 h-11 w-full text-sm font-medium sm:text-base"
             >
-              {t("forgotPassword")}
+              {loading ? t("submitting") : t("submit")}
+            </Button>
+          </form>
+
+          {/* Register Link */}
+          <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
+            <span className="text-foreground">{t("noAccount")}</span>
+            <Link
+              href="/register"
+              className="font-medium text-accent hover:underline"
+            >
+              {t("registerLink")}
             </Link>
           </div>
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-4"
-          >
-            {loading ? t("submitting") : t("submit")}
-          </Button>
-        </form>
-
-        {/* Register Link */}
-        <div className="flex items-center justify-center gap-1 text-sm">
-          <span className="text-foreground">{t("noAccount")}</span>
-          <Link
-            href="/register"
-            className="font-medium text-accent hover:underline"
-          >
-            {t("registerLink")}
-          </Link>
         </div>
-      </div>
 
-      {/* Footer Text */}
-      <div className="mt-6">
-        <p className="text-sm text-muted-foreground">
-          Secure authentication • GDPR compliant
-        </p>
+        {/* Footer Text */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>Secure authentication • GDPR compliant</p>
+        </div>
       </div>
     </div>
   );
