@@ -26,6 +26,11 @@ export default function DashboardPage() {
     return profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
   }, [profile?.role, page]);
 
+  const roleLabel = useMemo(() => {
+    if (!profile?.role) return page('roleFallback');
+    return profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
+  }, [profile?.role, page]);
+
   const memberSince = useMemo(() => {
     if (!profile?.created_at) return null;
     return new Intl.DateTimeFormat(undefined, {
@@ -76,6 +81,59 @@ export default function DashboardPage() {
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
               <UserRound className="h-6 w-6 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">{page('signedInAs')}</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {profile?.full_name || profile?.first_name || page('loadingUser')}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs uppercase tracking-wide">
+                  {roleLabel}
+                </Badge>
+                {memberSince && (
+                  <span className="text-sm text-muted-foreground">{page('memberSince', { date: memberSince })}</span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{profile?.email || page('noEmailAvailable')}</p>
+            </div>
+          </div>
+          <Button asChild variant="secondary" className="self-start md:self-auto">
+            <Link href={`/${locale}/dashboard/settings`}>{sidebar('settings')}</Link>
+          </Button>
+        </div>
+      </div>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">{page('quickActions')}</h2>
+        <div className="flex flex-wrap gap-3">
+          {quickLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <Button
+                key={link.id}
+                asChild
+                variant={link.variant}
+                className="px-5"
+              >
+                <Link href={link.href} className="flex items-center gap-2">
+                  <Icon className="h-5 w-5" />
+                  <span>{link.label}</span>
+                </Link>
+              </Button>
+            );
+          })}
+        </div>
+      </section>
+
+      <Card className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-6 py-5">
+        <div className="flex items-start gap-4">
+          <AlertTriangle className="h-6 w-6 text-primary" />
+          <div className="space-y-1">
+            <p className="text-lg font-semibold text-primary">{page('developmentTitle')}</p>
+            <p className="text-sm text-muted-foreground">
+              {page('developmentDescription')}
+            </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">{page('signedInAs')}</p>
