@@ -105,7 +105,6 @@ function CardsGrid({
                     backfaceVisibility: 'hidden',
                   }}
                   loading="lazy"
-                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
@@ -215,7 +214,6 @@ function FrequentlyUsedCards({
                   backfaceVisibility: 'hidden',
                 }}
                 loading="lazy"
-                unoptimized
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
@@ -322,7 +320,6 @@ function SavedCards({
                   backfaceVisibility: 'hidden',
                 }}
                 loading="lazy"
-                unoptimized
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">

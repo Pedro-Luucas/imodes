@@ -26,11 +26,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       href: '/dashboard/patients',
       icon: Users,
     },
-    {
-      label: t('activity'),
-      href: '/dashboard/activity',
-      icon: Activity,
-    },
+// {
+//   label: t('activity'),
+//   href: '/dashboard/activity',
+//   icon: Activity,
+// },
     {
       label: t('settings'),
       href: '/dashboard/settings',

@@ -5,10 +5,16 @@ import { useTranslations } from 'next-intl';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import { toast } from 'sonner';
-import { CanvasCard as CanvasCardType, Gender, CardCategory, ToolMode, PostItNote } from '@/types/canvas';
+import {
+  CanvasCard as CanvasCardType,
+  Gender,
+  CardCategory,
+  ToolMode,
+  // PostItNote,
+} from '@/types/canvas';
 import { CanvasCard } from './CanvasCard';
 import { CanvasLoading } from './CanvasLoading';
-import { PostItNoteComponent } from './PostItNote';
+//import { PostItNoteComponent } from './PostItNote';
 import { preloadImagesWithPriority } from '@/lib/imagePreloader';
 import { saveCard } from '@/lib/savedCardsTracker';
 import { useCanvasStore, canvasStore } from '@/stores/canvasStore';
@@ -79,9 +85,9 @@ export function CanvasBoard({
 }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const cards = useCanvasStore((state) => state.cards);
-  const notes = useCanvasStore((state) => state.notes);
+  //const notes = useCanvasStore((state) => state.notes);
   const selectedCardId = useCanvasStore((state) => state.selectedCardId);
-  const selectedNoteId = useCanvasStore((state) => state.selectedNoteId);
+  //const selectedNoteId = useCanvasStore((state) => state.selectedNoteId);
   const displayScale = useCanvasStore((state) => state.displayScale);
   const stagePosition = useCanvasStore((state) => state.stagePosition);
   const currentGender = useCanvasStore((state) => state.gender);
@@ -93,10 +99,10 @@ export function CanvasBoard({
     addCard,
     updateCard,
     removeCard,
-    addNote,
-    updateNote,
-    removeNote,
-    bringNoteToFront,
+    //addNote,
+    //updateNote,
+    //removeNote,
+    //bringNoteToFront,
     clearCanvas,
     bringCardToFront,
     selectCard,
@@ -377,21 +383,35 @@ export function CanvasBoard({
       const colorIndex = cards.length % CARD_COLORS.length;
       const cardId = Date.now().toString();
       
-      // Calculate center of viewport in stage coordinates
-      // Account for current stage position and scale
       const cardWidth = 280;
       const cardHeight = 320;
-      
-      // Viewport center in screen coordinates
-      const viewportCenterX = dimensions.width / 2;
-      const viewportCenterY = dimensions.height / 2;
-      
-      // Convert to stage coordinates
-      // Formula: stageCoord = (screenCoord - stagePosition) / scale
-      const centerX = (viewportCenterX - stagePositionRef.current.x) / displayScale;
-      const centerY = (viewportCenterY - stagePositionRef.current.y) / displayScale;
-      
-      // Position card so its center is at viewport center
+
+      // Always fetch up-to-date viewport dimensions (state can lag during layout changes)
+      const container = containerRef.current;
+      const viewportWidth = container?.offsetWidth ?? dimensions.width;
+      const viewportHeight = container?.offsetHeight ?? dimensions.height;
+
+      const stagePos = stagePositionRef.current ?? { x: 0, y: 0 };
+      const scale = displayScale || 1;
+
+      let centerX: number;
+      let centerY: number;
+
+      if (viewportWidth > 0 && viewportHeight > 0) {
+        // Viewport center in screen coordinates
+        const viewportCenterX = viewportWidth / 2;
+        const viewportCenterY = viewportHeight / 2;
+
+        // Convert to stage coordinates
+        centerX = (viewportCenterX - stagePos.x) / scale;
+        centerY = (viewportCenterY - stagePos.y) / scale;
+      } else {
+        // Fallback to keeping relative to current stage origin if dimensions are unavailable
+        centerX = -stagePos.x / scale;
+        centerY = -stagePos.y / scale;
+      }
+
+      // Position card so its center is at the computed center
       const cardX = centerX - cardWidth / 2;
       const cardY = centerY - cardHeight / 2;
       
@@ -735,42 +755,51 @@ export function CanvasBoard({
       const stage = e.target.getStage();
       if (!stage) return;
 
-      if (toolMode === 'text' && e.target === stage) {
-        const pointerPos = stage.getPointerPosition();
-        if (!pointerPos) return;
-        const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
-        const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
-
-        const noteWidth = 142;
-        const noteHeight = 100;
-
-        const newNote: PostItNote = {
-          id: Date.now().toString(),
-          x: stageX - noteWidth / 2,
-          y: stageY - noteHeight / 2,
-          text: '',
-          width: noteWidth,
-          height: noteHeight,
-          isEditing: true,
-        };
-
-        addNote(newNote);
-        selectNote(newNote.id);
-        selectCard(null);
-        markDirty('interaction');
-
-        if (sessionId) {
-          void publish('note.add', { note: newNote });
-        }
-        return;
-      }
+      // if (toolMode === 'text' && e.target === stage) {
+      //   const pointerPos = stage.getPointerPosition();
+      //   if (!pointerPos) return;
+      //   const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
+      //   const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
+      //
+      //   const noteWidth = 142;
+      //   const noteHeight = 100;
+      //
+      //   const newNote: PostItNote = {
+      //     id: Date.now().toString(),
+      //     x: stageX - noteWidth / 2,
+      //     y: stageY - noteHeight / 2,
+      //     text: '',
+      //     width: noteWidth,
+      //     height: noteHeight,
+      //     isEditing: true,
+      //   };
+      //
+      //   addNote(newNote);
+      //   selectNote(newNote.id);
+      //   selectCard(null);
+      //   markDirty('interaction');
+      //
+      //   if (sessionId) {
+      //     void publish('note.add', { note: newNote });
+      //   }
+      //   return;
+      // }
 
       if (e.target === stage) {
         selectCard(null);
         selectNote(null);
       }
-    },
-    [addNote, displayScale, markDirty, publish, selectCard, selectNote, sessionId, toolMode]
+  },
+    [
+      // addNote,
+      // displayScale,
+      // markDirty,
+      // publish,
+      selectCard,
+      selectNote,
+      // sessionId,
+      // toolMode,
+    ]
   );
 
   useEffect(() => {
@@ -788,113 +817,113 @@ export function CanvasBoard({
     };
   }, [stopCanvasPan]);
 
-  const handleNoteSelect = useCallback(
-    (id: string) => {
-      selectNote(id);
-      selectCard(null);
-      bringNoteToFront(id, { skipHistory: true });
-    },
-    [bringNoteToFront, selectCard, selectNote]
-  );
-
-  const handleNoteDragEnd = useCallback(
-    (id: string, x: number, y: number) => {
-      updateNote(id, { x, y }, { skipHistory: true });
-
-      if (dragDebounceTimerRef.current) {
-        clearTimeout(dragDebounceTimerRef.current);
-      }
-      dragDebounceTimerRef.current = setTimeout(() => {
-        saveHistorySnapshot();
-      }, 300);
-
-      markDirty('interaction');
-
-      if (sessionId) {
-        void publish('note.patch', { id, patch: { x, y } });
-      }
-    },
-    [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
-  );
-
-  const handleNoteTextChange = useCallback(
-    (id: string, text: string) => {
-      updateNote(id, { text }, { skipHistory: true });
-
-      if (dragDebounceTimerRef.current) {
-        clearTimeout(dragDebounceTimerRef.current);
-      }
-      dragDebounceTimerRef.current = setTimeout(() => {
-        saveHistorySnapshot();
-      }, 500);
-
-      markDirty('interaction');
-
-      if (sessionId) {
-        void publish('note.patch', { id, patch: { text } });
-      }
-    },
-    [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
-  );
-
-  const handleNoteEditStateChange = useCallback(
-    (id: string, isEditing: boolean) => {
-      updateNote(id, { isEditing }, { skipHistory: true });
-    },
-    [updateNote]
-  );
-
-  const handleNoteSizeChange = useCallback(
-    (id: string, width: number, height: number) => {
-      updateNote(id, { width, height }, { skipHistory: true });
-
-      if (dragDebounceTimerRef.current) {
-        clearTimeout(dragDebounceTimerRef.current);
-      }
-      dragDebounceTimerRef.current = setTimeout(() => {
-        saveHistorySnapshot();
-      }, 300);
-
-      markDirty('interaction');
-
-      if (sessionId) {
-        void publish('note.patch', { id, patch: { width, height } });
-      }
-    },
-    [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
-  );
-
-  // Delete selected note on Delete/Backspace key (but not cards)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only delete notes, not cards
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNoteId && !selectedCardId) {
-        // Check if user is typing in an input/textarea - don't delete in that case
-        const activeElement = document.activeElement;
-        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-          return;
-        }
-        removeNote(selectedNoteId);
-        selectNote(null);
-        markDirty('interaction');
-
-        if (sessionId) {
-          void publish('note.remove', { id: selectedNoteId });
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    markDirty,
-    publish,
-    removeNote,
-    selectedCardId,
-    selectedNoteId,
-    selectNote,
-    sessionId,
-  ]);
+  // const handleNoteSelect = useCallback(
+  //   (id: string) => {
+  //     selectNote(id);
+  //     selectCard(null);
+  //     bringNoteToFront(id, { skipHistory: true });
+  //   },
+  //   [bringNoteToFront, selectCard, selectNote]
+  // );
+  //
+  // const handleNoteDragEnd = useCallback(
+  //   (id: string, x: number, y: number) => {
+  //     updateNote(id, { x, y }, { skipHistory: true });
+  //
+  //     if (dragDebounceTimerRef.current) {
+  //       clearTimeout(dragDebounceTimerRef.current);
+  //     }
+  //     dragDebounceTimerRef.current = setTimeout(() => {
+  //       saveHistorySnapshot();
+  //     }, 300);
+  //
+  //     markDirty('interaction');
+  //
+  //     if (sessionId) {
+  //       void publish('note.patch', { id, patch: { x, y } });
+  //     }
+  //   },
+  //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
+  // );
+  //
+  // const handleNoteTextChange = useCallback(
+  //   (id: string, text: string) => {
+  //     updateNote(id, { text }, { skipHistory: true });
+  //
+  //     if (dragDebounceTimerRef.current) {
+  //       clearTimeout(dragDebounceTimerRef.current);
+  //     }
+  //     dragDebounceTimerRef.current = setTimeout(() => {
+  //       saveHistorySnapshot();
+  //     }, 500);
+  //
+  //     markDirty('interaction');
+  //
+  //     if (sessionId) {
+  //       void publish('note.patch', { id, patch: { text } });
+  //     }
+  //   },
+  //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
+  // );
+  //
+  // const handleNoteEditStateChange = useCallback(
+  //   (id: string, isEditing: boolean) => {
+  //     updateNote(id, { isEditing }, { skipHistory: true });
+  //   },
+  //   [updateNote]
+  // );
+  //
+  // const handleNoteSizeChange = useCallback(
+  //   (id: string, width: number, height: number) => {
+  //     updateNote(id, { width, height }, { skipHistory: true });
+  //
+  //     if (dragDebounceTimerRef.current) {
+  //       clearTimeout(dragDebounceTimerRef.current);
+  //     }
+  //     dragDebounceTimerRef.current = setTimeout(() => {
+  //       saveHistorySnapshot();
+  //     }, 300);
+  //
+  //     markDirty('interaction');
+  //
+  //     if (sessionId) {
+  //       void publish('note.patch', { id, patch: { width, height } });
+  //     }
+  //   },
+  //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
+  // );
+  //
+  // // Delete selected note on Delete/Backspace key (but not cards)
+  // useEffect(() => {
+  //   const handleKeyDown = (e: KeyboardEvent) => {
+  //     // Only delete notes, not cards
+  //     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNoteId && !selectedCardId) {
+  //       // Check if user is typing in an input/textarea - don't delete in that case
+  //       const activeElement = document.activeElement;
+  //       if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+  //         return;
+  //       }
+  //       removeNote(selectedNoteId);
+  //       selectNote(null);
+  //       markDirty('interaction');
+  //
+  //       if (sessionId) {
+  //         void publish('note.remove', { id: selectedNoteId });
+  //       }
+  //     }
+  //   };
+  //
+  //   window.addEventListener('keydown', handleKeyDown);
+  //   return () => window.removeEventListener('keydown', handleKeyDown);
+  // }, [
+  //   markDirty,
+  //   publish,
+  //   removeNote,
+  //   selectedCardId,
+  //   selectedNoteId,
+  //   selectNote,
+  //   sessionId,
+  // ]);
 
   return (
     <div 
@@ -944,18 +973,20 @@ export function CanvasBoard({
                 onRotationChange={handleCardRotationChange}
               />
             ))}
-            {notes.map((note) => (
-              <PostItNoteComponent
-                key={note.id}
-                note={note}
-                isSelected={selectedNoteId === note.id}
-                onSelect={() => handleNoteSelect(note.id)}
-                onDragEnd={handleNoteDragEnd}
-                onTextChange={handleNoteTextChange}
-                onEditStateChange={handleNoteEditStateChange}
-                onSizeChange={handleNoteSizeChange}
-              />
-            ))}
+            {/*
+            // {notes.map((note) => (
+            //   <PostItNoteComponent
+            //     key={note.id}
+            //     note={note}
+            //     isSelected={selectedNoteId === note.id}
+            //     onSelect={() => handleNoteSelect(note.id)}
+            //     onDragEnd={handleNoteDragEnd}
+            //     onTextChange={handleNoteTextChange}
+            //     onEditStateChange={handleNoteEditStateChange}
+            //     onSizeChange={handleNoteSizeChange}
+            //   />
+            // ))}
+            */}
           </Layer>
         </Stage>
       )}

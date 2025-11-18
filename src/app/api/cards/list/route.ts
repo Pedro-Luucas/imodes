@@ -5,6 +5,21 @@ import { hasRole } from '@/lib/roleAuth';
 
 const BUCKET_NAME = 'modes_cards';
 
+const supabaseProjectUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+
+const PUBLIC_STORAGE_PREFIX = supabaseProjectUrl
+  ? `${supabaseProjectUrl.replace(/\/+$/, '')}/storage/v1/object/public/${BUCKET_NAME}`
+  : null;
+
+function buildPublicUrl(path: string): string | undefined {
+  if (!PUBLIC_STORAGE_PREFIX) {
+    return undefined;
+  }
+  const normalizedPath = path.replace(/^\/+/, '');
+  return `${PUBLIC_STORAGE_PREFIX}/${normalizedPath}`;
+}
+
 /**
  * GET /api/cards/list
  * 
@@ -76,11 +91,17 @@ export async function GET(
           category: category,
           cardNumber: cardNumber,
           gender: gender || undefined,
+          publicUrl: buildPublicUrl(fullPath),
         };
       })
       .sort((a, b) => a.cardNumber - b.cardNumber);
 
-    return NextResponse.json(cards, { status: 200 });
+    return NextResponse.json(cards, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+      },
+    });
   } catch (error) {
     console.error('Error in cards/list route:', error);
     return NextResponse.json(

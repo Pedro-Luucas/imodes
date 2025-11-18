@@ -275,14 +275,14 @@ export default function PatientsPage() {
             {t('title')}
           </h1>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="default">
+            {/*<Button variant="secondary" size="default">
               <Download className="w-5 h-5" />
               {t('export')}
             </Button>
             <Button variant="secondary" size="default">
               <Plus className="w-5 h-5" />
               {t('startNewSession')}
-            </Button>
+            </Button>*/}
             <Button
               variant="default"
               size="default"
@@ -324,7 +324,7 @@ export default function PatientsPage() {
             </div>
           </Card>
 
-          <Card className="border border-input rounded-2xl p-6">
+         {/* <Card className="border border-input rounded-2xl p-6">
             <div className="flex flex-col gap-4">
               <h3 className="text-base font-medium text-foreground">
                 {t('completedSessions')}
@@ -346,7 +346,7 @@ export default function PatientsPage() {
               </p>
               <p className="text-xs text-muted-foreground">{t('dueToday')}</p>
             </div>
-          </Card>
+          </Card>*/}
         </div>
 
         {/* Assignments Section */}
@@ -425,15 +425,15 @@ export default function PatientsPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <Button
+                    {/*<Button
                       variant="default"
                       className="flex-1 h-10"
                       onClick={() => handleSchedule(patient.id)}
                     >
                       {t('schedule')}
-                    </Button>
+                    </Button>*/}
                     <Button
-                      variant="secondary"
+                      variant="default"
                       className="flex-1 h-10"
                       onClick={() => handleCreateAssignment(patient)}
                     >

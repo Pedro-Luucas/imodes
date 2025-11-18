@@ -19,13 +19,13 @@ import {
 } from 'lucide-react';
 import type { CanvasSession } from '@/types/canvas';
 
-interface Assignment {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  status: 'in-progress' | 'overdue' | 'completed';
-}
+// interface Assignment {
+//   id: string;
+//   title: string;
+//   description: string;
+//   dueDate: string;
+//   status: 'in-progress' | 'overdue' | 'completed';
+// }
 
 export default function DashboardPatientPage() {
   const t = useTranslations('dashboardPatient');
@@ -39,36 +39,36 @@ export default function DashboardPatientPage() {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
 
-  const [assignments] = useState<Assignment[]>([
-    {
-      id: '1',
-      title: 'Assignment #3',
-      description: 'Track your daily emotions and triggers',
-      dueDate: 'Dec 22, 2025',
-      status: 'in-progress',
-    },
-    {
-      id: '2',
-      title: 'Assignment #3',
-      description: 'Track your daily emotions and triggers',
-      dueDate: 'Dec 22, 2025',
-      status: 'in-progress',
-    },
-    {
-      id: '3',
-      title: 'Assignment #3',
-      description: 'Track your daily emotions and triggers',
-      dueDate: 'Dec 22, 2025',
-      status: 'overdue',
-    },
-    {
-      id: '4',
-      title: 'Assignment #3',
-      description: 'Track your daily emotions and triggers',
-      dueDate: 'Dec 22, 2025',
-      status: 'completed',
-    },
-  ]);
+  // const [assignments] = useState<Assignment[]>([
+  //   {
+  //     id: '1',
+  //     title: 'Assignment #3',
+  //     description: 'Track your daily emotions and triggers',
+  //     dueDate: 'Dec 22, 2025',
+  //     status: 'in-progress',
+  //   },
+  //   {
+  //     id: '2',
+  //     title: 'Assignment #3',
+  //     description: 'Track your daily emotions and triggers',
+  //     dueDate: 'Dec 22, 2025',
+  //     status: 'in-progress',
+  //   },
+  //   {
+  //     id: '3',
+  //     title: 'Assignment #3',
+  //     description: 'Track your daily emotions and triggers',
+  //     dueDate: 'Dec 22, 2025',
+  //     status: 'overdue',
+  //   },
+  //   {
+  //     id: '4',
+  //     title: 'Assignment #3',
+  //     description: 'Track your daily emotions and triggers',
+  //     dueDate: 'Dec 22, 2025',
+  //     status: 'completed',
+  //   },
+  // ]);
 
   useEffect(() => {
     const checkTherapist = async () => {
@@ -226,18 +226,12 @@ export default function DashboardPatientPage() {
               {t('progressOverview')}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className="text-4xl font-bold text-orange-400">12</span>
-            <p className="text-sm text-muted-foreground">
-              {t('progressOverview')}
-            </p>
-          </div>
         </div>
       </Card>
-
-      {/* Stats Cards */}
+    {/*
+      Stats Cards   
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Next Session */}
+        Next Session
         <Card className="border border-input rounded-2xl p-4">
           <div className="flex gap-4 items-center">
             <div className="bg-stone-100 rounded-lg p-4">
@@ -253,7 +247,7 @@ export default function DashboardPatientPage() {
           </div>
         </Card>
 
-        {/* Active Assignment */}
+        Active Assignment
         <Card className="border border-input rounded-2xl p-4">
           <div className="flex gap-4 items-center">
             <div className="bg-stone-100 rounded-lg p-4">
@@ -269,7 +263,7 @@ export default function DashboardPatientPage() {
           </div>
         </Card>
 
-        {/* Days Since Last Session */}
+        Days Since Last Session
         <Card className="border border-input rounded-2xl p-4">
           <div className="flex gap-4 items-center">
             <div className="bg-stone-100 rounded-lg p-4">
@@ -287,7 +281,7 @@ export default function DashboardPatientPage() {
       </div>
 
       {/* Two Column Layout - Sessions & Assignments */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Recent Sessions */}
         <Card className="border border-input rounded-2xl p-4">
           <div className="flex flex-col gap-4 h-full">
@@ -378,51 +372,53 @@ export default function DashboardPatientPage() {
           </div>
         </Card>
 
-        {/* My Assignments */}
-        <Card className="border border-input rounded-2xl p-4">
-          <div className="flex flex-col gap-4 h-full">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">{t('myAssignments')}</h2>
-              <button className="text-sm text-sky-600 hover:underline">
-                {t('viewAll')}
-              </button>
-            </div>
-
-            {/* Assignments List */}
-            <div className="flex flex-col gap-2 flex-1">
-              {assignments.map((assignment) => (
-                <Card key={assignment.id} className="border border-input rounded-2xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-stone-100 rounded-lg p-6 flex items-center justify-center">
-                        <PencilLine className="w-6 h-6 text-stone-600" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-base font-medium text-foreground">
-                          {assignment.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">{assignment.description}</p>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
-                          <span>{assignment.dueDate}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge className={`${getStatusBadge(assignment.status)} h-8 px-4 rounded-lg font-semibold`}>
-                      {getStatusLabel(assignment.status)}
-                    </Badge>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            {/* Load More */}
-            <button className="text-sm text-sky-600 hover:underline text-center">
-              {t('loadMoreAssignments')}
-            </button>
-          </div>
-        </Card>
+        {/*
+        // {/* My Assignments * /}
+        // <Card className="border border-input rounded-2xl p-4">
+        //   <div className="flex flex-col gap-4 h-full">
+        //     {/* Header * /}
+        //     <div className="flex items-center justify-between">
+        //       <h2 className="text-xl font-semibold text-foreground">{t('myAssignments')}</h2>
+        //       <button className="text-sm text-sky-600 hover:underline">
+        //         {t('viewAll')}
+        //       </button>
+        //     </div>
+        //
+        //     {/* Assignments List * /}
+        //     <div className="flex flex-col gap-2 flex-1">
+        //       {assignments.map((assignment) => (
+        //         <Card key={assignment.id} className="border border-input rounded-2xl p-4">
+        //           <div className="flex items-center justify-between">
+        //             <div className="flex items-center gap-4">
+        //               <div className="bg-stone-100 rounded-lg p-6 flex items-center justify-center">
+        //                 <PencilLine className="w-6 h-6 text-stone-600" />
+        //               </div>
+        //               <div className="flex flex-col gap-2">
+        //                 <h3 className="text-base font-medium text-foreground">
+        //                   {assignment.title}
+        //                 </h3>
+        //                 <p className="text-sm text-muted-foreground">{assignment.description}</p>
+        //                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
+        //                   <Calendar className="w-4 h-4" />
+        //                   <span>{assignment.dueDate}</span>
+        //                 </div>
+        //               </div>
+        //             </div>
+        //             <Badge className={`${getStatusBadge(assignment.status)} h-8 px-4 rounded-lg font-semibold`}>
+        //               {getStatusLabel(assignment.status)}
+        //             </Badge>
+        //           </div>
+        //         </Card>
+        //       ))}
+        //     </div>
+        //
+        //     {/* Load More * /}
+        //     <button className="text-sm text-sky-600 hover:underline text-center">
+        //       {t('loadMoreAssignments')}
+        //     </button>
+        //   </div>
+        // </Card>
+        */}
       </div>
     </div>
   );

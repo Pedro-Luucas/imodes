@@ -1,11 +1,15 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import { usePageMetadata } from '@/hooks/usePageMetadata';
-import { Card } from '@/components/ui/card';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
+import { useMemo } from 'react';
+import { AlertTriangle, AppWindow, Settings, Users, UserRound } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Smile, Wrench, BrainCircuit, User, UserPlus, Plus } from 'lucide-react';
+import { usePageMetadata } from '@/hooks/usePageMetadata';
+import { useAuthProfile } from '@/stores/authStore';
 
 export default function DashboardPage() {
                                                                                                                                                                                                          const locale = useLocale();
@@ -15,41 +19,12 @@ export default function DashboardPage() {
   
   usePageMetadata(page('pageTitle'), page('pageDescription'));
 
-  const assignments = [
-    {
-      id: 1,
-      title: 'Mood Tracking Exercising',
-      patient: 'Sarah M.',
-      dueDate: 'Today',
-      status: t('inProgress'),
-      icon: Smile,
-      iconBg: 'bg-sky-50',
-      iconColor: 'text-sky-600',
-      badgeClass: 'bg-green-50 text-green-600 border-transparent',
-    },
-    {
-      id: 2,
-      title: 'Cognitive Restructuring Worksheet',
-      patient: 'John D.',
-      dueDate: 'Today',
-      status: t('pending'),
-      icon: Wrench,
-      iconBg: 'bg-yellow-50',
-      iconColor: 'text-yellow-600',
-      badgeClass: 'bg-orange-50 text-orange-500 border-transparent',
-    },
-    {
-      id: 3,
-      title: 'Mindfulness Practice Log',
-      patient: 'John D.',
-      dueDate: 'Today',
-      status: t('completed'),
-      icon: BrainCircuit,
-      iconBg: 'bg-emerald-50',
-      iconColor: 'text-emerald-600',
-      badgeClass: 'bg-neutral-200 text-muted-foreground border-transparent',
-    },
-  ];
+  const profile = useAuthProfile();
+
+  const roleLabel = useMemo(() => {
+    if (!profile?.role) return page('roleFallback');
+    return profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
+  }, [profile?.role, page]);
 
   const roleLabel = useMemo(() => {
     if (!profile?.role) return page('roleFallback');
@@ -159,51 +134,62 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">
               {page('developmentDescription')}
             </p>
-          </div>
-        </div>
-
-        {/* Recent Sessions Section */}
-        <div className="px-6">
-          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-semibold text-foreground">
-              {t('recentSessions')}
-            </h2>
-            <div className="flex flex-col gap-2">
-              {recentSessions.map((session) => (
-                <Card
-                  key={session.id}
-                  className="border border-input rounded-2xl p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {/* Icon */}
-                      <div
-                        className={`w-14 h-14 rounded-lg flex items-center justify-center ${session.iconBg}`}
-                      >
-                        <User className={`w-6 h-6 ${session.iconColor}`} />
-                      </div>
-                      {/* Info */}
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-base font-medium text-foreground">
-                          {session.patient}
-                        </h3>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
-                          <span>{session.date}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Action */}
-                    <Button variant="secondary" size="sm" className="h-8 px-3">
-                      View
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">{page('signedInAs')}</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {profile?.full_name || profile?.first_name || page('loadingUser')}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs uppercase tracking-wide">
+                  {roleLabel}
+                </Badge>
+                {memberSince && (
+                  <span className="text-sm text-muted-foreground">{page('memberSince', { date: memberSince })}</span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{profile?.email || page('noEmailAvailable')}</p>
             </div>
           </div>
+          <Button asChild variant="secondary" className="self-start md:self-auto">
+            <Link href={`/${locale}/dashboard/settings`}>{sidebar('settings')}</Link>
+          </Button>
         </div>
-      </div>
+      </Card>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">{page('quickActions')}</h2>
+        <div className="flex flex-wrap gap-3">
+          {quickLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <Button
+                key={link.id}
+                asChild
+                variant={link.variant}
+                className="px-5"
+              >
+                <Link href={link.href} className="flex items-center gap-2">
+                  <Icon className="h-5 w-5" />
+                  <span>{link.label}</span>
+                </Link>
+              </Button>
+            );
+          })}
+        </div>
+      </section>
+
+      <Card className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-6 py-5">
+        <div className="flex items-start gap-4">
+          <AlertTriangle className="h-6 w-6 text-primary" />
+          <div className="space-y-1">
+            <p className="text-lg font-semibold text-primary">{page('developmentTitle')}</p>
+            <p className="text-sm text-muted-foreground">
+              {page('developmentDescription')}
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

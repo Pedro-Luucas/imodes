@@ -20,6 +20,20 @@ interface UseCardsDataResult {
  * Combines image list API and text parsing API
  * Returns matched cards with images and text data
  */
+const CARDS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
+
+const cardsCache = new Map<
+  string,
+  {
+    timestamp: number;
+    data: CardWithData[];
+  }
+>();
+
+function getCacheKey(category: CardCategory, gender: Gender | undefined, locale: string) {
+  return `${category}:${gender ?? 'all'}:${locale}`;
+}
+
 export function useCardsData(
   category: CardCategory,
   gender: Gender | undefined,
@@ -28,6 +42,7 @@ export function useCardsData(
   const [cards, setCards] = useState<CardWithData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cacheKey = getCacheKey(category, gender, locale);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +50,13 @@ export function useCardsData(
 
     async function fetchCards() {
       if (!category) return;
+
+      const cached = cardsCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CARDS_CACHE_TTL_MS) {
+        setCards(cached.data);
+        setLoading(false);
+        return;
+      }
 
       // Delay fetching cards to prioritize canvas images loading first
       // This gives canvas images time to load before competing for bandwidth
@@ -73,13 +95,13 @@ export function useCardsData(
         // Fetch signed URLs for images and match with text data
         const cardsWithData: CardWithData[] = await Promise.all(
           cardList.map(async (cardMeta) => {
-            // Get signed URL for image
-            const imageResponse = await fetch(`/api/cards/image?path=${encodeURIComponent(cardMeta.path)}`);
-            let imageUrl: string | undefined;
-            
-            if (imageResponse.ok) {
-              const imageData = await imageResponse.json();
-              imageUrl = imageData.signed_url;
+            let imageUrl: string | undefined = cardMeta.publicUrl;
+            if (!imageUrl) {
+              const imageResponse = await fetch(`/api/cards/image?path=${encodeURIComponent(cardMeta.path)}`);
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                imageUrl = imageData.signed_url;
+              }
             }
 
             // Match card metadata with text data by number
@@ -97,6 +119,7 @@ export function useCardsData(
         if (!cancelled) {
           setCards(cardsWithData);
           setLoading(false);
+          cardsCache.set(cacheKey, { data: cardsWithData, timestamp: Date.now() });
         }
       } catch (err) {
         if (!cancelled) {
@@ -114,7 +137,7 @@ export function useCardsData(
         clearTimeout(timeoutId);
       }
     };
-  }, [category, gender, locale]);
+  }, [category, gender, locale, cacheKey]);
 
   return { cards, loading, error };
 }

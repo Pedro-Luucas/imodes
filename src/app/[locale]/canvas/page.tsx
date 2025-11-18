@@ -68,7 +68,7 @@ export default function CanvasPage() {
   const creatingSessionRef = useRef(false);
   const [patientProfile, setPatientProfile] = useState<Profile | null>(null);
   const [therapistProfile, setTherapistProfile] = useState<Profile | null>(null);
-  const [sessionNotes, setSessionNotes] = useState<string>('');
+  //  const [sessionNotes, setSessionNotes] = useState<string>('');
   const [sessionType, setSessionType] = useState<string>('Individual');
   const [showPatientDialog, setShowPatientDialog] = useState(false);
   const [currentDuration, setCurrentDuration] = useState<number>(0); // Current session duration in seconds
@@ -193,9 +193,9 @@ const storeSessionRef = useRef<string | null>(null);
           setSessionName(session?.name || null);
           
           // Load notes from session data
-          if (session?.data?.therapistSettings?.notes) {
+          /*if (session?.data?.therapistSettings?.notes) {
             setSessionNotes(session.data.therapistSettings.notes);
-          }
+          }*/
 
           // Set session type from session data
           if (session.type) {
@@ -447,11 +447,11 @@ const storeSessionRef = useRef<string | null>(null);
         therapistProfile={therapistProfile}
         sessionType={sessionType}
         language="English"
-        initialNotes={sessionNotes}
-        onNotesChange={(notes) => {
+        //initialNotes={sessionNotes}
+        /*onNotesChange={(notes) => {
           setSessionNotes(notes);
           // Notes will be auto-saved by SessionDetailsPanel
-        }}
+        }}*/
         currentDuration={currentDuration}
       />
 
@@ -520,7 +520,7 @@ const storeSessionRef = useRef<string | null>(null);
               <MousePointer2 className="w-5 h-5" />
             </Button>
 
-            <Button
+            {/*<Button
               variant={toolMode === 'text' ? 'default' : 'secondary'}
               size="icon"
               className="size-10"
@@ -528,7 +528,7 @@ const storeSessionRef = useRef<string | null>(null);
               title={tControls('textTool')}
             >
               <Type className="w-5 h-5" />
-            </Button>
+            </Button>*/}  
           </div>
         </div>
 

@@ -42,12 +42,12 @@ export async function GET(
 
     // Build text file path based on category
     let textPath: string;
-    if (category === 'boat') {
-      textPath = `boat/text/${locale}/Text_Boat_${locale === 'en' ? 'English' : 'Portuguese'}.txt`;
-    } else if (category === 'wave') {
-      textPath = `wave/text/${locale}/Text_Wave_${locale === 'en' ? 'English' : 'Portuguese'}.txt`;
+    const normalizedCategory = category.toLowerCase();
+
+    if (normalizedCategory === 'boat' || normalizedCategory === 'wave') {
+      textPath = `${normalizedCategory}/text/${locale}.txt`;
     } else {
-      textPath = `${category}/text/${locale}.txt`;
+      textPath = `${normalizedCategory}/text/${locale}.txt`;
     }
 
     const supabase = createSupabaseServerClient();

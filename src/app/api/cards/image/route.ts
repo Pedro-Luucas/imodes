@@ -6,10 +6,14 @@ const BUCKET_NAME = 'modes_cards';
 
 /**
  * GET /api/cards/image
- * 
- * Gets a signed URL for a card image
+ *
+ * Generates a short-lived signed URL for a card image.
+ * This endpoint is only required when the storage bucket remains private.
+ * If `modes_cards` is public, prefer the deterministic `publicUrl`
+ * returned by `/api/cards/list` and skip this route entirely.
+ *
  * Query params: path (file path in bucket)
- * Returns signed URL for image access
+ * Returns: { signed_url }
  */
 export async function GET(
   request: NextRequest
