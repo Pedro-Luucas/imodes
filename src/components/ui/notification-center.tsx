@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, Check, X, ExternalLink, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,6 +8,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import {
   useNotifications,
@@ -28,6 +36,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const [open, setOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const notifications = useNotifications();
   const unreadCount = useUnreadCount();
   const loading = useNotificationLoading();
@@ -81,73 +90,120 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
     await markAllAsRead();
   };
 
+  const notificationHeader = (variant: 'dialog' | 'popover') => (
+    <div
+      className={`flex items-center justify-between px-4 py-3 border-b border-stroke ${
+        variant === 'dialog' ? 'sticky top-0 z-10 bg-white' : ''
+      }`}
+    >
+      <h3 className="font-semibold">Notifications</h3>
+      <div className="flex items-center gap-2">
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            className="h-8 text-xs"
+          >
+            <Check className="w-4 h-4 mr-1" />
+            Mark all as read
+          </Button>
+        )}
+        {variant === 'dialog' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
+  const notificationList = (variant: 'dialog' | 'popover') => (
+    <div className={`overflow-auto p-3 ${variant === 'dialog' ? 'max-h-[70vh]' : 'max-h-[65vh] sm:max-h-[400px]'}`}>
+      {loading && notifications.length === 0 ? (
+        <div className="flex items-center justify-center py-8">
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Bell className="w-12 h-12 text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">No notifications</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {notifications.map((notification) => (
+            <NotificationItem
+              key={notification.id}
+              notification={notification}
+              getTimeAgo={getTimeAgo}
+              onNotificationClick={handleNotificationClick}
+              onDismiss={handleDismiss}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const triggerButton = (
+    <Button variant="secondary" size="icon" className={`relative ${className}`}>
+      <Bell className="w-5 h-5" />
+      {unreadCount > 0 && (
+        <Badge
+          variant="destructive"
+          className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+        >
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </Badge>
+      )}
+    </Button>
+  );
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="secondary" size="icon" className={`relative ${className}`}>
-            <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0 border-stroke" align="end">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-stroke">
-          <h3 className="font-semibold">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="h-8 text-xs"
-            >
-              <Check className="w-4 h-4 mr-1" />
-              Mark all as read
-            </Button>
-          )}
-        </div>
+      {isMobile ? (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+          <DialogContent
+            className="p-0 gap-0 border-stroke rounded-2xl shadow-2xl w-[min(420px,calc(100vw-1.5rem))] max-w-none overflow-hidden"
+            showCloseButton={false}
+          >
+            <DialogHeader className="sr-only">
+              <DialogTitle>Notifications</DialogTitle>
+              <DialogDescription>Review your latest notifications</DialogDescription>
+            </DialogHeader>
+            {notificationHeader('dialog')}
+            {notificationList('dialog')}
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+          <PopoverContent
+            className="w-[calc(100vw-2rem)] max-w-[400px] sm:w-[400px] p-0 border-stroke rounded-2xl shadow-lg"
+            align="end"
+            sideOffset={12}
+            alignOffset={-4}
+          >
+            {notificationHeader('popover')}
+            {notificationList('popover')}
+          </PopoverContent>
+        </Popover>
+      )}
 
-        <div className="overflow-auto max-h-[400px] p-3">
-          {loading && notifications.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Bell className="w-12 h-12 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No notifications</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  getTimeAgo={getTimeAgo}
-                  onNotificationClick={handleNotificationClick}
-                  onDismiss={handleDismiss}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-
-    {selectedNotification && (
-      <AcceptRejectPatientDialog
-        notification={selectedNotification}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onComplete={handleDialogComplete}
-      />
-    )}
+      {selectedNotification && (
+        <AcceptRejectPatientDialog
+          notification={selectedNotification}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onComplete={handleDialogComplete}
+        />
+      )}
     </>
   );
 }
@@ -157,6 +213,40 @@ interface NotificationItemProps {
   getTimeAgo: (date: string) => string;
   onNotificationClick: (notification: Notification) => void;
   onDismiss: (e: React.MouseEvent, id: string) => void;
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia(query);
+    const updateMatch = (event: MediaQueryList | MediaQueryListEvent) => {
+      setMatches(event.matches);
+    };
+
+    updateMatch(mediaQuery);
+
+    const listener = (event: MediaQueryListEvent) => updateMatch(event);
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', listener);
+    } else {
+      // Safari fallback
+      mediaQuery.addListener(listener);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', listener);
+      } else {
+        mediaQuery.removeListener(listener);
+      }
+    };
+  }, [query]);
+
+  return matches;
 }
 
 function NotificationItem({
