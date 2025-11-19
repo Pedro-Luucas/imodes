@@ -1,10 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { LayoutDashboard, Users, Activity, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, Settings, X, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuthProfile } from '@/stores/authStore';
+import { useRouter } from '@/i18n/navigation';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,6 +18,9 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const t = useTranslations('dashboard.sidebar');
   const pathname = usePathname();
+  const profile = useAuthProfile();
+  const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const navItems = [
     {
@@ -47,6 +54,57 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     return pathname.includes(href);
   };
 
+  const getInitials = () => {
+    if (profile?.first_name) {
+      return profile.first_name.charAt(0).toUpperCase();
+    }
+    if (profile?.email) {
+      return profile.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
+  const getDisplayName = () => {
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
+    if (profile?.full_name) {
+      return profile.full_name;
+    }
+    return profile?.email || 'User';
+  };
+
+  useEffect(() => {
+    const fetchAvatarUrl = async () => {
+      if (profile?.avatar_url) {
+        try {
+          const response = await fetch('/api/profile/avatar/url');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.signed_url) {
+              setAvatarUrl(data.signed_url);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching avatar URL:', error);
+        }
+      } else {
+        setAvatarUrl(null);
+      }
+    };
+
+    fetchAvatarUrl();
+  }, [profile?.avatar_url]);
+
+  const handleProfileClick = () => {
+    if (profile?.role === 'patient') {
+      router.push('/dashboard-patient/settings');
+    } else {
+      router.push('/dashboard/settings');
+    }
+    onClose();
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -76,7 +134,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </button>
 
         {/* Logo */}
-        <div className="px-6 py-8">
+        <div className="px-6 pt-8 pb-4">
           <div className="w-[160px] h-[37px] relative">
             <Image
               src="/imodes.png"
@@ -87,6 +145,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             />
           </div>
         </div>
+
+        {/* Profile Card */}
+        {profile && (
+          <button
+            onClick={handleProfileClick}
+            className="mx-6 mb-6 flex items-center gap-3 rounded-2xl border border-input bg-muted/40 px-4 py-3 text-left transition hover:border-primary"
+          >
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={avatarUrl || undefined} alt={profile.first_name || profile.email || 'User'} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col flex-1">
+              <span className="text-sm font-semibold text-foreground">{getDisplayName()}</span>
+              {profile?.email && <span className="text-xs text-muted-foreground truncate">{profile.email}</span>}
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 px-6">

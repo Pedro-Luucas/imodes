@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Settings, Menu,  LogOut } from 'lucide-react';
+import { Settings, Menu, LogOut } from 'lucide-react';
 import { useAuthProfile, useAuthActions } from '@/stores/authStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -101,57 +101,44 @@ export function Header({ onMenuClick }: HeaderProps) {
     }
   };
 
-  const handleGoToCanvasSelection = () => {
-    router.push('/canvas-selection');
-  };
-
   return (
     <header className="border-b border-input bg-background sticky top-0 z-30">
-      <div className="flex items-center justify-between px-8 py-6">
-        {/* Left: Mobile menu + Search */}
-        <div className="flex items-center gap-4 flex-1">
-          {/* Mobile menu button */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-8 md:py-6">
+        {/* Left: Mobile menu */}
+        <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
-            className="lg:hidden text-foreground hover:text-accent"
+            className="md:hidden text-foreground hover:text-accent"
+            aria-label="Open navigation menu"
           >
             <Menu className="w-6 h-6" />
           </button>
-
         </div>
 
         {/* Right: Icons + User */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6 flex-1 justify-end flex-wrap">
           {/* Notification Button */}
-          <NotificationCenter className="rounded-lg" />
+          <NotificationCenter className="rounded-lg h-10 w-10 md:h-11 md:w-11" />
 
           {/* Settings Button */}
           <Button
             variant="secondary"
             size="icon"
-            className="rounded-lg"
+            className="rounded-lg h-10 w-10 md:h-11 md:w-11"
             onClick={handleSettingsClick}
           >
             <Settings className="w-5 h-5" />
           </Button>
 
-          {/* Canvas Selection Button */}
-          <Button
-            variant="outline"
-            onClick={handleGoToCanvasSelection}
-          >
-            Canvas Selection (test)
-          </Button>
-
           {/* User Profile */}
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
             <Avatar className="w-10 h-10">
               <AvatarImage src={avatarUrl || undefined} alt={t('profilePicture')} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium text-foreground hidden md:block">
+            <span className="text-sm font-medium text-foreground">
               {getDisplayName()}
             </span>
           </div>

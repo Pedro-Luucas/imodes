@@ -6,20 +6,14 @@ import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Download,
-  Plus,
-  UserPlus,
-  Calendar,
-  Users,
-  ClipboardList,
-} from 'lucide-react';
+import { Plus, UserPlus, Calendar, Users, ClipboardList } from 'lucide-react';
 import { useAuthProfile } from '@/stores/authStore';
 import type { Profile } from '@/types/auth';
 import { PatientDetailsDialog } from '@/components/dashboard/PatientDetailsDialog';
 import { AddPatientDialog } from '@/components/dashboard/AddPatientDialog';
 import { CreateAssignmentDialog } from '@/components/dashboard/CreateAssignmentDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useRouter } from '@/i18n/navigation';
 
 // Extended data for demonstration
 interface ExtendedPatient extends Profile {
@@ -37,6 +31,7 @@ const PATIENTS_PER_PAGE = 10;
 export default function PatientsPage() {
   usePageMetadata('Patients', 'Manage and view all your patients.');
   const t = useTranslations('dashboard.patients');
+  const router = useRouter();
   const profile = useAuthProfile();
   const [patients, setPatients] = useState<ExtendedPatient[]>([]);
   const [displayedPatients, setDisplayedPatients] = useState<PatientWithAvatar[]>([]);
@@ -49,7 +44,15 @@ export default function PatientsPage() {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedPatientForAssignment, setSelectedPatientForAssignment] = useState<ExtendedPatient | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
   //const [avatarUrls, setAvatarUrls] = useState<Record<string, string | null>>({});
+
+  // Redirect patients away from therapist dashboard
+  useEffect(() => {
+    if (profile && profile.role === 'patient') {
+      router.push('/dashboard-patient');
+    }
+  }, [profile, router]);
 
   // Fetch avatar URL for a patient
   const fetchAvatarUrl = useCallback(async (patientId: string, avatarUrl: string | undefined) => {
@@ -70,6 +73,8 @@ export default function PatientsPage() {
   // Fetch patients data
   const fetchPatients = useCallback(async () => {
     if (!profile?.id) return;
+    // Don't fetch if user is a patient
+    if (profile.role === 'patient') return;
 
     try {
       setLoading(true);
@@ -122,6 +127,17 @@ export default function PatientsPage() {
     fetchPatients();
   }, [fetchPatients]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Load more patients
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -171,7 +187,22 @@ export default function PatientsPage() {
     pendingAssignments: 5, // Mock data
   };
 
+  const handleNavigateToPatient = (patientId: string) => {
+    router.push(`/dashboard/patients/${patientId}`);
+  };
+
+  const handleCardClick = (patient: ExtendedPatient) => {
+    if (isMobile) {
+      handleNavigateToPatient(patient.id);
+    }
+  };
+
   const handleViewPatient = (patient: ExtendedPatient) => {
+    if (isMobile) {
+      handleNavigateToPatient(patient.id);
+      return;
+    }
+
     setSelectedPatient(patient);
     setDialogOpen(true);
   };
@@ -179,6 +210,11 @@ export default function PatientsPage() {
   const handleSchedule = (patientId: string) => {
     console.log('Schedule session for patient:', patientId);
     // TODO: Implement scheduling logic
+  };
+
+  const handleStartNewSession = () => {
+    console.log('Start new session clicked');
+    // TODO: Connect to session creation flow
   };
 
   const handleCreateAssignment = (patient: ExtendedPatient) => {
@@ -193,69 +229,68 @@ export default function PatientsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-6 pt-8 pb-16 px-40">
+      <div className="flex flex-col gap-6 pt-6 pb-16 px-4 md:px-8 xl:px-40">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between px-6 py-1">
-          <div className="h-8 w-64 bg-muted animate-pulse rounded" />
-          <div className="flex gap-2">
-            <div className="h-10 w-24 bg-muted animate-pulse rounded-lg" />
-            <div className="h-10 w-40 bg-muted animate-pulse rounded-lg" />
-            <div className="h-10 w-32 bg-muted animate-pulse rounded-lg" />
+        <div className="flex flex-col gap-3 px-1 md:px-6 md:flex-row md:items-center md:justify-between">
+          <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+          <div className="hidden md:flex gap-2">
+            <div className="h-10 w-32 bg-muted animate-pulse rounded-xl" />
           </div>
         </div>
 
         {/* Stats Cards Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 px-6">
+        <div className="grid grid-cols-2 gap-3 px-1 sm:px-6 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="border border-input rounded-2xl p-6">
-              <div className="flex flex-col gap-4">
-                <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                <div className="h-10 w-16 bg-muted animate-pulse rounded" />
-                <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+            <Card key={i} className="border border-input rounded-2xl p-4 sm:p-5">
+              <div className="flex flex-col gap-3">
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                <div className="h-8 w-12 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
               </div>
             </Card>
           ))}
         </div>
 
+        {/* CTA Skeleton */}
+        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row">
+          <div className="h-12 w-full border-2 border-dashed border-input rounded-xl bg-muted/30" />
+          <div className="h-12 w-full rounded-xl bg-muted animate-pulse md:hidden" />
+        </div>
+
         {/* Assignments Section Skeleton */}
-        <div className="px-6">
-          <div className="h-7 w-32 bg-muted animate-pulse rounded mb-4" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <div className="px-1 sm:px-6">
+          <div className="h-6 w-32 bg-muted animate-pulse rounded mb-4" />
+          <div className="flex flex-col gap-4">
             {[...Array(4)].map((_, i) => (
               <Card key={i} className="border border-input rounded-2xl p-4">
                 <div className="flex flex-col gap-4">
                   {/* Patient Header Skeleton */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-muted animate-pulse rounded-lg" />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-muted animate-pulse rounded-xl" />
                       <div className="flex flex-col gap-2">
-                        <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                        <div className="h-4 w-40 bg-muted animate-pulse rounded" />
+                        <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-24 bg-muted animate-pulse rounded" />
                       </div>
                     </div>
-                    <div className="h-8 w-16 bg-muted animate-pulse rounded-lg" />
+                    <div className="h-7 w-16 bg-muted animate-pulse rounded-full" />
                   </div>
 
                   {/* Patient Stats Skeleton */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                      <div className="h-4 w-8 bg-muted animate-pulse rounded" />
-                    </div>
-                    <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                    </div>
-                    <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <div className="h-4 w-16 bg-muted animate-pulse rounded" />
-                      <div className="h-4 w-12 bg-muted animate-pulse rounded" />
-                    </div>
+                  <div className="flex flex-col divide-y divide-input rounded-xl border border-input">
+                    {[...Array(3)].map((_, statIndex) => (
+                      <div key={statIndex} className="flex items-center justify-between px-4 py-2">
+                        <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-10 bg-muted animate-pulse rounded" />
+                      </div>
+                    ))}
                   </div>
 
                   {/* Action Buttons Skeleton */}
-                  <div className="flex gap-2">
-                    <div className="flex-1 h-10 bg-muted animate-pulse rounded-lg" />
-                    <div className="flex-1 h-10 bg-muted animate-pulse rounded-lg" />
+                  <div className="flex flex-col gap-2 md:flex-row">
+                    <div className="h-11 w-full bg-muted animate-pulse rounded-lg" />
+                    <div className="h-11 w-full bg-muted animate-pulse rounded-lg" />
+                    <div className="hidden h-11 w-full bg-muted animate-pulse rounded-lg md:inline-flex" />
                   </div>
                 </div>
               </Card>
@@ -268,21 +303,13 @@ export default function PatientsPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-6 pt-8 pb-16 px-40">
+      <div className="flex flex-col gap-6 pt-6 pb-16 px-4 md:px-8 xl:px-40">
         {/* Page Title & Actions */}
-        <div className="flex items-center justify-between px-6 py-1">
+        <div className="flex flex-col gap-3 px-1 md:px-6 md:flex-row md:items-center md:justify-between">
           <h1 className="text-2xl font-semibold text-foreground">
             {t('title')}
           </h1>
-          <div className="flex items-center gap-2">
-            {/*<Button variant="secondary" size="default">
-              <Download className="w-5 h-5" />
-              {t('export')}
-            </Button>
-            <Button variant="secondary" size="default">
-              <Plus className="w-5 h-5" />
-              {t('startNewSession')}
-            </Button>*/}
+          <div className="hidden md:flex items-center gap-2">
             <Button
               variant="default"
               size="default"
@@ -295,13 +322,13 @@ export default function PatientsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 px-6">
-          <Card className="border border-input rounded-2xl p-6">
-            <div className="flex flex-col gap-4">
-              <h3 className="text-base font-medium text-foreground">
+        <div className="grid grid-cols-2 gap-3 px-1 sm:px-6 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t('totalPatients')}
               </h3>
-              <p className="text-4xl font-bold text-primary leading-5">
+              <p className="text-3xl font-bold text-primary leading-tight">
                 {stats.totalPatients}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -310,12 +337,12 @@ export default function PatientsPage() {
             </div>
           </Card>
 
-          <Card className="border border-input rounded-2xl p-6">
-            <div className="flex flex-col gap-4">
-              <h3 className="text-base font-medium text-foreground">
+          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t('activeSessions')}
               </h3>
-              <p className="text-4xl font-bold text-primary leading-5">
+              <p className="text-3xl font-bold text-primary leading-tight">
                 {stats.activeSessions}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -324,69 +351,92 @@ export default function PatientsPage() {
             </div>
           </Card>
 
-         {/* <Card className="border border-input rounded-2xl p-6">
-            <div className="flex flex-col gap-4">
-              <h3 className="text-base font-medium text-foreground">
+          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t('completedSessions')}
               </h3>
-              <p className="text-4xl font-bold text-primary leading-5">
+              <p className="text-3xl font-bold text-primary leading-tight">
                 {stats.completedSessions}
               </p>
               <p className="text-xs text-muted-foreground">{t('thisMonth')}</p>
             </div>
           </Card>
 
-          <Card className="border border-input rounded-2xl p-6">
-            <div className="flex flex-col gap-4">
-              <h3 className="text-base font-medium text-foreground">
+          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t('pendingAssignments')}
               </h3>
-              <p className="text-4xl font-bold text-primary leading-5">
+              <p className="text-3xl font-bold text-primary leading-tight">
                 {stats.pendingAssignments}
               </p>
               <p className="text-xs text-muted-foreground">{t('dueToday')}</p>
             </div>
-          </Card>*/}
+          </Card>
+        </div>
+
+        {/* CTA Section */}
+        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row md:items-center">
+          <Button
+            variant="outline"
+            className="h-12 w-full border-2 border-dashed border-input bg-background text-foreground shadow-none hover:bg-muted"
+            onClick={handleStartNewSession}
+          >
+            <Plus className="w-4 h-4" />
+            {t('startNewSession')}
+          </Button>
+          <Button
+            variant="default"
+            className="h-12 w-full md:hidden"
+            onClick={() => setAddPatientDialogOpen(true)}
+          >
+            <UserPlus className="w-5 h-5" />
+            {t('addPatient')}
+          </Button>
         </div>
 
         {/* Assignments Section */}
-        <div className="px-6">
+        <div className="px-1 sm:px-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
             {t('assignments')}
           </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            {displayedPatients.slice(0, 4).map((patient, index) => (
+          <div className="flex flex-col gap-4">
+            {displayedPatients.map((patient) => (
               <Card
-                key={`assignment-${patient.id}-${index}`}
-                className="border border-input rounded-2xl p-4"
+                key={`assignment-${patient.id}`}
+                className={`border border-input rounded-2xl p-4 shadow-sm transition ${
+                  isMobile ? 'cursor-pointer hover:shadow-md' : ''
+                }`}
+                onClick={() => handleCardClick(patient)}
               >
                 <div className="flex flex-col gap-4">
                   {/* Patient Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage
-                        src={patient.avatarSignedUrl || undefined}
-                        alt={patient.full_name || 'Profile picture'}
-                      />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {patient.full_name
-                          ? patient.full_name
-                              .split(' ')
-                              .slice(0, 2)
-                              .map((n) => n[0])
-                              .join('')
-                              .toUpperCase()
-                          : 'P'}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage
+                          src={patient.avatarSignedUrl || undefined}
+                          alt={patient.full_name || 'Profile picture'}
+                        />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {patient.full_name
+                            ? patient.full_name
+                                .split(' ')
+                                .slice(0, 2)
+                                .map((n) => n[0])
+                                .join('')
+                                .toUpperCase()
+                            : 'P'}
+                        </AvatarFallback>
+                      </Avatar>
 
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-base font-medium text-foreground">
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-base font-semibold text-foreground">
                           {patient.full_name}
                         </h3>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="w-3.5 h-3.5" />
                           <span>
                             {t('memberSince')}{' '}
                             {new Date(patient.created_at).toLocaleDateString()}
@@ -394,58 +444,71 @@ export default function PatientsPage() {
                         </div>
                       </div>
                     </div>
-                    <Badge className="bg-green-50 text-green-600 border-transparent px-4 h-8 rounded-lg font-semibold">
+                    <Badge className="bg-green-100 text-green-700 border-none px-4 h-7 rounded-full font-medium">
                       {t('active')}
                     </Badge>
                   </div>
 
                   {/* Patient Stats */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <span className="text-sm text-foreground">{t('sessions')}</span>
-                      <span className="text-sm text-foreground">
+                  <div className="flex flex-col divide-y divide-input rounded-xl border border-input">
+                    <div className="flex items-center justify-between px-4 py-2">
+                      <span className="text-sm text-muted-foreground">
+                        {t('sessions')}
+                      </span>
+                      <span className="text-sm font-medium text-foreground">
                         {patient.sessions}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <span className="text-sm text-foreground">
+                    <div className="flex items-center justify-between px-4 py-2">
+                      <span className="text-sm text-muted-foreground">
                         {t('lastSession')}
                       </span>
-                      <span className="text-sm text-foreground">
+                      <span className="text-sm font-medium text-foreground">
                         {patient.lastSession}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between py-2.5 border-b border-input">
-                      <span className="text-sm text-foreground">{t('progress')}</span>
-                      <span className="text-sm text-foreground">
+                    <div className="flex items-center justify-between px-4 py-2">
+                      <span className="text-sm text-muted-foreground">
+                        {t('progress')}
+                      </span>
+                      <span className="text-sm font-medium text-foreground">
                         {patient.progress}
                       </span>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    {/*<Button
-                      variant="default"
-                      className="flex-1 h-10"
-                      onClick={() => handleSchedule(patient.id)}
-                    >
-                      {t('schedule')}
-                    </Button>*/}
+                  <div className="flex flex-col gap-2 md:flex-row">
                     <Button
                       variant="default"
-                      className="flex-1 h-10"
-                      onClick={() => handleCreateAssignment(patient)}
+                      className="h-11 w-full"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleSchedule(patient.id);
+                      }}
                     >
-                      <ClipboardList className="w-4 h-4" />
-                      {t('assignment')}
+                      {t('schedule')}
                     </Button>
                     <Button
                       variant="secondary"
-                      className="flex-1 h-10"
-                      onClick={() => handleViewPatient(patient)}
+                      className="h-11 w-full"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleViewPatient(patient);
+                      }}
                     >
                       {t('view')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="hidden h-11 w-full md:inline-flex md:w-auto"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCreateAssignment(patient);
+                      }}
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      {t('assignment')}
                     </Button>
                   </div>
                 </div>

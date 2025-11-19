@@ -67,7 +67,10 @@ export default async function middleware(request: NextRequest) {
 
         if (profile) {
           // Check if patient is trying to access therapist dashboard
-          if (profile.role === 'patient' && pathname.includes('/dashboard') && !pathname.includes('/dashboard-patient')) {
+          const isDashboardRoute = pathname === `/${locale}/dashboard` || pathname.startsWith(`/${locale}/dashboard/`);
+          const isDashboardPatientRoute = pathname === `/${locale}/dashboard-patient` || pathname.startsWith(`/${locale}/dashboard-patient/`);
+
+          if (profile.role === 'patient' && isDashboardRoute && !isDashboardPatientRoute) {
             const dashboardUrl = new URL(`/${locale}/dashboard-patient`, request.url);
             return NextResponse.redirect(dashboardUrl);
           }
