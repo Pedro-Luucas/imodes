@@ -181,7 +181,7 @@ export function CanvasHeader({
   return (
     <>
       <div className="bg-white border-b border-gray-200 w-full">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-2 py-1 md:px-6 md:py-4">
           {/* Left Section - Menu & Title */}
           <div className="flex items-center gap-4">
             <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -189,9 +189,9 @@ export function CanvasHeader({
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="size-10"
+                  className="size-8 md:size-10"
                 >
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-4 h-4 md:w-6 md:h-6" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
@@ -236,19 +236,19 @@ export function CanvasHeader({
 
           
           <div className="flex flex-col">
-            <span className="text-sm text-zinc-500">{sessionTitle || displayTitle}</span>
-            <span className="text-base font-medium text-foreground">
+            <span className="text-xs md:text-sm text-zinc-500">{sessionTitle || displayTitle}</span>
+            <span className="text-sm md:text-base font-medium text-foreground">
               {sessionSubtitle || displaySubtitle}
             </span>
           </div>
         </div>
 
         {/* Right Section - Actions & Avatar */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="default" className="h-10">
-                <UserRound className="w-5 h-5" />
+              <Button variant="secondary" size="default" className="h-8 md:h-10">
+                <UserRound className="w-4 h-4 md:w-6 md:h-6" />
                 {t('gender')}
               </Button>
             </DropdownMenuTrigger>
@@ -271,21 +271,21 @@ export function CanvasHeader({
           <Button 
             variant="secondary" 
             size="default" 
-            className="h-10"
+            className="h-8 md:h-10"
             onClick={handleSave}
             disabled={!onSave}
           >
-            <Save className="w-5 h-5" />
+            <Save className="w-4 h-4 md:w-6 md:h-6" />
             {t('save')}
           </Button>
           
           <Button 
             variant="secondary" 
             size="default" 
-            className="h-10"
+            className="h-8 md:h-10"
             onClick={toggleSessionPanel}
           >
-            <Calendar className="w-5 h-5" />
+              <Calendar className="w-4 h-4 md:w-6 md:h-6" />
             {t('session')}
           </Button>
 

@@ -69,17 +69,17 @@ function CardsGrid({
   }, [onCardSelect]);
 
   return (
-    <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
+    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400 md:h-6 md:w-6" />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center py-8 text-sm text-red-500">
+        <div className="flex items-center justify-center py-8 text-xs text-red-500 md:text-sm">
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
           {cards.map((card) => (
             <div
               key={card.path}
@@ -186,15 +186,15 @@ function FrequentlyUsedCards({
 
   if (frequentCards.length === 0) {
     return (
-      <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
-        <div className="text-sm text-gray-500 text-center py-8">{t('noFrequentlyUsed')}</div>
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">{t('noFrequentlyUsed')}</div>
       </div>
     );
   }
 
   return (
-    <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
-      <div className="grid grid-cols-3 gap-3">
+    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
         {frequentCards.map((cardUsage) => (
           <div
             key={`${cardUsage.category}-${cardUsage.cardNumber}`}
@@ -292,15 +292,15 @@ function SavedCards({
 
   if (savedCards.length === 0) {
     return (
-      <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
-        <div className="text-sm text-gray-500 text-center py-8">{t('noSavedCards')}</div>
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">{t('noSavedCards')}</div>
       </div>
     );
   }
 
   return (
-    <div className="absolute left-72 top-0 bg-white border border-stroke rounded-2xl p-4 max-h-[600px] overflow-y-auto w-[480px] shadow-lg">
-      <div className="grid grid-cols-3 gap-3">
+    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
         {savedCards.map((savedCard) => (
           <div
             key={`${savedCard.category}-${savedCard.cardNumber}`}
@@ -328,7 +328,7 @@ function SavedCards({
             )}
             {/* Remove button on hover */}
             <button
-              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 md:right-2 md:top-2 md:p-1.5"
               onClick={(e) => {
                 e.stopPropagation();
                 removeSavedCard(savedCard.cardNumber, savedCard.category);
@@ -374,140 +374,144 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
   );
 
   return (
-    <div className={`flex gap-4 absolute left-8 top-8 z-10 ${!isOpen ? 'hidden' : ''}`}>
-      {/* Main Panel */}
-      <div className="bg-white border border-stroke rounded-2xl p-6 w-64">
+    <div className={`absolute left-2 top-2 z-10 md:left-8 md:top-8 ${!isOpen ? 'hidden' : ''}`}>
+      <div className="relative">
+        {/* Main Panel */}
+        <div className="bg-white border border-stroke rounded-2xl w-full max-w-sm p-4 md:max-w-none md:w-64 md:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-base font-medium text-foreground">{t('title')}</span>
+        <div className="mb-3 flex items-center justify-between md:mb-4">
+          <span className="text-sm font-medium text-foreground md:text-base">{t('title')}</span>
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 hover:bg-transparent"
+            className="size-6 hover:bg-transparent md:size-8"
             onClick={onClose}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
         </div>
 
-        {/* Modes Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('modes')}
-            className="flex items-center border border-stroke justify-between w-full py-2 px-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Smile className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-medium">{t('modes')}</span>
-            </div>
-            {expandedSection === 'modes' ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+        <div className="flex flex-col gap-3 overflow-y-auto pr-1 max-h-[60vh] md:gap-4 md:max-h-[70vh]">
+          {/* Modes Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('modes')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <Smile className="h-4 w-4 text-amber-500 md:h-5 md:w-5" />
+                <span className="text-xs font-medium md:text-sm">{t('modes')}</span>
+              </div>
+              {expandedSection === 'modes' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+          </div>
 
-        {/* Needs Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('needs')}
-            className="flex items-center border border-stroke justify-between w-full py-2 px-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <div className="text-red-500">❤️</div>
-              <span className="text-sm font-medium">{t('needs')}</span>
-            </div>
-            {expandedSection === 'needs' ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+          {/* Needs Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('needs')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-red-500 md:text-sm">❤️</div>
+                <span className="text-xs font-medium md:text-sm">{t('needs')}</span>
+              </div>
+              {expandedSection === 'needs' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+          </div>
 
-        {/* Strengths Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('strengths')}
-            className="flex items-center border border-stroke justify-between w-full py-2 px-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium">{t('strengths')}</span>
-            </div>
-            {expandedSection === 'strengths' ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+          {/* Strengths Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('strengths')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
+                <span className="text-xs font-medium md:text-sm">{t('strengths')}</span>
+              </div>
+              {expandedSection === 'strengths' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+          </div>
 
-        {/* Boat & Wave Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('boat')}
-            className="flex items-center border border-stroke justify-between w-full py-2 px-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Waves className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium">{t('boatAndWave')}</span>
-            </div>
-            {expandedSection === 'boat' ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+          {/* Boat & Wave Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('boat')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <Waves className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
+                <span className="text-xs font-medium md:text-sm">{t('boatAndWave')}</span>
+              </div>
+              {expandedSection === 'boat' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+          </div>
 
-        {/* Frequently Used Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('frequent')}
-            className="flex items-center border border-stroke justify-between w-full py-2 px-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium">{t('frequentlyUsed')}</span>
-            </div>
-            {expandedSection === 'frequent' ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
+          {/* Frequently Used Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('frequent')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
+                <span className="text-xs font-medium md:text-sm">{t('frequentlyUsed')}</span>
+              </div>
+              {expandedSection === 'frequent' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+            {expandedSection === 'frequent' && (
+              <FrequentlyUsedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'frequent'} />
             )}
-          </button>
-          {expandedSection === 'frequent' && (
-            <FrequentlyUsedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'frequent'} />
-          )}
-        </div>
+          </div>
 
-        {/* Saved Cards Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('saved')}
-            className="flex items-center border border-stroke justify-between w-full py-2 px-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium">{t('savedCards')}</span>
-            </div>
-            {expandedSection === 'saved' ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
+          {/* Saved Cards Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('saved')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
+                <span className="text-xs font-medium md:text-sm">{t('savedCards')}</span>
+              </div>
+              {expandedSection === 'saved' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+            {expandedSection === 'saved' && (
+              <SavedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'saved'} />
             )}
-          </button>
-          {expandedSection === 'saved' && (
-            <SavedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'saved'} />
-          )}
+          </div>
         </div>
       </div>
-      
+
       {/* Render all card grids (always mounted, hidden when not expanded) */}
       {cardGrids}
     </div>
+  </div>
   );
 }
 
