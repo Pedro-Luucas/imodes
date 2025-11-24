@@ -18,7 +18,7 @@ export default async function middleware(request: NextRequest) {
   const locale = routing.locales.includes(pathnameLocale as typeof routing.locales[number]) ? pathnameLocale : routing.defaultLocale;
   
   // Define public routes that don't require authentication
-  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const publicPaths = ['/auth', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
   const isPublicPath = publicPaths.some(path => 
     pathname === `/${locale}${path}` || pathname.startsWith(`/${locale}${path}/`)
   );
@@ -30,7 +30,7 @@ export default async function middleware(request: NextRequest) {
     
     if (!accessToken) {
       // No auth token found, redirect to login
-      const loginUrl = new URL(`/${locale}/login`, request.url);
+      const loginUrl = new URL(`/${locale}/auth/login`, request.url);
       // Add redirect parameter to return user to original destination after login
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
@@ -53,7 +53,7 @@ export default async function middleware(request: NextRequest) {
         
         // If token is invalid or user not found, redirect to login
         if (error || !user) {
-          const loginUrl = new URL(`/${locale}/login`, request.url);
+          const loginUrl = new URL(`/${locale}/auth/login`, request.url);
           loginUrl.searchParams.set('redirect', pathname);
           return NextResponse.redirect(loginUrl);
         }
@@ -94,7 +94,7 @@ export default async function middleware(request: NextRequest) {
     } catch (error) {
       // If validation fails, redirect to login
       console.error('Token validation error:', error);
-      const loginUrl = new URL(`/${locale}/login`, request.url);
+      const loginUrl = new URL(`/${locale}/auth/login`, request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }

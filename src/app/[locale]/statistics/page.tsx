@@ -39,7 +39,7 @@ export default function StatisticsPage() {
   
   const handleLogout = async () => {
     await logoutAction();
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   const [therapistStats, setTherapistStats] = useState<TherapistStats | null>(null);

@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   usePageMetadata('Register', 'Create a new account on iModes platform.');
@@ -42,6 +42,8 @@ export default function RegisterPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -78,11 +80,6 @@ export default function RegisterPage() {
       newErrors.email = t("errors.emailRequired");
     } else if (!validateEmail(formData.email)) {
       newErrors.email = t("errors.emailInvalid");
-    }
-
-    // Phone validation (required for therapists)
-    if (formData.role === "therapist" && !formData.phone.trim()) {
-      newErrors.phone = t("errors.phoneRequired");
     }
 
     // Password validation
@@ -135,7 +132,7 @@ export default function RegisterPage() {
         setApiError(response.message);
         
         setTimeout(() => {
-          router.push('/login');
+          router.push('/auth/login');
         }, 2000);
       } catch (error) {
         setApiError(error instanceof Error ? error.message : "Registration failed. Please try again.");
@@ -189,7 +186,7 @@ export default function RegisterPage() {
         {/* Form Card */}
         <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
           {/* Back Button */}
-          <Link href="/login" className="flex items-center gap-2 text-sm text-foreground">
+          <Link href="/auth/login" className="flex items-center gap-2 text-sm text-foreground">
             <ArrowLeft className="h-4 w-4 text-foreground" />
             <span>Create an account</span>
           </Link>
@@ -289,41 +286,30 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Phone Field - Only show for therapists */}
-            {formData.role === "therapist" && (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="phone" className="text-sm font-medium text-foreground">
-                  Phone Number
-                </Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="+1234567890"
-                  className={`h-10 text-sm ${errors.phone ? "border-red-500" : ""}`}
-                  autoComplete="tel"
-                />
-                {errors.phone && (
-                  <p className="text-xs text-red-600">{errors.phone}</p>
-                )}
-              </div>
-            )}
-
             {/* Password Field */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="password" className="text-sm font-medium text-foreground">
                 {t("password")}
               </Label>
-              <Input
-                type="password"
-                id="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder={t("passwordPlaceholder")}
-                className={`h-10 text-sm ${errors.password ? "border-red-500" : ""}`}
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder={t("passwordPlaceholder")}
+                  className={`h-10 pr-10 text-sm ${errors.password ? "border-red-500" : ""}`}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs text-red-600">{errors.password}</p>
               )}
@@ -334,15 +320,25 @@ export default function RegisterPage() {
               <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
                 {t("confirmPassword")}
               </Label>
-              <Input
-                type="password"
-                id="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                placeholder={t("confirmPasswordPlaceholder")}
-                className={`h-10 text-sm ${errors.confirmPassword ? "border-red-500" : ""}`}
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  placeholder={t("confirmPasswordPlaceholder")}
+                  className={`h-10 pr-10 text-sm ${errors.confirmPassword ? "border-red-500" : ""}`}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label="Toggle confirm password visibility"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-xs text-red-600">{errors.confirmPassword}</p>
               )}
@@ -386,7 +382,7 @@ export default function RegisterPage() {
           {/* Login Link */}
           <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
             <span className="text-foreground">Already have an account?</span>
-            <Link href="/login" className="font-medium text-accent hover:underline">
+            <Link href="/auth/login" className="font-medium text-accent hover:underline">
               Sign in
             </Link>
           </div>

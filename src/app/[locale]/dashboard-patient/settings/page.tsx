@@ -257,7 +257,7 @@ export default function PatientSettingsPage() {
       
       // Redirect to login after a short delay
       setTimeout(() => {
-        router.push('/login');
+        router.push('/auth/login');
       }, 1500);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('errors.deleteFailed'));

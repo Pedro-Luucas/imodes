@@ -86,7 +86,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     try {
       await logout();
       logoutAction();
-      router.push('/login');
+      router.push('/auth/login');
     } catch (error) {
       console.error('Logout error:', error);
       setIsLoggingOut(false);

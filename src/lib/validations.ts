@@ -36,23 +36,8 @@ export const registerSchema = z.object({
     .string()
     .min(1, 'First name is required')
     .max(100, 'First name must not exceed 100 characters'),
-  phone: z
-    .string()
-    .min(1, 'Phone is required for therapists')
-    .optional(),
-}).refine(
-  (data) => {
-    // Phone is required for therapists
-    if (data.role === 'therapist' && !data.phone) {
-      return false;
-    }
-    return true;
-  },
-  {
-    message: 'Phone is required for therapists',
-    path: ['phone'],
-  }
-);
+  phone: z.string().optional(),
+});
 
 /**
  * Validation schema for forgot password requests

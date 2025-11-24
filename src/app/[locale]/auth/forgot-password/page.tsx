@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
         {t("checkEmail")}
       </h1>
       <p className="text-sm text-muted-foreground">{t("success")}</p>
-      <Link href="/login" className="w-full">
+      <Link href="/auth/login" className="w-full">
         <Button className="h-11 w-full text-sm font-medium sm:text-base">
           {t("backToLogin")}
         </Button>
@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
   return (
     <Layout>
       <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
-        <Link href="/login" className="flex items-center gap-2 text-sm text-foreground">
+        <Link href="/auth/login" className="flex items-center gap-2 text-sm text-foreground">
           <ArrowLeft className="h-4 w-4 text-foreground" />
           <span>Reset your password</span>
         </Link>
@@ -158,7 +158,7 @@ export default function ForgotPasswordPage() {
 
         <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
           <span className="text-foreground">Remember your password?</span>
-          <Link href="/login" className="font-medium text-accent hover:underline">
+          <Link href="/auth/login" className="font-medium text-accent hover:underline">
             Back to sign in
           </Link>
         </div>

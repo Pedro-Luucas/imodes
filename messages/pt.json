@@ -52,6 +52,15 @@
     "lastUpdated": "Última Atualização",
     "additionalInfo": "Informações Adicionais"
   },
+  "authLanding": {
+    "metaTitle": "Autenticação",
+    "metaDescription": "Escolha como deseja acessar sua conta iModes.",
+    "title": "Bem-vindo ao iModes",
+    "subtitle": "Selecione a opção que melhor descreve você para continuar.",
+    "newUserButton": "Novo usuário",
+    "returningUserButton": "Usuário existente",
+    "footer": "Autenticação segura • Conformidade GDPR"
+  },
   "login": {
     "title": "Bem-vindo de Volta",
     "subtitle": "Entre na sua conta para continuar",

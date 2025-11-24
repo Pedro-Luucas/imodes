@@ -78,7 +78,7 @@ export default function ResetPasswordPage() {
         await resetPassword(formData.password, accessToken, refreshToken);
         setSuccess(true);
         setTimeout(() => {
-          router.push("/login");
+          router.push("/auth/login");
         }, 2000);
       } catch (error) {
         setApiError(
@@ -143,7 +143,7 @@ export default function ResetPasswordPage() {
   return (
     <Layout>
       <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
-        <Link href="/login" className="flex items-center gap-2 text-sm text-foreground">
+        <Link href="/auth/login" className="flex items-center gap-2 text-sm text-foreground">
           <ArrowLeft className="h-4 w-4 text-foreground" />
           <span>Create new password</span>
         </Link>
@@ -202,7 +202,7 @@ export default function ResetPasswordPage() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/auth/login")}
             className="h-11 w-full text-sm font-medium sm:text-base"
           >
             Back to sign in

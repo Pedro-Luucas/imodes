@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   usePageMetadata('Login', 'Sign in to your iModes account.');
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const profile = useAuthProfile();
 
@@ -217,15 +219,25 @@ export default function LoginPage() {
               <Label htmlFor="password" className="text-sm font-medium text-foreground">
                 {t("password")}
               </Label>
-              <Input
-                type="password"
-                id="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder={t("passwordPlaceholder")}
-                className={`h-10 text-sm ${errors.password ? "border-red-500" : ""}`}
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder={t("passwordPlaceholder")}
+                  className={`h-10 pr-10 text-sm ${errors.password ? "border-red-500" : ""}`}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs text-red-600">{errors.password}</p>
               )}
@@ -250,7 +262,7 @@ export default function LoginPage() {
               </div>
 
               <Link
-                href="/forgot-password"
+                href="/auth/forgot-password"
                 className="text-sm font-medium text-accent hover:underline whitespace-nowrap"
               >
                 {t("forgotPassword")}
@@ -271,7 +283,7 @@ export default function LoginPage() {
           <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
             <span className="text-foreground">{t("noAccount")}</span>
             <Link
-              href="/register"
+              href="/auth/register"
               className="font-medium text-accent hover:underline"
             >
               {t("registerLink")}

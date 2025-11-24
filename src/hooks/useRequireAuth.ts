@@ -7,7 +7,7 @@ import { useIsAuthenticated, useAuthLoading } from '@/stores/authStore';
 interface UseRequireAuthOptions {
   /**
    * Custom redirect path when not authenticated
-   * @default '/login'
+   * @default '/auth/login'
    */
   redirectTo?: string;
 }
@@ -37,7 +37,7 @@ interface UseRequireAuthOptions {
  * ```
  */
 export function useRequireAuth(options: UseRequireAuthOptions = {}) {
-  const { redirectTo = '/login' } = options;
+  const { redirectTo = '/auth/login' } = options;
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();
   const loading = useAuthLoading();
