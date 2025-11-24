@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, FormEvent, ReactNode } from "react";
+import { useState, FormEvent, ReactNode, useEffect } from "react";
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { forgotPassword } from "@/lib/authClient";
+import { useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,10 @@ import { ArrowLeft } from "lucide-react";
 export default function ForgotPasswordPage() {
   usePageMetadata('Forgot Password', 'Reset your password by entering your email address.');
   const t = useTranslations("forgotPassword");
+  const router = useRouter();
+  const isAuthenticated = useIsAuthenticated();
+  const authLoading = useAuthLoading();
+  const profile = useAuthProfile();
 
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,6 +75,38 @@ export default function ForgotPasswordPage() {
       setApiError("");
     }
   };
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && profile) {
+      // Redirect based on user role
+      if (profile.role === 'therapist') {
+        router.push("/dashboard");
+      } else if (profile.role === 'patient') {
+        router.push("/dashboard-patient");
+      } else {
+        // Admin or unknown role - go to home
+        router.push("/");
+      }
+    }
+  }, [authLoading, isAuthenticated, profile, router]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if already authenticated (will redirect)
+  if (isAuthenticated) {
+    return null;
+  }
 
   const SuccessContent = () => (
     <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 text-center shadow-sm sm:p-10">

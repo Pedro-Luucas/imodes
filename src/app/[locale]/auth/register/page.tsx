@@ -5,7 +5,7 @@ import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { register } from "@/lib/authClient";
-import { useIsAuthenticated, useAuthLoading } from "@/stores/authStore";
+import { useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();
   const authLoading = useAuthLoading();
+  const profile = useAuthProfile();
 
   const [formData, setFormData] = useState({
     role: "" as "" | "therapist" | "patient",
@@ -47,10 +48,18 @@ export default function RegisterPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      router.push("/");
+    if (!authLoading && isAuthenticated && profile) {
+      // Redirect based on user role
+      if (profile.role === 'therapist') {
+        router.push("/dashboard");
+      } else if (profile.role === 'patient') {
+        router.push("/dashboard-patient");
+      } else {
+        // Admin or unknown role - go to home
+        router.push("/");
+      }
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, profile, router]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

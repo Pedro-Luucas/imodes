@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { resetPassword } from "@/lib/authClient";
+import { useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,9 @@ export default function ResetPasswordPage() {
   const t = useTranslations("resetPassword");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isAuthenticated = useIsAuthenticated();
+  const authLoading = useAuthLoading();
+  const profile = useAuthProfile();
 
   const [formData, setFormData] = useState({
     password: "",
@@ -105,6 +109,39 @@ export default function ResetPasswordPage() {
       setApiError("");
     }
   };
+
+  // Redirect if already authenticated (but only if not in the middle of a password reset)
+  useEffect(() => {
+    // Only redirect if authenticated and we don't have reset tokens (meaning they're not in the middle of a password reset)
+    if (!authLoading && isAuthenticated && profile && !accessToken && !refreshToken) {
+      // Redirect based on user role
+      if (profile.role === 'therapist') {
+        router.push("/dashboard");
+      } else if (profile.role === 'patient') {
+        router.push("/dashboard-patient");
+      } else {
+        // Admin or unknown role - go to home
+        router.push("/");
+      }
+    }
+  }, [authLoading, isAuthenticated, profile, router, accessToken, refreshToken]);
+
+  // Show loading while checking authentication (but allow password reset flow to continue)
+  if (authLoading && !accessToken && !refreshToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if already authenticated and not in password reset flow (will redirect)
+  if (isAuthenticated && !accessToken && !refreshToken) {
+    return null;
+  }
 
   const Layout = ({ children }: { children: ReactNode }) => (
     <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">

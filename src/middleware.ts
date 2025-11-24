@@ -29,11 +29,11 @@ export default async function middleware(request: NextRequest) {
     const accessToken = request.cookies.get('sb-access-token')?.value;
     
     if (!accessToken) {
-      // No auth token found, redirect to login
-      const loginUrl = new URL(`/${locale}/auth/login`, request.url);
+      // No auth token found, redirect to auth landing page
+      const authUrl = new URL(`/${locale}/auth`, request.url);
       // Add redirect parameter to return user to original destination after login
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      authUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(authUrl);
     }
     
     // Validate the token by checking with Supabase
@@ -51,11 +51,11 @@ export default async function middleware(request: NextRequest) {
         
         const { data: { user }, error } = await supabase.auth.getUser(accessToken);
         
-        // If token is invalid or user not found, redirect to login
+        // If token is invalid or user not found, redirect to auth landing page
         if (error || !user) {
-          const loginUrl = new URL(`/${locale}/auth/login`, request.url);
-          loginUrl.searchParams.set('redirect', pathname);
-          return NextResponse.redirect(loginUrl);
+          const authUrl = new URL(`/${locale}/auth`, request.url);
+          authUrl.searchParams.set('redirect', pathname);
+          return NextResponse.redirect(authUrl);
         }
 
         // Get user profile for role-based routing
@@ -92,11 +92,11 @@ export default async function middleware(request: NextRequest) {
         }
       }
     } catch (error) {
-      // If validation fails, redirect to login
+      // If validation fails, redirect to auth landing page
       console.error('Token validation error:', error);
-      const loginUrl = new URL(`/${locale}/auth/login`, request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      const authUrl = new URL(`/${locale}/auth`, request.url);
+      authUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(authUrl);
     }
   }
   

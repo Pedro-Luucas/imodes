@@ -1,16 +1,54 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 
 export default function AuthLandingPage() {
   const t = useTranslations("authLanding");
+  const router = useRouter();
+  const isAuthenticated = useIsAuthenticated();
+  const authLoading = useAuthLoading();
+  const profile = useAuthProfile();
 
   usePageMetadata(t("metaTitle"), t("metaDescription"));
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && profile) {
+      // Redirect based on user role
+      if (profile.role === 'therapist') {
+        router.push("/dashboard");
+      } else if (profile.role === 'patient') {
+        router.push("/dashboard-patient");
+      } else {
+        // Admin or unknown role - go to dashboard
+        router.push("/dashboard");
+      }
+    }
+  }, [authLoading, isAuthenticated, profile, router]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if already authenticated (will redirect)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">
