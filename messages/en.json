@@ -635,5 +635,34 @@
     "confirmUnassign": "Are you sure you want to unassign this patient?",
     "since": "Since",
     "patient": "Patient"
+  },
+  "api": {
+    "common": {
+      "validationFailed": "Validation failed",
+      "unexpectedError": "An unexpected error occurred"
+    },
+    "auth": {
+      "register": {
+        "emailAvailabilityFailed": "Failed to verify email availability",
+        "emailExists": "An account with this email already exists",
+        "signupFailed": "Registration failed",
+        "createUserFailed": "Failed to create user account",
+        "success": "Registration successful! Please check your email to confirm your account. Your profile will be created automatically once you verify your email address."
+      },
+      "login": {
+        "invalidCredentials": "Invalid credentials"
+      },
+      "logout": {
+        "success": "Logged out successfully"
+      },
+      "forgotPassword": {
+        "success": "If an account exists with this email, a password reset link has been sent."
+      },
+      "resetPassword": {
+        "invalidLink": "Invalid or expired reset link. Please request a new password reset.",
+        "updateFailed": "Failed to update password",
+        "success": "Password successfully reset. Please log in with your new password."
+      }
+    }
   }
 }

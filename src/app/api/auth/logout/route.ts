@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { clearAuthCookies, COOKIE_NAME } from '@/lib/auth';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
+import { getApiMessages } from '@/lib/apiMessages';
 
 /**
  * POST /api/auth/logout
@@ -10,8 +11,18 @@ import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
  * 1. Signing out from Supabase (invalidates the session)
  * 2. Clearing authentication cookies
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
+  let messages = await getApiMessages();
   try {
+    let locale: string | undefined;
+    try {
+      const body = await request.json();
+      locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    } catch {
+      // Ignore body parsing errors (likely no body was sent)
+    }
+    messages = await getApiMessages(locale);
+
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(COOKIE_NAME)?.value;
 
@@ -25,7 +36,7 @@ export async function POST() {
     await clearAuthCookies();
 
     return NextResponse.json(
-      { message: 'Logged out successfully' },
+      { message: messages.auth.logout.success },
       { status: 200 }
     );
   } catch (error) {
@@ -39,7 +50,7 @@ export async function POST() {
     }
     
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: messages.common.unexpectedError },
       { status: 500 }
     );
   }

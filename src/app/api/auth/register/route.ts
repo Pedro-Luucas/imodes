@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { registerSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
+import { getApiMessages } from '@/lib/apiMessages';
+
+const logRegister = (...args: unknown[]) => console.log('[Register API]', ...args);
 
 /**
  * POST /api/register
@@ -17,26 +20,53 @@ import { ZodError } from 'zod';
  */
 
 export async function POST(request: NextRequest) {
+  let messages = await getApiMessages();
+  let registerMessages = messages.auth.register;
   try {
     // Parse request body
     const body = await request.json();
+    const submittedLocale = typeof body?.locale === 'string' ? body.locale : undefined;
+    const localeForBody = submittedLocale ?? 'en';
+    const bodyWithLocale = { ...body, locale: localeForBody };
+    logRegister('Incoming payload', {
+      ...bodyWithLocale,
+      password: bodyWithLocale.password ? '[REDACTED]' : undefined,
+    });
+    logRegister('Locale info', {
+      provided: submittedLocale ?? 'not-set',
+      usedForBody: localeForBody,
+    });
+    messages = await getApiMessages(submittedLocale);
+    registerMessages = messages.auth.register;
 
     // Validate input with Zod
-    const validatedData = registerSchema.parse(body);
+    const validatedData = registerSchema.parse(bodyWithLocale);
     const { email, password, role, full_name, first_name, phone } = validatedData;
+    logRegister('Validated data', {
+      email,
+      role,
+      hasPhone: Boolean(phone),
+      hasPassword: Boolean(password),
+    });
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonClient();
+    logRegister('Supabase client initialized');
 
     // Check if email already exists in profiles table using database function
     const { data: emailExists, error: profileCheckError } = await supabase
       .rpc('check_email_exists', { email_to_check: email });
+    logRegister('Email existence check result', {
+      email,
+      emailExists,
+      profileCheckError: profileCheckError?.message,
+    });
 
     // Handle database query errors
     if (profileCheckError) {
       console.error('Error checking profile existence:', profileCheckError.message);
       return NextResponse.json(
-        { error: 'Failed to verify email availability' },
+        { error: registerMessages.emailAvailabilityFailed },
         { status: 500 }
       );
     }
@@ -44,7 +74,7 @@ export async function POST(request: NextRequest) {
     // If email exists, return error
     if (emailExists === true) {
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
+        { error: registerMessages.emailExists },
         { status: 409 }
       );
     }
@@ -72,21 +102,24 @@ export async function POST(request: NextRequest) {
       // Check for specific error types
       if (signUpError.message.includes('already registered')) {
         return NextResponse.json(
-          { error: 'An account with this email already exists' },
+          { error: registerMessages.emailExists },
           { status: 409 }
         );
       }
       
       return NextResponse.json(
-        { error: signUpError.message || 'Registration failed' },
+        { error: registerMessages.signupFailed },
         { status: 400 }
       );
     }
+    logRegister('Supabase signUp response', {
+      hasUser: Boolean(signUpData.user),
+    });
 
     // Check if user was created
     if (!signUpData.user) {
       return NextResponse.json(
-        { error: 'Failed to create user account' },
+        { error: registerMessages.createUserFailed },
         { status: 500 }
       );
     }
@@ -96,6 +129,11 @@ export async function POST(request: NextRequest) {
     // Step 2: Return success response
     // Profile and role-specific records will be created automatically by database trigger
     // when the user confirms their email
+    logRegister('Registration completed', {
+      userId: user.id,
+      email: user.email,
+      requiresEmailConfirmation: true,
+    });
     return NextResponse.json(
       { 
         user: {
@@ -104,7 +142,7 @@ export async function POST(request: NextRequest) {
           email_confirmed_at: user.email_confirmed_at,
           created_at: user.created_at,
         },
-        message: 'Registration successful! Please check your email to confirm your account. Your profile will be created automatically once you verify your email address.',
+        message: registerMessages.success,
         requiresEmailConfirmation: true,
       },
       { status: 201 }
@@ -112,9 +150,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Handle Zod validation errors
     if (error instanceof ZodError) {
+      logRegister('Validation error', error.issues);
       return NextResponse.json(
         { 
-          error: 'Validation failed',
+          error: messages.common.validationFailed,
           details: error.issues.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
@@ -125,8 +164,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Unexpected error during registration:', error);
+    logRegister('Unexpected error payload', error);
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: messages.common.unexpectedError },
       { status: 500 }
     );
   }

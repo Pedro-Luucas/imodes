@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { resetPasswordSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
+import { getApiMessages } from '@/lib/apiMessages';
 
 /**
  * POST /api/reset-password
@@ -9,9 +10,14 @@ import { ZodError } from 'zod';
  * Resets the user's password using the access token from the reset email
  */
 export async function POST(request: NextRequest) {
+  let messages = await getApiMessages();
+  let resetMessages = messages.auth.resetPassword;
   try {
     // Parse request body
     const body = await request.json();
+    const locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    messages = await getApiMessages(locale);
+    resetMessages = messages.auth.resetPassword;
 
     // Validate input with Zod
     const validatedData = resetPasswordSchema.parse(body);
@@ -29,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (sessionError) {
       console.error('Session error:', sessionError.message);
       return NextResponse.json(
-        { error: 'Invalid or expired reset link. Please request a new password reset.' },
+        { error: resetMessages.invalidLink },
         { status: 400 }
       );
     }
@@ -42,14 +48,14 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('Password update error:', updateError.message);
       return NextResponse.json(
-        { error: updateError.message || 'Failed to update password' },
+        { error: resetMessages.updateFailed },
         { status: 400 }
       );
     }
 
     if (!data.user) {
       return NextResponse.json(
-        { error: 'Failed to update password' },
+        { error: resetMessages.updateFailed },
         { status: 400 }
       );
     }
@@ -58,7 +64,7 @@ export async function POST(request: NextRequest) {
     await supabase.auth.signOut();
 
     return NextResponse.json(
-      { message: 'Password successfully reset. Please log in with your new password.' },
+      { message: resetMessages.success },
       { status: 200 }
     );
   } catch (error) {
@@ -66,7 +72,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof ZodError) {
       return NextResponse.json(
         { 
-          error: 'Validation failed',
+          error: messages.common.validationFailed,
           details: error.issues.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
@@ -78,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     console.error('Unexpected error during password reset:', error);
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: messages.common.unexpectedError },
       { status: 500 }
     );
   }

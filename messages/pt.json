@@ -635,5 +635,34 @@
     "confirmUnassign": "Tem certeza de que deseja remover este paciente?",
     "since": "Desde",
     "patient": "Paciente"
+  },
+  "api": {
+    "common": {
+      "validationFailed": "Falha na validação",
+      "unexpectedError": "Ocorreu um erro inesperado"
+    },
+    "auth": {
+      "register": {
+        "emailAvailabilityFailed": "Não foi possível verificar a disponibilidade do e-mail",
+        "emailExists": "Já existe uma conta com este e-mail",
+        "signupFailed": "Falha no registro",
+        "createUserFailed": "Não foi possível criar a conta do usuário",
+        "success": "Registro realizado com sucesso! Verifique seu e-mail para confirmar sua conta. Seu perfil será criado automaticamente após a confirmação."
+      },
+      "login": {
+        "invalidCredentials": "Credenciais inválidas"
+      },
+      "logout": {
+        "success": "Logout realizado com sucesso"
+      },
+      "forgotPassword": {
+        "success": "Se existir uma conta com este e-mail, um link de redefinição foi enviado."
+      },
+      "resetPassword": {
+        "invalidLink": "Link de redefinição inválido ou expirado. Solicite uma nova redefinição.",
+        "updateFailed": "Não foi possível atualizar a senha",
+        "success": "Senha redefinida com sucesso. Entre com sua nova senha."
+      }
+    }
   }
 }

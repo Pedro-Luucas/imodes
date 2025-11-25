@@ -136,13 +136,9 @@ export default function RegisterPage() {
           formData.phone || undefined
         );
 
-        // Always redirect to login after successful registration
         setSubmitSuccess(true);
         setApiError(response.message);
         
-        setTimeout(() => {
-          router.push('/auth/login');
-        }, 2000);
       } catch (error) {
         setApiError(error instanceof Error ? error.message : "Registration failed. Please try again.");
       } finally {

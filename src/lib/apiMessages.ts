@@ -1,0 +1,56 @@
+import { cookies } from 'next/headers';
+import enMessages from '../../messages/en.json';
+import ptMessages from '../../messages/pt.json';
+
+const SUPPORTED_LOCALES = ['en', 'pt'] as const;
+type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+
+const fallbackLocale: SupportedLocale = 'en';
+
+type ApiMessages = (typeof enMessages)['api'];
+
+const apiMessagesMap: Record<SupportedLocale, ApiMessages> = {
+  en: enMessages.api,
+  pt: ptMessages.api,
+};
+
+const getLocaleFromCookies = async (): Promise<string | undefined> => {
+  try {
+    const cookieStore = await cookies();
+    const nextLocaleCookie = cookieStore.get('NEXT_LOCALE')?.value;
+    if (nextLocaleCookie) {
+      return nextLocaleCookie;
+    }
+  } catch {
+    // cookies() is only available in server contexts; ignore failures elsewhere
+  }
+
+  return undefined;
+};
+
+const resolveLocaleInput = async (locale?: string): Promise<string | undefined> =>
+  locale ?? (await getLocaleFromCookies());
+
+const normalizeLocale = (locale?: string): SupportedLocale => {
+  if (!locale) {
+    return fallbackLocale;
+  }
+
+  const normalized = locale.toLowerCase();
+
+  if (normalized.startsWith('pt')) {
+    return 'pt';
+  }
+
+  return 'en';
+};
+
+export const getApiMessages = async (locale?: string): Promise<ApiMessages> => {
+  const resolvedLocale = await resolveLocaleInput(locale);
+  const normalized = normalizeLocale(resolvedLocale);
+  return apiMessagesMap[normalized] ?? apiMessagesMap[fallbackLocale];
+};
+
+export type ApiMessageBundle = Awaited<ReturnType<typeof getApiMessages>>;
+
+

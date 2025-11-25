@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { forgotPasswordSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
+import { getApiMessages } from '@/lib/apiMessages';
 
 /**
  * POST /api/forgot-password
@@ -10,9 +11,12 @@ import { ZodError } from 'zod';
  * Always returns success (security best practice to prevent email enumeration)
  */
 export async function POST(request: NextRequest) {
+  let messages = await getApiMessages();
   try {
     // Parse request body
     const body = await request.json();
+    const locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    messages = await getApiMessages(locale);
 
     // Validate input with Zod
     const validatedData = forgotPasswordSchema.parse(body);
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Always return success to prevent email enumeration attacks
     return NextResponse.json(
-      { message: 'If an account exists with this email, a password reset link has been sent.' },
+      { message: messages.auth.forgotPassword.success },
       { status: 200 }
     );
   } catch (error) {
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof ZodError) {
       return NextResponse.json(
         { 
-          error: 'Validation failed',
+          error: messages.common.validationFailed,
           details: error.issues.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     console.error('Unexpected error during password reset request:', error);
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: messages.common.unexpectedError },
       { status: 500 }
     );
   }

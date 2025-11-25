@@ -3,6 +3,7 @@ import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { setAuthCookies } from '@/lib/auth';
 import { loginSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
+import { getApiMessages } from '@/lib/apiMessages';
 
 /**
  * POST /api/login
@@ -11,9 +12,12 @@ import { ZodError } from 'zod';
  * Sets HttpOnly cookies with session tokens on success
  */
 export async function POST(request: NextRequest) {
+  let messages = await getApiMessages();
   try {
     // Parse request body
     const body = await request.json();
+    const locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    messages = await getApiMessages(locale);
 
     // Validate input with Zod
     const validatedData = loginSchema.parse(body);
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (error || !data.session) {
       console.error('Login error:', error?.message);
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: messages.auth.login.invalidCredentials },
         { status: 401 }
       );
     }
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof ZodError) {
       return NextResponse.json(
         { 
-          error: 'Validation failed',
+          error: messages.common.validationFailed,
           details: error.issues.map((err) => ({
             field: err.path.join('.'),
             message: err.message,
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     console.error('Unexpected error during login:', error);
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: messages.common.unexpectedError },
       { status: 500 }
     );
   }
