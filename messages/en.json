@@ -128,7 +128,18 @@
       "passwordMismatch": "Passwords do not match",
       "termsRequired": "You must accept the terms of use"
     },
-    "success": "Registration successful! Redirecting..."
+    "success": "Registration successful! Redirecting...",
+    "patientInvite": {
+      "title": "Complete your registration",
+      "subtitle": "Enter your details to join your therapist on iModes.",
+      "invitedBy": "You're joining {name}",
+      "expiresAt": "Link expires on {date}",
+      "invalidTitle": "Invite not available",
+      "invalidDescription": "This invite link is invalid, expired, or already used. Please contact your therapist for a new link.",
+      "missingToken": "This page requires a valid invite link. Make sure you opened the complete URL shared by your therapist.",
+      "ctaReturn": "Back to login",
+      "loading": "Checking invite…"
+    }
   },
   "forgotPassword": {
     "title": "Forgot Password",
@@ -477,6 +488,7 @@
       "export": "Export",
       "startNewSession": "Start new session",
       "addPatient": "Add patient",
+      "invitePatient": "Invite patient",
       "totalPatients": "Total Patients",
       "activeSessions": "Active Sessions",
       "completedSessions": "Completed Sessions",
@@ -512,6 +524,19 @@
       "success": "Patient added successfully! Refreshing list...",
       "errorRequired": "Please enter a patient ID",
       "errorFailed": "Failed to add patient"
+    },
+    "invitePatient": {
+      "title": "Invite a Patient",
+      "description": "Generate a secure link that you can share with your patient. They will use it to create their account already linked to you.",
+      "generate": "Generate invite link",
+      "generating": "Generating...",
+      "linkLabel": "Invite link",
+      "copy": "Copy link",
+      "copied": "Link copied!",
+      "expires": "Expires on {date}",
+      "newInvite": "Generate a new link",
+      "success": "Share the link below with your patient.",
+      "errorFailed": "Failed to generate invite"
     },
     "patientDetails": {
       "title": "Patient Details",
@@ -565,7 +590,9 @@
     "patientFallback": "Patient",
     "unknownStatus": "Unknown",
     "activeStatus": "Active",
-    "archivedStatus": "Archived"
+    "archivedStatus": "Archived",
+    "noTherapistTitle": "We're setting up your therapist",
+    "noTherapistDescription": "Your therapist hasn't accepted your invitation yet. We'll notify you as soon as you're connected."
   },
   "dashboardPatientSessions": {
     "title": "Therapy Sessions",
@@ -647,6 +674,10 @@
         "emailExists": "An account with this email already exists",
         "signupFailed": "Registration failed",
         "createUserFailed": "Failed to create user account",
+        "inviteRequired": "A valid invite link is required to register as a patient",
+        "inviteInvalid": "Invite link is invalid",
+        "inviteExpired": "Invite link has expired",
+        "inviteUsed": "Invite link has already been used",
         "success": "Registration successful! Please check your email to confirm your account. Your profile will be created automatically once you verify your email address."
       },
       "login": {

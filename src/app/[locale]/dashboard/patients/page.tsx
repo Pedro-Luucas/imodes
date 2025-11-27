@@ -10,7 +10,7 @@ import { Plus, UserPlus, Calendar, Users, ClipboardList } from 'lucide-react';
 import { useAuthProfile } from '@/stores/authStore';
 import type { Profile } from '@/types/auth';
 import { PatientDetailsDialog } from '@/components/dashboard/PatientDetailsDialog';
-import { AddPatientDialog } from '@/components/dashboard/AddPatientDialog';
+import { InvitePatientDialog } from '@/components/dashboard/InvitePatientDialog';
 import { CreateAssignmentDialog } from '@/components/dashboard/CreateAssignmentDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from '@/i18n/navigation';
@@ -40,7 +40,7 @@ export default function PatientsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<Profile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [addPatientDialogOpen, setAddPatientDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedPatientForAssignment, setSelectedPatientForAssignment] = useState<ExtendedPatient | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -313,10 +313,10 @@ export default function PatientsPage() {
             <Button
               variant="default"
               size="default"
-              onClick={() => setAddPatientDialogOpen(true)}
+              onClick={() => setInviteDialogOpen(true)}
             >
               <UserPlus className="w-5 h-5" />
-              {t('addPatient')}
+              {t('invitePatient')}
             </Button>
           </div>
         </div>
@@ -389,10 +389,10 @@ export default function PatientsPage() {
           <Button
             variant="default"
             className="h-12 w-full md:hidden"
-            onClick={() => setAddPatientDialogOpen(true)}
+            onClick={() => setInviteDialogOpen(true)}
           >
             <UserPlus className="w-5 h-5" />
-            {t('addPatient')}
+            {t('invitePatient')}
           </Button>
         </div>
 
@@ -401,7 +401,7 @@ export default function PatientsPage() {
           <h2 className="text-xl font-semibold text-foreground mb-4">
             {t('assignments')}
           </h2>
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {displayedPatients.map((patient) => (
               <Card
                 key={`assignment-${patient.id}`}
@@ -549,7 +549,7 @@ export default function PatientsPage() {
             <p className="text-sm text-muted-foreground mb-4">
               {t('noPatientsDesc')}
             </p>
-            <Button variant="default">
+            <Button variant="default" onClick={() => setInviteDialogOpen(true)}>
               <UserPlus className="w-5 h-5" />
               {t('addPatientButton')}
             </Button>
@@ -565,13 +565,12 @@ export default function PatientsPage() {
         onSchedule={handleSchedule}
       />
 
-      {/* Add Patient Dialog */}
+      {/* Invite Patient Dialog */}
       {profile?.id && (
-        <AddPatientDialog
-          open={addPatientDialogOpen}
-          onOpenChange={setAddPatientDialogOpen}
+        <InvitePatientDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
           therapistId={profile.id}
-          onPatientAdded={fetchPatients}
         />
       )}
 

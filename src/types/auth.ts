@@ -35,6 +35,7 @@ export interface RegisterRequest {
   full_name: string;
   first_name: string;
   phone?: string;
+  inviteToken?: string;
 }
 
 export interface RegisterResponse {
@@ -53,6 +54,29 @@ export interface RegisterResponse {
   };
   message: string;
   requiresEmailConfirmation: boolean;
+}
+
+export interface PatientInvite {
+  id: string;
+  token: string;
+  therapist_id: string;
+  created_at: string;
+  expires_at: string;
+  consumed_at: string | null;
+}
+
+export interface CreateInviteRequest {
+  expiresInHours?: number;
+}
+
+export interface CreateInviteResponse {
+  invite: PatientInvite;
+  url: string;
+}
+
+export interface InviteValidationResponse {
+  invite: PatientInvite;
+  therapist: Pick<Profile, 'id' | 'full_name' | 'first_name'>;
 }
 
 export interface ForgotPasswordRequest {

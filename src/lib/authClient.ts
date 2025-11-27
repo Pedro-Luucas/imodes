@@ -39,7 +39,8 @@ export async function register(
   role: 'therapist' | 'patient',
   full_name: string,
   first_name: string,
-  phone?: string
+  phone?: string,
+  inviteToken?: string
 ): Promise<RegisterResponse> {
   const response = await fetch('/api/auth/register', {
     method: 'POST',
@@ -52,7 +53,8 @@ export async function register(
       role, 
       full_name, 
       first_name, 
-      phone 
+      phone,
+      inviteToken,
     } as RegisterRequest),
   });
 

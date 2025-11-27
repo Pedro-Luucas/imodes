@@ -19,9 +19,22 @@ export default async function middleware(request: NextRequest) {
   
   // Define public routes that don't require authentication
   const publicPaths = ['/auth', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
-  const isPublicPath = publicPaths.some(path => 
-    pathname === `/${locale}${path}` || pathname.startsWith(`/${locale}${path}/`)
-  );
+  const isAuthNamespace =
+    pathname === `/${locale}/auth` ||
+    pathname.startsWith(`/${locale}/auth/`) ||
+    pathname === '/auth' ||
+    pathname.startsWith('/auth/');
+  const isPublicPath =
+    isAuthNamespace ||
+    publicPaths.some((path) => {
+      const localizedPath = `/${locale}${path}`;
+      return (
+        pathname === localizedPath ||
+        pathname.startsWith(`${localizedPath}/`) ||
+        pathname === path ||
+        pathname.startsWith(`${path}/`)
+      );
+    });
   
   // Check authentication for all routes except public ones
   if (!isPublicPath) {
@@ -75,20 +88,6 @@ export default async function middleware(request: NextRequest) {
             return NextResponse.redirect(dashboardUrl);
           }
 
-          // Check if patient with therapist is trying to access no-therapist page
-          if (profile.role === 'patient' && pathname.includes('/dashboard-patient/no-therapist')) {
-            const { data: patientData } = await supabase
-              .from('patients')
-              .select('therapist_id')
-              .eq('id', user.id)
-              .single();
-
-            if (patientData?.therapist_id) {
-              // Patient has a therapist, redirect to dashboard
-              const dashboardUrl = new URL(`/${locale}/dashboard-patient`, request.url);
-              return NextResponse.redirect(dashboardUrl);
-            }
-          }
         }
       }
     } catch (error) {

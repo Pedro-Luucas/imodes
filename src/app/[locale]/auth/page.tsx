@@ -76,9 +76,10 @@ export default function AuthLandingPage() {
           <div className="flex flex-col gap-4">
             <Button
               asChild
+              variant="outline"
               className="h-11 w-full text-sm font-medium sm:text-base"
             >
-              <Link href="/auth/register">{t("newUserButton")}</Link>
+              <Link href="/auth/register/therapist">{t("newUserButton")}</Link>
             </Button>
             <Button
               asChild

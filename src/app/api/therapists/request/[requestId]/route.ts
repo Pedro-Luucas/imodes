@@ -213,7 +213,7 @@ export async function POST(
             therapist_id: user.id,
             therapist_name: therapistProfile.full_name,
           },
-          link: '/dashboard-patient/no-therapist',
+          link: '/dashboard-patient',
         });
 
       return NextResponse.json({

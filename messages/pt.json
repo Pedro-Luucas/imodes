@@ -128,7 +128,18 @@
       "passwordMismatch": "As senhas não coincidem",
       "termsRequired": "Você deve aceitar os termos de uso"
     },
-    "success": "Registro realizado com sucesso! Redirecionando..."
+    "success": "Registro realizado com sucesso! Redirecionando...",
+    "patientInvite": {
+      "title": "Finalize seu cadastro",
+      "subtitle": "Preencha seus dados para se juntar ao seu terapeuta no iModes.",
+      "invitedBy": "Você foi convidado por {name}",
+      "expiresAt": "O link expira em {date}",
+      "invalidTitle": "Convite indisponível",
+      "invalidDescription": "Este link de convite é inválido, expirou ou já foi usado. Solicite um novo link ao seu terapeuta.",
+      "missingToken": "Esta página requer um link de convite válido. Verifique se você abriu a URL completa compartilhada pelo seu terapeuta.",
+      "ctaReturn": "Voltar para o login",
+      "loading": "Verificando convite..."
+    }
   },
   "forgotPassword": {
     "title": "Esqueceu a Senha",
@@ -477,6 +488,7 @@
       "export": "Exportar",
       "startNewSession": "Iniciar nova sessão",
       "addPatient": "Adicionar paciente",
+      "invitePatient": "Convidar paciente",
       "totalPatients": "Total de Pacientes",
       "activeSessions": "Sessões Ativas",
       "completedSessions": "Sessões Concluídas",
@@ -512,6 +524,19 @@
       "success": "Paciente adicionado com sucesso! Atualizando lista...",
       "errorRequired": "Por favor, digite um ID de paciente",
       "errorFailed": "Falha ao adicionar paciente"
+    },
+    "invitePatient": {
+      "title": "Convidar um Paciente",
+      "description": "Gere um link seguro para compartilhar com o paciente. Ele usará esse link para criar a conta já vinculada a você.",
+      "generate": "Gerar link de convite",
+      "generating": "Gerando...",
+      "linkLabel": "Link de convite",
+      "copy": "Copiar link",
+      "copied": "Link copiado!",
+      "expires": "Expira em {date}",
+      "newInvite": "Gerar novo link",
+      "success": "Compartilhe o link abaixo com o paciente.",
+      "errorFailed": "Não foi possível gerar o convite"
     },
     "patientDetails": {
       "title": "Detalhes do Paciente",
@@ -565,7 +590,9 @@
     "patientFallback": "Paciente",
     "unknownStatus": "Desconhecido",
     "activeStatus": "Ativa",
-    "archivedStatus": "Arquivada"
+    "archivedStatus": "Arquivada",
+    "noTherapistTitle": "Estamos conectando você ao terapeuta",
+    "noTherapistDescription": "Seu terapeuta ainda não aceitou o convite. Avisaremos assim que a conexão estiver pronta."
   },
   "dashboardPatientSessions": {
     "title": "Sessões Terapêuticas",
@@ -647,6 +674,10 @@
         "emailExists": "Já existe uma conta com este e-mail",
         "signupFailed": "Falha no registro",
         "createUserFailed": "Não foi possível criar a conta do usuário",
+        "inviteRequired": "É necessário um convite válido para registrar como paciente",
+        "inviteInvalid": "Link de convite inválido",
+        "inviteExpired": "Link de convite expirado",
+        "inviteUsed": "Este convite já foi utilizado",
         "success": "Registro realizado com sucesso! Verifique seu e-mail para confirmar sua conta. Seu perfil será criado automaticamente após a confirmação."
       },
       "login": {

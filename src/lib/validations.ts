@@ -37,6 +37,7 @@ export const registerSchema = z.object({
     .min(1, 'First name is required')
     .max(100, 'First name must not exceed 100 characters'),
   phone: z.string().optional(),
+  inviteToken: z.string().uuid('Invalid invite token').optional(),
 });
 
 /**

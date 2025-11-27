@@ -1,10 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
+import { createSupabaseAnonClient, createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { registerSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
 import { getApiMessages } from '@/lib/apiMessages';
 
 const logRegister = (...args: unknown[]) => console.log('[Register API]', ...args);
+
+type PatientInviteRecord = {
+  id: string;
+  token: string;
+  therapist_id: string;
+  expires_at: string;
+  consumed_at: string | null;
+};
+
+async function linkPatientToTherapist(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  patientId: string,
+  therapistId: string
+) {
+  const { error: patientError } = await supabase
+    .from('patients')
+    .upsert(
+      {
+        id: patientId,
+        therapist_id: therapistId,
+      },
+      { onConflict: 'id' }
+    );
+
+  if (patientError) {
+    console.error('Failed to link patient to therapist (patients table):', patientError);
+    return;
+  }
+
+  const { data: therapistData, error: fetchError } = await supabase
+    .from('therapists')
+    .select('patients')
+    .eq('id', therapistId)
+    .single();
+
+  if (fetchError) {
+    console.warn('Unable to fetch therapist patients array, creating or updating record instead:', fetchError.message);
+  }
+
+  const currentPatients: string[] = therapistData?.patients || [];
+
+  if (!currentPatients.includes(patientId)) {
+    const { error: therapistUpdateError } = await supabase
+      .from('therapists')
+      .upsert(
+        {
+          id: therapistId,
+          patients: [...currentPatients, patientId],
+        },
+        { onConflict: 'id' }
+      );
+
+    if (therapistUpdateError) {
+      console.error('Failed to update therapist patients array:', therapistUpdateError);
+    }
+  }
+}
 
 /**
  * POST /api/register
@@ -41,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     // Validate input with Zod
     const validatedData = registerSchema.parse(bodyWithLocale);
-    const { email, password, role, full_name, first_name, phone } = validatedData;
+    const { email, password, role, full_name, first_name, phone, inviteToken } = validatedData;
     logRegister('Validated data', {
       email,
       role,
@@ -51,7 +108,51 @@ export async function POST(request: NextRequest) {
 
     // Initialize Supabase client
     const supabase = createSupabaseAnonClient();
+    const serviceSupabase = createSupabaseServerClient();
     logRegister('Supabase client initialized');
+
+    let inviteRecord: PatientInviteRecord | null = null;
+    let therapistIdFromInvite: string | null = null;
+
+    if (role === 'patient') {
+      if (!inviteToken) {
+        return NextResponse.json(
+          { error: registerMessages.inviteRequired },
+          { status: 400 }
+        );
+      }
+
+      const { data, error } = await serviceSupabase
+        .from('patient_invites')
+        .select('id, token, therapist_id, expires_at, consumed_at')
+        .eq('token', inviteToken)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json(
+          { error: registerMessages.inviteInvalid },
+          { status: 404 }
+        );
+      }
+
+      if (data.consumed_at) {
+        return NextResponse.json(
+          { error: registerMessages.inviteUsed },
+          { status: 410 }
+        );
+      }
+
+      const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
+      if (expiresAt && expiresAt.getTime() < Date.now()) {
+        return NextResponse.json(
+          { error: registerMessages.inviteExpired },
+          { status: 410 }
+        );
+      }
+
+      inviteRecord = data;
+      therapistIdFromInvite = data.therapist_id;
+    }
 
     // Check if email already exists in profiles table using database function
     const { data: emailExists, error: profileCheckError } = await supabase
@@ -91,6 +192,8 @@ export async function POST(request: NextRequest) {
           first_name,
           phone: phone || null,
           email,
+          therapist_id: therapistIdFromInvite,
+          patient_invite_token: inviteRecord?.token,
         },
       },
     });
@@ -129,6 +232,33 @@ export async function POST(request: NextRequest) {
     // Step 2: Return success response
     // Profile and role-specific records will be created automatically by database trigger
     // when the user confirms their email
+    if (user) {
+      await serviceSupabase
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            role,
+            full_name,
+            first_name,
+            email,
+          },
+          { onConflict: 'id' }
+        );
+
+      if (role === 'patient' && therapistIdFromInvite) {
+        await linkPatientToTherapist(serviceSupabase, user.id, therapistIdFromInvite);
+
+        if (inviteRecord) {
+          await serviceSupabase
+            .from('patient_invites')
+            .update({ consumed_at: new Date().toISOString() })
+            .eq('id', inviteRecord.id)
+            .is('consumed_at', null);
+        }
+      }
+    }
+
     logRegister('Registration completed', {
       userId: user.id,
       email: user.email,

@@ -8,6 +8,7 @@ import { useAuthProfile } from '@/stores/authStore';
 import { useCurrentTherapist, useTherapistActions } from '@/stores/therapistStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Calendar, 
   PencilLine, 
@@ -15,7 +16,8 @@ import {
   Smile, 
   Wrench, 
   Timer,
-  Loader2 
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import type { CanvasSession } from '@/types/canvas';
 
@@ -38,6 +40,7 @@ export default function DashboardPatientPage() {
   const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [hasTherapist, setHasTherapist] = useState(true);
 
   // const [assignments] = useState<Assignment[]>([
   //   {
@@ -77,15 +80,12 @@ export default function DashboardPatientPage() {
         const therapistData = await getPatientTherapist(profile.id);
         setLoading(false);
         
-        // Redirect to no-therapist page if no therapist assigned
-        if (!therapistData) {
-          router.push('/dashboard-patient/no-therapist');
-        }
+        setHasTherapist(Boolean(therapistData));
       }
     };
 
     checkTherapist();
-  }, [profile, getPatientTherapist, router]);
+  }, [profile, getPatientTherapist]);
 
   const fetchSessions = useCallback(async () => {
     if (loading) {
@@ -228,6 +228,20 @@ export default function DashboardPatientPage() {
           </div>
         </div>
       </Card>
+
+      {!hasTherapist && (
+        <Alert className="border-dashed border-primary/40 bg-primary/5">
+          <AlertCircle className="h-4 w-4 text-primary" />
+          <div>
+            <p className="text-sm font-medium text-primary">
+              {t('noTherapistTitle')}
+            </p>
+            <AlertDescription className="text-xs text-muted-foreground mt-1">
+              {t('noTherapistDescription')}
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
     {/*
       Stats Cards   
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
