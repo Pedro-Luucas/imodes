@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ export function SelectPatientDialog({
   therapistId,
   onSelect,
 }: SelectPatientDialogProps) {
+  const t = useTranslations('selectPatientDialog');
   const [patients, setPatients] = useState<Profile[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const initialSessionName = buildDefaultSessionName();
@@ -150,15 +152,15 @@ export function SelectPatientDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Select Patient</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            Choose a patient for this session, or select &quot;No Patient&quot; to create a playground session.
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="session-name">Session name</Label>
+            <Label htmlFor="session-name">{t('sessionName')}</Label>
             {editingName ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
@@ -174,7 +176,7 @@ export function SelectPatientDialog({
                     variant="outline"
                     size="icon"
                     onClick={handleCancelEditingName}
-                    aria-label="Cancel session name edit"
+                    aria-label={t('cancelEdit')}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -182,7 +184,7 @@ export function SelectPatientDialog({
                     type="button"
                     size="icon"
                     onClick={handleConfirmEditingName}
-                    aria-label="Save session name"
+                    aria-label={t('saveEdit')}
                   >
                     <Check className="h-4 w-4" />
                   </Button>
@@ -197,7 +199,7 @@ export function SelectPatientDialog({
                   variant="ghost"
                   className="text-muted-foreground"
                   onClick={handleStartEditingName}
-                  aria-label="Edit session name"
+                  aria-label={t('editName')}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -205,11 +207,11 @@ export function SelectPatientDialog({
             )}
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="patient">Patient</Label>
+            <Label htmlFor="patient">{t('patient')}</Label>
             {loadingPatients ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading patients...</span>
+                <span className="ml-2 text-sm text-muted-foreground">{t('loadingPatients')}</span>
               </div>
             ) : (
               <Select
@@ -217,10 +219,10 @@ export function SelectPatientDialog({
                 onValueChange={(value) => setSelectedPatientId(value === 'none' ? null : value)}
               >
                 <SelectTrigger id="patient" className="w-full">
-                  <SelectValue placeholder="Select a patient" />
+                  <SelectValue placeholder={t('selectPatient')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No Patient (Playground)</SelectItem>
+                  <SelectItem value="none">{t('noPatient')}</SelectItem>
                   {patients.map((patient) => (
                     <SelectItem key={patient.id} value={patient.id}>
                       {patient.full_name || patient.first_name || patient.email}
@@ -238,7 +240,7 @@ export function SelectPatientDialog({
               onClick={() => handleClose(false)}
               disabled={loading}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               type="button"
@@ -248,10 +250,10 @@ export function SelectPatientDialog({
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Creating...
+                  {t('creating')}
                 </>
               ) : (
-                'Create Session'
+                t('createSession')
               )}
             </Button>
           </DialogFooter>

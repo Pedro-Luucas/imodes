@@ -58,7 +58,20 @@ export default function CanvasPage() {
   const tPage = useTranslations('canvas.page');
   
   const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text'>('select');
-  const [zoomLevel, setZoomLevel] = useState(100);
+  const [zoomLevel, setZoomLevel] = useState(() => {
+    // Check if we're on mobile during initial render (client-side only)
+    if (typeof window !== 'undefined') {
+      const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+      const hasTouchScreen = navigator.maxTouchPoints > 0;
+      const noHover = window.matchMedia('(hover: none)').matches;
+      const mobileUserAgent = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+      const isMobileDevice = ((hasCoarsePointer || noHover) && hasTouchScreen) || mobileUserAgent;
+      return isMobileDevice ? 60 : 100;
+    }
+    return 100;
+  });
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
   const [gender, setGender] = useState<Gender>('male');
   const [showClearDialog, setShowClearDialog] = useState(false);
@@ -453,6 +466,7 @@ const storeSessionRef = useRef<string | null>(null);
           // Notes will be auto-saved by SessionDetailsPanel
         }}*/
         currentDuration={currentDuration}
+        onSessionRenamed={setSessionName}
       />
 
       {/* Canvas with Floating Controls */}
@@ -513,7 +527,7 @@ const storeSessionRef = useRef<string | null>(null);
             <Button
               variant={toolMode === 'select' ? 'default' : 'secondary'}
               size="icon"
-              className="size-10"
+              className="size-10 hidden"
               onClick={() => setToolMode('select')}
               title={tControls('cursorTool')}
             >

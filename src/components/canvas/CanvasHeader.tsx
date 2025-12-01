@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthProfile } from '@/stores/authStore';
 import { useRouter } from '@/i18n/navigation';
@@ -18,6 +19,8 @@ import {
 //  CalendarCheck,
   LogOut,
   X,
+  Pencil,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,6 +54,7 @@ interface CanvasHeaderProps {
 //  initialNotes?: string;
 //  onNotesChange?: (notes: string) => void;
   currentDuration?: number; // Current session duration in seconds
+  onSessionRenamed?: (newTitle: string) => void;
 }
 
 export function CanvasHeader({
@@ -67,17 +71,26 @@ export function CanvasHeader({
 //  initialNotes = '',
 //  onNotesChange,
   currentDuration = 0,
+  onSessionRenamed,
 }: CanvasHeaderProps) {
   const t = useTranslations('canvas.header');
+  const locale = useLocale();
   const profile = useAuthProfile();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSessionPanelOpen, setIsSessionPanelOpen] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(sessionTitle || '');
+  const [isRenaming, setIsRenaming] = useState(false);
   
+  const now = new Date();
   const displayTitle = sessionTitle || t('defaultTitle');
-  const displaySubtitle = sessionSubtitle || t('defaultSubtitle');
+  const displaySubtitle = sessionSubtitle || t('defaultSubtitle', { 
+    date: now.getDate(),
+    month: now.toLocaleString(locale, { month: 'long' })
+  });
   const isTherapist = profile?.role === 'therapist';
   const isPatient = profile?.role === 'patient';
 
@@ -178,6 +191,66 @@ export function CanvasHeader({
     setIsSessionPanelOpen(!isSessionPanelOpen);
   };
 
+  const handleStartEditing = () => {
+    setEditedTitle(sessionTitle || displayTitle);
+    setIsEditingTitle(true);
+  };
+
+  const handleCancelEditing = () => {
+    setEditedTitle(sessionTitle || displayTitle);
+    setIsEditingTitle(false);
+  };
+
+  const handleRenameSession = async () => {
+    const trimmedTitle = editedTitle.trim();
+    
+    // Validation
+    if (trimmedTitle.length < 1) {
+      toast.error(t('nameTooShort'));
+      return;
+    }
+    if (trimmedTitle.length > 60) {
+      toast.error(t('nameTooLong'));
+      return;
+    }
+    
+    if (!sessionId) {
+      toast.error(t('renameError'));
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/rename`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedTitle }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to rename session');
+      }
+
+      toast.success(t('sessionRenamed'));
+      setIsEditingTitle(false);
+      onSessionRenamed?.(trimmedTitle);
+    } catch (error) {
+      console.error('Error renaming session:', error);
+      toast.error(t('renameError'));
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRenameSession();
+    } else if (e.key === 'Escape') {
+      handleCancelEditing();
+    }
+  };
+
   return (
     <>
       <div className="bg-white border-b border-gray-200 w-full">
@@ -236,8 +309,53 @@ export function CanvasHeader({
 
           
           <div className="flex flex-col">
-            <span className="text-xs md:text-sm text-zinc-500">{sessionTitle || displayTitle}</span>
-            <span className="text-sm md:text-base font-medium text-foreground">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  className="h-7 md:h-8 text-sm md:text-lg font-medium w-40 md:w-60"
+                  maxLength={60}
+                  autoFocus
+                  disabled={isRenaming}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 md:size-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  onClick={handleRenameSession}
+                  disabled={isRenaming}
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 md:size-7 text-gray-500 hover:text-gray-700"
+                  onClick={handleCancelEditing}
+                  disabled={isRenaming}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm md:text-lg font-medium text-foreground">{sessionTitle || displayTitle}</span>
+                {isTherapist && sessionId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-5 md:size-6 text-gray-400 hover:text-gray-600"
+                    onClick={handleStartEditing}
+                    title={t('renameSession')}
+                  >
+                    <Pencil className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
+            <span className="text-xs md:text-sm text-zinc-500">
               {sessionSubtitle || displaySubtitle}
             </span>
           </div>

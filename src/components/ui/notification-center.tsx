@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell, Check, X, ExternalLink, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +34,7 @@ interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ className }: NotificationCenterProps) {
+  const t = useTranslations('notifications');
   const [open, setOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -174,8 +176,8 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
             showCloseButton={false}
           >
             <DialogHeader className="sr-only">
-              <DialogTitle>Notifications</DialogTitle>
-              <DialogDescription>Review your latest notifications</DialogDescription>
+              <DialogTitle>{t('title')}</DialogTitle>
+              <DialogDescription>{t('dialogDescription')}</DialogDescription>
             </DialogHeader>
             {notificationHeader('dialog')}
             {notificationList('dialog')}

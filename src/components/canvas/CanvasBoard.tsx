@@ -166,6 +166,11 @@ export function CanvasBoard({
   const didPanRef = useRef(false);
   const dragDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastBroadcastVersionRef = useRef<number>(lastSavedVersion ?? 0);
+  // Pinch zoom refs
+  const isPinchingRef = useRef(false);
+  const pinchStartDistanceRef = useRef(0);
+  const pinchStartScaleRef = useRef(1);
+  const pinchCenterRef = useRef({ x: 0, y: 0 });
 
   const handleUndo = useCallback(() => {
     undo();
@@ -287,28 +292,55 @@ export function CanvasBoard({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Center the view after loading is complete
   useEffect(() => {
     if (!dimensions.width || !dimensions.height) return;
     if (hasCenteredRef.current) return;
+    // Wait for hydration to complete when there's a session
+    if (sessionId && !isHydrated) return;
 
-    const centeredPosition = {
-      x: dimensions.width / 2,
-      y: dimensions.height / 2,
-    };
+    // Get current cards from the store
+    const currentCards = canvasStore.getState().cards;
+    
+    let centeredPosition: { x: number; y: number };
 
-    if (
-      stagePosition &&
-      Math.abs(stagePosition.x - centeredPosition.x) < 0.5 &&
-      Math.abs(stagePosition.y - centeredPosition.y) < 0.5
-    ) {
-      hasCenteredRef.current = true;
-      return;
+    if (currentCards.length > 0) {
+      // Calculate bounding box of all cards
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      currentCards.forEach((card) => {
+        minX = Math.min(minX, card.x);
+        minY = Math.min(minY, card.y);
+        maxX = Math.max(maxX, card.x + card.width);
+        maxY = Math.max(maxY, card.y + card.height);
+      });
+
+      // Calculate center of bounding box
+      const contentCenterX = (minX + maxX) / 2;
+      const contentCenterY = (minY + maxY) / 2;
+
+      // Position stage so content center is at viewport center
+      // Formula: viewportCenter = stagePosition + contentCenter * scale
+      // So: stagePosition = viewportCenter - contentCenter * scale
+      centeredPosition = {
+        x: dimensions.width / 2 - contentCenterX * displayScale,
+        y: dimensions.height / 2 - contentCenterY * displayScale,
+      };
+    } else {
+      // No cards, center the origin
+      centeredPosition = {
+        x: dimensions.width / 2,
+        y: dimensions.height / 2,
+      };
     }
 
     setStagePosition(centeredPosition);
     stagePositionRef.current = centeredPosition;
     hasCenteredRef.current = true;
-  }, [dimensions.width, dimensions.height, sessionId, stagePosition, setStagePosition]);
+  }, [dimensions.width, dimensions.height, sessionId, isHydrated, displayScale, setStagePosition]);
 
   // Handle zoom centering on selected card or viewport center
   useEffect(() => {
@@ -683,27 +715,116 @@ export function CanvasBoard({
     stopCanvasPan();
   }, [stopCanvasPan]);
 
+  // Helper to calculate distance between two touch points
+  const getTouchDistance = useCallback((touch1: Touch, touch2: Touch) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }, []);
+
+  // Helper to get center point between two touches
+  const getTouchCenter = useCallback((touch1: Touch, touch2: Touch) => {
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2,
+    };
+  }, []);
+
   const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (e.target !== e.target.getStage()) return;
-    if (e.evt.touches.length !== 1) return;
     e.evt.preventDefault();
-    const touch = e.evt.touches[0];
-    startCanvasPan(touch.clientX, touch.clientY);
-  }, [startCanvasPan]);
+    
+    const touches = e.evt.touches;
+    
+    // Two finger touch - start pinch zoom
+    if (touches.length === 2) {
+      isPinchingRef.current = true;
+      isPanningRef.current = false;
+      pinchStartDistanceRef.current = getTouchDistance(touches[0], touches[1]);
+      pinchStartScaleRef.current = displayScale;
+      const center = getTouchCenter(touches[0], touches[1]);
+      pinchCenterRef.current = center;
+      return;
+    }
+    
+    // Single finger touch - start panning
+    if (touches.length === 1) {
+      const touch = touches[0];
+      startCanvasPan(touch.clientX, touch.clientY);
+    }
+  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale]);
 
   const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    const touches = e.evt.touches;
+    
+    // Handle pinch zoom
+    if (isPinchingRef.current && touches.length === 2) {
+      e.evt.preventDefault();
+      
+      const currentDistance = getTouchDistance(touches[0], touches[1]);
+      const currentCenter = getTouchCenter(touches[0], touches[1]);
+      
+      // Calculate new scale based on pinch distance change
+      const scaleFactor = currentDistance / pinchStartDistanceRef.current;
+      let newScale = pinchStartScaleRef.current * scaleFactor;
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      
+      if (newScale !== displayScale) {
+        // Calculate the center point in stage coordinates using the initial pinch center
+        const centerX = (pinchCenterRef.current.x - stagePositionRef.current.x) / displayScale;
+        const centerY = (pinchCenterRef.current.y - stagePositionRef.current.y) / displayScale;
+        
+        // Calculate position adjustment to keep pinch center fixed
+        const newPosition = {
+          x: currentCenter.x - centerX * newScale,
+          y: currentCenter.y - centerY * newScale,
+        };
+        
+        setDisplayScale(newScale);
+        setStagePosition(newPosition);
+        stagePositionRef.current = newPosition;
+        prevScaleRef.current = newScale;
+        
+        if (onZoomChange) {
+          onZoomChange(newScale * 100);
+        }
+        const zoomPercent = newScale * 100;
+        if (userRole === 'patient') {
+          setZoomLevel('patient', zoomPercent);
+        } else if (userRole === 'therapist') {
+          setZoomLevel('therapist', zoomPercent);
+        }
+      }
+      
+      // Update pinch center for panning while pinching
+      pinchCenterRef.current = currentCenter;
+      return;
+    }
+    
+    // Handle single-finger panning
     if (!isPanningRef.current) return;
-    const touch = e.evt.touches[0] || e.evt.changedTouches[0];
+    const touch = touches[0] || e.evt.changedTouches[0];
     if (!touch) return;
     e.evt.preventDefault();
     moveCanvasPan(touch.clientX, touch.clientY);
-  }, [moveCanvasPan]);
+  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole]);
 
-  const handleStageTouchEnd = useCallback(() => {
+  const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    // If we were pinching and now have 1 or 0 fingers, stop pinching
+    if (isPinchingRef.current) {
+      isPinchingRef.current = false;
+      // If there's still one finger, start panning from that position
+      if (e.evt.touches.length === 1) {
+        const touch = e.evt.touches[0];
+        startCanvasPan(touch.clientX, touch.clientY);
+        return;
+      }
+    }
     stopCanvasPan();
-  }, [stopCanvasPan]);
+  }, [stopCanvasPan, startCanvasPan]);
 
   const handleStageTouchCancel = useCallback(() => {
+    isPinchingRef.current = false;
     stopCanvasPan();
   }, [stopCanvasPan]);
 

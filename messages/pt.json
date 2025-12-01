@@ -57,12 +57,12 @@
     "metaDescription": "Escolha como deseja acessar sua conta iModes.",
     "title": "Bem-vindo ao iModes",
     "subtitle": "Selecione a opção que melhor descreve você para continuar.",
-    "newUserButton": "Novo usuário",
-    "returningUserButton": "Usuário existente",
+    "newUserButton": "Criar conta",
+    "returningUserButton": "Entrar",
     "footer": "Autenticação segura • Conformidade GDPR"
   },
   "login": {
-    "title": "Bem-vindo de Volta",
+    "title": "Bem-vindo de volta",
     "subtitle": "Entre na sua conta para continuar",
     "email": "E-mail",
     "emailPlaceholder": "Digite seu e-mail",
@@ -261,6 +261,7 @@
   },
   "notifications": {
     "title": "Notificações",
+    "dialogDescription": "Revise suas notificações mais recentes",
     "markAllAsRead": "Marcar todas como lidas",
     "noNotifications": "Sem notificações",
     "loading": "Carregando notificações...",
@@ -318,8 +319,13 @@
       "female": "Feminino",
       "save": "Salvar",
       "session": "Sessão",
-      "defaultTitle": "Ass. 1",
-      "defaultSubtitle": "Sessão do Paciente - 9 de Out"
+      "defaultTitle": "Título da Sessão",
+      "defaultSubtitle": "Sessão - dia {date} de {month}",
+      "renameSession": "Renomear sessão",
+      "sessionRenamed": "Sessão renomeada com sucesso",
+      "renameError": "Falha ao renomear sessão",
+      "nameTooShort": "O nome deve ter pelo menos 1 caractere",
+      "nameTooLong": "O nome deve ter no máximo 60 caracteres"
     },
     "postItNote": {
       "clickToEdit": "Clique para editar"
@@ -364,11 +370,26 @@
       "tools": "Ferramentas"
     }
   },
+  "selectPatientDialog": {
+    "title": "Selecionar Paciente",
+    "description": "Escolha um paciente para esta sessão, ou selecione \"Nenhum Paciente\" para criar uma sessão playground.",
+    "sessionName": "Nome da sessão",
+    "cancelEdit": "Cancelar edição do nome",
+    "saveEdit": "Salvar nome da sessão",
+    "editName": "Editar nome da sessão",
+    "patient": "Paciente",
+    "loadingPatients": "Carregando pacientes...",
+    "selectPatient": "Selecione um paciente",
+    "noPatient": "Nenhum Paciente (Playground)",
+    "cancel": "Cancelar",
+    "creating": "Criando...",
+    "createSession": "Criar Sessão"
+  },
   "canvasSelection": {
     "pageTitle": "Seleção de Canvas",
     "pageDescription": "Selecione ou crie uma sessão de canvas.",
     "loading": "Carregando sessões...",
-    "title": "Sessões de Canvas",
+    "title": "Sessões",
     "subtitle": "Selecione uma sessão existente ou crie uma nova",
     "createButton": "Criar nova sessão",
     "creatingButton": "Criando...",
@@ -453,14 +474,15 @@
       "pageTitle": "Dashboard",
       "pageDescription": "Visão geral da sua conta enquanto o produto está em desenvolvimento ativo.",
       "title": "Dashboard",
-      "workspaceReady": "Seu espaço de trabalho está sendo preparado",
-      "underConstructionMessage": "O site está em desenvolvimento e construção.",
+      "workspaceReady": "Seu espaço de trabalho está pronto!",
+      "underConstructionMessage": "Tenha em mente que o website está em desenvolvimento e construção. Algumas funcionalidades ainda não estão disponíveis ou podem funcionar de forma diferente do esperado.",
       "signedInAs": "Conectado como",
       "loadingUser": "Carregando usuário...",
       "memberSince": "Membro desde {date}",
       "noEmailAvailable": "Nenhum e-mail disponível",
       "quickActions": "Ações rápidas",
-      "canvasSelection": "Seleção de Canvas",
+      "invitePatient": "Convidar paciente",
+      "canvasSelection": "Sessões salvas",
       "developmentTitle": "Site em desenvolvimento",
       "developmentDescription": "O site está em desenvolvimento e construção. Algumas áreas ainda não estão prontas, mas estes links rápidos ajudam você a acessar as partes que estão disponíveis hoje.",
       "roleFallback": "—",

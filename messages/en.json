@@ -57,8 +57,8 @@
     "metaDescription": "Choose how you want to access your iModes account.",
     "title": "Welcome to iModes",
     "subtitle": "Pick the option that best describes you to continue.",
-    "newUserButton": "New user",
-    "returningUserButton": "Returning user",
+    "newUserButton": "Create account",
+    "returningUserButton": "Login",
     "footer": "Secure authentication • GDPR compliant"
   },
   "login": {
@@ -261,6 +261,7 @@
   },
   "notifications": {
     "title": "Notifications",
+    "dialogDescription": "Review your latest notifications",
     "markAllAsRead": "Mark all as read",
     "noNotifications": "No notifications",
     "loading": "Loading notifications...",
@@ -318,8 +319,13 @@
       "female": "Female",
       "save": "Save",
       "session": "Session",
-      "defaultTitle": "Ass. 1",
-      "defaultSubtitle": "Patient Session - Oct 9"
+      "defaultTitle": "Session title",
+      "defaultSubtitle": "Session - day {date} of {month}",
+      "renameSession": "Rename session",
+      "sessionRenamed": "Session renamed successfully",
+      "renameError": "Failed to rename session",
+      "nameTooShort": "Name must be at least 1 character",
+      "nameTooLong": "Name must be at most 60 characters"
     },
     "postItNote": {
       "clickToEdit": "Click to edit"
@@ -363,6 +369,21 @@
     "page": {
       "tools": "Tools"
     }
+  },
+  "selectPatientDialog": {
+    "title": "Select Patient",
+    "description": "Choose a patient for this session, or select \"No Patient\" to create a playground session.",
+    "sessionName": "Session name",
+    "cancelEdit": "Cancel session name edit",
+    "saveEdit": "Save session name",
+    "editName": "Edit session name",
+    "patient": "Patient",
+    "loadingPatients": "Loading patients...",
+    "selectPatient": "Select a patient",
+    "noPatient": "No Patient (Playground)",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "createSession": "Create Session"
   },
   "canvasSelection": {
     "pageTitle": "Canvas Selection",
@@ -460,7 +481,8 @@
       "memberSince": "Member since {date}",
       "noEmailAvailable": "No email available",
       "quickActions": "Quick actions",
-      "canvasSelection": "Canvas Selection",
+      "invitePatient": "Invite patient",
+      "canvasSelection": "Saved sessions",
       "developmentTitle": "Website under development",
       "developmentDescription": "Website is under development and construction. Some areas are not ready yet, but these quick links help you reach the parts that are available today.",
       "roleFallback": "—",

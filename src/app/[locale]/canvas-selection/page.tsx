@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useAuthProfile } from '@/stores/authStore';
+import { useCreateSession } from '@/hooks/useCreateSession';
 import { Trash2, Pencil, Check, X, UserCircle2, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -29,9 +30,9 @@ export default function CanvasSelectionPage() {
   usePageMetadata(t('pageTitle'), t('pageDescription'));
   const router = useRouter();
   const profile = useAuthProfile();
-  const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([]);
+  const { createSession, creating } = useCreateSession();
+  const [sessions, setSessions] = useState<Omit<CanvasSession, 'data'>[]>([])
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPatientDialog, setShowPatientDialog] = useState(false);
@@ -180,56 +181,16 @@ export default function CanvasSelectionPage() {
     }
   };
 
-  const handleCreateSession = async (patientId: string | null, type: string, sessionName?: string) => {
-    try {
-      setCreating(true);
-      const trimmedName = sessionName?.trim();
-      const payload: {
-        patient_id: string | null;
-        type: string;
-        name?: string;
-      } = {
-        patient_id: patientId,
-        type: type,
-      };
-
-      if (trimmedName) {
-        payload.name = trimmedName;
-      }
-
-      const response = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || t('errors.createSession'));
-      }
-
-      const data = await response.json();
-      router.push(`/canvas?sessionId=${data.session.id}`);
-    } catch (error) {
-      console.error('Error creating session:', error);
-      toast.error(error instanceof Error ? error.message : t('errors.createSession'));
-    } finally {
-      setCreating(false);
-    }
-  };
-
   const handleCreateClick = () => {
     // If therapist has no patients, create playground session directly
     if (profile?.role === 'therapist' && therapistPatients.length === 0 && !checkingPatients) {
-      handleCreateSession(null, 'playground');
+      createSession(null, 'playground');
     } else if (profile?.role === 'therapist') {
       // Show patient selection dialog
       setShowPatientDialog(true);
     } else {
       // For patients, create session directly
-      handleCreateSession(null, 'session');
+      createSession(null, 'session');
     }
   };
 
@@ -610,7 +571,7 @@ export default function CanvasSelectionPage() {
           open={showPatientDialog}
           onOpenChange={setShowPatientDialog}
           therapistId={profile.id}
-          onSelect={handleCreateSession}
+          onSelect={createSession}
         />
       )}
 

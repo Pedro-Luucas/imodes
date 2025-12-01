@@ -2,14 +2,18 @@
 
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { useMemo } from 'react';
-import { AlertTriangle, AppWindow, Settings, Users, UserRound } from 'lucide-react';
+import { useMemo, useEffect, useState } from 'react';
+import { AlertTriangle, AppWindow, Settings, Users, UserPlus, Play } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useAuthProfile } from '@/stores/authStore';
+import { InvitePatientDialog } from '@/components/dashboard/InvitePatientDialog';
+import { SelectPatientDialog } from '@/components/canvas/SelectPatientDialog';
+import { useCreateSession } from '@/hooks/useCreateSession';
 
 export default function DashboardPage() {
   const locale = useLocale();
@@ -19,6 +23,10 @@ export default function DashboardPage() {
   usePageMetadata(page('pageTitle'), page('pageDescription'));
 
   const profile = useAuthProfile();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [selectPatientDialogOpen, setSelectPatientDialogOpen] = useState(false);
+  const { createSession, creating: creatingSession } = useCreateSession();
 
   const roleLabel = useMemo(() => {
     if (!profile?.role) return page('roleFallback');
@@ -32,6 +40,52 @@ export default function DashboardPage() {
       year: 'numeric',
     }).format(new Date(profile.created_at));
   }, [profile?.created_at]);
+
+  const profileInitial = useMemo(() => {
+    if (profile?.first_name) {
+      return profile.first_name.charAt(0).toUpperCase();
+    }
+    if (profile?.full_name) {
+      return profile.full_name.charAt(0).toUpperCase();
+    }
+    if (profile?.email) {
+      return profile.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  }, [profile?.first_name, profile?.full_name, profile?.email]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAvatarUrl = async () => {
+      if (!profile?.avatar_url) {
+        if (isMounted) setAvatarUrl(null);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/profile/avatar/url');
+        if (!response.ok) {
+          if (isMounted) setAvatarUrl(null);
+          return;
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          setAvatarUrl(data.signed_url ?? null);
+        }
+      } catch (error) {
+        console.error('Error fetching avatar URL:', error);
+        if (isMounted) setAvatarUrl(null);
+      }
+    };
+
+    fetchAvatarUrl();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile?.avatar_url]);
 
   const quickLinks = useMemo(
     () => [
@@ -74,7 +128,16 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-              <UserRound className="h-6 w-6 text-primary" />
+              <Avatar className="h-12 w-12 rounded-2xl">
+                <AvatarImage
+                  src={avatarUrl || undefined}
+                  alt={profile?.full_name || profile?.email || 'User avatar'}
+                  className="object-cover"
+                />
+                <AvatarFallback className="rounded-2xl bg-primary/10 text-lg font-semibold text-primary">
+                  {profileInitial}
+                </AvatarFallback>
+              </Avatar>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">{page('signedInAs')}</p>
@@ -117,6 +180,27 @@ export default function DashboardPage() {
               </Button>
             );
           })}
+          <Button
+            variant="secondary"
+            className="px-5"
+            onClick={() => setInviteDialogOpen(true)}
+          >
+            <span className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              <span>{page('invitePatient')}</span>
+            </span>
+          </Button>
+          <Button
+            variant="secondary"
+            className="px-5"
+            onClick={() => setSelectPatientDialogOpen(true)}
+            disabled={creatingSession}
+          >
+            <span className="flex items-center gap-2">
+              <Play className="h-5 w-5" />
+              <span>{page('startNewSession')}</span>
+            </span>
+          </Button>
         </div>
       </section>
 
@@ -131,6 +215,23 @@ export default function DashboardPage() {
           </div>
         </div>
       </Card>
+
+      {profile?.id && (
+        <InvitePatientDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          therapistId={profile.id}
+        />
+      )}
+
+      {profile?.role === 'therapist' && profile?.id && (
+        <SelectPatientDialog
+          open={selectPatientDialogOpen}
+          onOpenChange={setSelectPatientDialogOpen}
+          therapistId={profile.id}
+          onSelect={createSession}
+        />
+      )}
     </div>
   );
 }

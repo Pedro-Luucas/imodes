@@ -16,6 +16,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useCardsData } from '@/hooks/useCardsData';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { CardCategory, Gender } from '@/types/canvas';
 import { trackCardUsage, getFrequentlyUsedCards, type CardUsage } from '@/lib/cardUsageTracker';
 import { getSavedCards, removeSavedCard, type SavedCard } from '@/lib/savedCardsTracker';
@@ -39,7 +40,8 @@ function CardsGrid({
   category, 
   genderFilter, 
   locale, 
-  onCardSelect 
+  onCardSelect,
+  isMobile 
 }: { 
   category: CardCategory; 
   genderFilter?: Gender; 
@@ -51,6 +53,7 @@ function CardsGrid({
     category: CardCategory;
     cardNumber: number;
   }) => void;
+  isMobile: boolean;
 }) {
   const categoryGender = category === 'boat' || category === 'wave' ? undefined : genderFilter;
   const { cards, loading, error } = useCardsData(category, categoryGender, locale);
@@ -79,7 +82,7 @@ function CardsGrid({
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+        <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
           {cards.map((card) => (
             <div
               key={card.path}
@@ -122,7 +125,8 @@ function CardsGrid({
 // Component to display frequently used cards
 function FrequentlyUsedCards({ 
   onCardSelect,
-  isExpanded
+  isExpanded,
+  isMobile
 }: { 
   onCardSelect?: (card: {
     imageUrl?: string;
@@ -132,6 +136,7 @@ function FrequentlyUsedCards({
     cardNumber: number;
   }) => void;
   isExpanded?: boolean;
+  isMobile: boolean;
 }) {
   const t = useTranslations('canvas.tools');
   const [frequentCards, setFrequentCards] = useState<CardUsage[]>([]);
@@ -194,7 +199,7 @@ function FrequentlyUsedCards({
 
   return (
     <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+      <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
         {frequentCards.map((cardUsage) => (
           <div
             key={`${cardUsage.category}-${cardUsage.cardNumber}`}
@@ -230,7 +235,8 @@ function FrequentlyUsedCards({
 // Component to display saved cards
 function SavedCards({ 
   onCardSelect,
-  isExpanded
+  isExpanded,
+  isMobile
 }: { 
   onCardSelect?: (card: {
     imageUrl?: string;
@@ -240,6 +246,7 @@ function SavedCards({
     cardNumber: number;
   }) => void;
   isExpanded?: boolean;
+  isMobile: boolean;
 }) {
   const t = useTranslations('canvas.tools');
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
@@ -300,7 +307,7 @@ function SavedCards({
 
   return (
     <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+      <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
         {savedCards.map((savedCard) => (
           <div
             key={`${savedCard.category}-${savedCard.cardNumber}`}
@@ -348,27 +355,42 @@ function SavedCards({
 
 export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: ToolsPanelProps) {
   const t = useTranslations('canvas.tools');
+  const isMobile = useIsMobile();
   const [expandedSection, setExpandedSection] = useState<string | null>('modes');
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  // Wrap onCardSelect to collapse the panel on mobile after selecting a card
+  const handleCardSelect = useCallback((card: {
+    imageUrl?: string;
+    title: string;
+    description: string;
+    category: CardCategory;
+    cardNumber: number;
+  }) => {
+    onCardSelect?.(card);
+    if (isMobile) {
+      onClose();
+    }
+  }, [onCardSelect, isMobile, onClose]);
+
   // Always render all card grids to ensure hooks are called consistently
   // Hide them with CSS when not expanded - this ensures hooks run every render
   const cardGrids = (
     <>
       <div className={expandedSection === 'modes' ? '' : 'hidden'}>
-        <CardsGrid category="modes" genderFilter={gender} locale={locale} onCardSelect={onCardSelect} />
+        <CardsGrid category="modes" genderFilter={gender} locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
       </div>
       <div className={expandedSection === 'needs' ? '' : 'hidden'}>
-        <CardsGrid category="needs" genderFilter={gender} locale={locale} onCardSelect={onCardSelect} />
+        <CardsGrid category="needs" genderFilter={gender} locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
       </div>
       <div className={expandedSection === 'strengths' ? '' : 'hidden'}>
-        <CardsGrid category="strengths" genderFilter={gender} locale={locale} onCardSelect={onCardSelect} />
+        <CardsGrid category="strengths" genderFilter={gender} locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
       </div>
       <div className={expandedSection === 'boat' ? '' : 'hidden'}>
-        <CardsGrid category="boat" locale={locale} onCardSelect={onCardSelect} />
+        <CardsGrid category="boat" locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
       </div>
     </>
   );
@@ -481,7 +503,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
               )}
             </button>
             {expandedSection === 'frequent' && (
-              <FrequentlyUsedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'frequent'} />
+              <FrequentlyUsedCards onCardSelect={handleCardSelect} isExpanded={expandedSection === 'frequent'} isMobile={isMobile} />
             )}
           </div>
 
@@ -502,7 +524,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
               )}
             </button>
             {expandedSection === 'saved' && (
-              <SavedCards onCardSelect={onCardSelect} isExpanded={expandedSection === 'saved'} />
+              <SavedCards onCardSelect={handleCardSelect} isExpanded={expandedSection === 'saved'} isMobile={isMobile} />
             )}
           </div>
         </div>

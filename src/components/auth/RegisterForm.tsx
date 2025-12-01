@@ -45,7 +45,7 @@ export function RegisterForm({
     email: "",
     password: "",
     confirmPassword: "",
-    acceptTerms: false,
+    acceptTerms: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -318,7 +318,7 @@ export function RegisterForm({
               )}
             </div>
 
-            <div className="mt-1 flex flex-col gap-2">
+            <div className="mt-1 flex flex-col gap-2 hidden">
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="acceptTerms"

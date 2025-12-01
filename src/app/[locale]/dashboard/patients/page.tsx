@@ -39,7 +39,7 @@ export default function PatientsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<Profile | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedPatientForAssignment, setSelectedPatientForAssignment] = useState<ExtendedPatient | null>(null);
@@ -204,7 +204,7 @@ export default function PatientsPage() {
     }
 
     setSelectedPatient(patient);
-    setDialogOpen(true);
+    setDetailDialogOpen(true);
   };
 
   const handleSchedule = (patientId: string) => {
@@ -238,21 +238,17 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        {/* Stats Cards Skeleton */}
-        <div className="grid grid-cols-2 gap-3 px-1 sm:px-6 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="border border-input rounded-2xl p-4 sm:p-5">
-              <div className="flex flex-col gap-3">
-                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                <div className="h-8 w-12 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-              </div>
-            </Card>
-          ))}
+        {/* Total Patients Skeleton */}
+        <div className="px-1 sm:px-6">
+          <div className="flex flex-col gap-2">
+            <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-10 w-20 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-28 bg-muted animate-pulse rounded" />
+          </div>
         </div>
 
         {/* CTA Skeleton */}
-        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row">
+        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row hidden">
           <div className="h-12 w-full border-2 border-dashed border-input rounded-xl bg-muted/30" />
           <div className="h-12 w-full rounded-xl bg-muted animate-pulse md:hidden" />
         </div>
@@ -321,63 +317,20 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 px-1 sm:px-6 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t('totalPatients')}
-              </h3>
-              <p className="text-3xl font-bold text-primary leading-tight">
-                {stats.totalPatients}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t('fromLastMonth')}
-              </p>
-            </div>
-          </Card>
-
-          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t('activeSessions')}
-              </h3>
-              <p className="text-3xl font-bold text-primary leading-tight">
-                {stats.activeSessions}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t('scheduledToday')}
-              </p>
-            </div>
-          </Card>
-
-          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t('completedSessions')}
-              </h3>
-              <p className="text-3xl font-bold text-primary leading-tight">
-                {stats.completedSessions}
-              </p>
-              <p className="text-xs text-muted-foreground">{t('thisMonth')}</p>
-            </div>
-          </Card>
-
-          <Card className="border border-input rounded-2xl p-4 sm:p-5 shadow-none">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t('pendingAssignments')}
-              </h3>
-              <p className="text-3xl font-bold text-primary leading-tight">
-                {stats.pendingAssignments}
-              </p>
-              <p className="text-xs text-muted-foreground">{t('dueToday')}</p>
-            </div>
-          </Card>
+        {/* Total Patients */}
+        <div className="px-1 sm:px-6">
+          <div className="flex flex-col gap-1">
+            <p className="text-s font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('totalPatients')}
+            </p>
+            <p className="text-5xl font-bold text-primary leading-tight">
+              {stats.totalPatients}
+            </p>
+          </div>
         </div>
 
         {/* CTA Section */}
-        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row md:items-center">
+        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row md:items-center hidden">
           <Button
             variant="outline"
             className="h-12 w-full border-2 border-dashed border-input bg-background text-foreground shadow-none hover:bg-muted"
@@ -559,8 +512,8 @@ export default function PatientsPage() {
 
       {/* Patient Details Dialog */}
       <PatientDetailsDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
         patient={selectedPatient}
         onSchedule={handleSchedule}
       />
