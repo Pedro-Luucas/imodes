@@ -318,6 +318,7 @@
       "male": "Masculino",
       "female": "Feminino",
       "save": "Salvar",
+      "leaveSession": "Sair da Sessão",
       "session": "Sessão",
       "defaultTitle": "Título da Sessão",
       "defaultSubtitle": "Sessão - dia {date} de {month}",
@@ -532,7 +533,8 @@
       "allLoaded": "Todos os pacientes carregados",
       "noPatients": "Nenhum paciente encontrado",
       "noPatientsDesc": "Comece adicionando seu primeiro paciente",
-      "addPatientButton": "Adicionar paciente"
+      "addPatientButton": "Adicionar paciente",
+      "devWarning": "Este site está em desenvolvimento e construção. Algumas funcionalidades ainda não estão disponíveis ou podem funcionar de forma diferente do esperado."
     },
     "addPatient": {
       "title": "Adicionar Paciente",

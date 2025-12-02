@@ -273,7 +273,7 @@ export function CanvasHeader({
               >
                 <DropdownMenuItem onClick={handleSave}>
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  {t('save')}
                 </DropdownMenuItem>
                 {/* <DropdownMenuItem onClick={handleTakeScreenshot}>
                   <Camera className="w-4 h-4 mr-2" />
@@ -301,7 +301,7 @@ export function CanvasHeader({
                 <DropdownMenuSeparator />*/}
                 <DropdownMenuItem onClick={handleLeaveSession}>
                   <LogOut className="w-4 h-4 mr-2" />
-                  Leave Session
+                  {t('leaveSession')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

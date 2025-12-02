@@ -317,7 +317,8 @@
       "gender": "Gender",
       "male": "Male",
       "female": "Female",
-      "save": "Save",
+      "save": "Save", 
+      "leaveSession": "Leave Session",
       "session": "Session",
       "defaultTitle": "Session title",
       "defaultSubtitle": "Session - day {date} of {month}",
@@ -474,8 +475,8 @@
       "pageTitle": "Dashboard",
       "pageDescription": "Snapshot of your account while the product is under active development.",
       "title": "Dashboard",
-      "workspaceReady": "Your workspace is getting ready",
-      "underConstructionMessage": "Website is under development and construction.",
+      "workspaceReady": "Your workspace is ready!",
+      "underConstructionMessage": "Keep in mind that the website is under development and construction. Some features are not yet available or may work differently than expected.",
       "signedInAs": "Signed in as",
       "loadingUser": "Loading user...",
       "memberSince": "Member since {date}",
@@ -532,7 +533,8 @@
       "allLoaded": "All patients loaded",
       "noPatients": "No patients found",
       "noPatientsDesc": "Start by adding your first patient",
-      "addPatientButton": "Add patient"
+      "addPatientButton": "Add patient",
+      "devWarning": "This website is under development and construction. Some features are not yet available or may work differently than expected."
     },
     "addPatient": {
       "title": "Add Patient",

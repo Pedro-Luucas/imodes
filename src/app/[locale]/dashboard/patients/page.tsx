@@ -326,6 +326,9 @@ export default function PatientsPage() {
             <p className="text-5xl font-bold text-primary leading-tight">
               {stats.totalPatients}
             </p>
+            <p className="text-sm text-muted-foreground">
+              {t('devWarning')}
+            </p>
           </div>
         </div>
 
@@ -434,7 +437,7 @@ export default function PatientsPage() {
                   <div className="flex flex-col gap-2 md:flex-row">
                     <Button
                       variant="default"
-                      className="h-11 w-full"
+                      className="h-11 w-full hidden"
                       onClick={(event) => {
                         event.stopPropagation();
                         handleSchedule(patient.id);
@@ -454,7 +457,7 @@ export default function PatientsPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="hidden h-11 w-full md:inline-flex md:w-auto"
+                      className="hidden h-11 w-full"
                       onClick={(event) => {
                         event.stopPropagation();
                         handleCreateAssignment(patient);
