@@ -73,8 +73,8 @@ export async function POST(
     const locale = routing.locales.includes(cookieLocale as typeof routing.locales[number])
       ? (cookieLocale as typeof routing.locales[number])
       : routing.defaultLocale;
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://imodes.vercel.app';
-    const inviteUrl = `${appBaseUrl}/${locale}/auth/register/patient?token=${invite.token}`;
+    const requestUrl = new URL(request.url);
+    const inviteUrl = `${requestUrl.origin}/${locale}/auth/register/patient?token=${invite.token}`;
 
     return NextResponse.json(
       {
