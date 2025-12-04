@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { Group, Rect, Text, Image as KonvaImage, Transformer } from 'react-konva';
+import { Group, Rect, Text, Image as KonvaImage } from 'react-konva';
 import Konva from 'konva';
 import { CanvasCard as CanvasCardType } from '@/types/canvas';
 
@@ -14,12 +14,10 @@ interface CanvasCardProps {
   onLockToggle: (id: string) => void;
   onAddToFrequentlyUsed?: (id: string) => void;
   onSizeChange?: (id: string, width: number, height: number) => void;
-  onRotationChange?: (id: string, rotation: number) => void;
 }
 
-export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, onLockToggle, onAddToFrequentlyUsed, onSizeChange, onRotationChange }: CanvasCardProps) {
+export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, onLockToggle, onAddToFrequentlyUsed, onSizeChange }: CanvasCardProps) {
   const groupRef = useRef<Konva.Group>(null);
-  const transformerRef = useRef<Konva.Transformer>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [deleteHovered, setDeleteHovered] = useState(false);
   const [lockHovered, setLockHovered] = useState(false);
@@ -144,16 +142,6 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
   const cardRotation = card.rotation ?? 0;
   const isLocked = card.locked ?? false;
 
-  // Attach transformer to selected card
-  useEffect(() => {
-    if (isSelected && transformerRef.current && groupRef.current && !isLocked) {
-      transformerRef.current.nodes([groupRef.current]);
-      transformerRef.current.getLayer()?.batchDraw();
-    } else if (transformerRef.current) {
-      transformerRef.current.nodes([]);
-    }
-  }, [isSelected, isLocked, card.id]);
-
   useEffect(() => {
     if (groupRef.current) {
       // Add shadow on hover and track hover state
@@ -190,32 +178,6 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
     }
   }, [isSelected, card.id]);
 
-  // Handle transformer changes
-  const handleTransform = () => {
-    if (!groupRef.current) return;
-    
-    const node = groupRef.current;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    
-    // Reset scale and update width/height
-    node.scaleX(1);
-    node.scaleY(1);
-    
-    const newWidth = Math.max(50, cardWidth * scaleX);
-    const newHeight = Math.max(50, cardHeight * scaleY);
-    
-    if (onSizeChange) {
-      onSizeChange(card.id, newWidth, newHeight);
-    }
-    
-    // Update rotation
-    const newRotation = node.rotation();
-    if (onRotationChange && Math.abs(newRotation - cardRotation) > 0.1) {
-      onRotationChange(card.id, newRotation);
-    }
-  };
-
   return (
     <>
       <Group
@@ -231,7 +193,6 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
             onDragEnd(card.id, e.target.x(), e.target.y());
           }
         }}
-        onTransformEnd={handleTransform}
         shadowColor="black"
         shadowBlur={isSelected ? 10 : 5}
         shadowOpacity={isSelected ? 0.25 : 0.15}
@@ -453,25 +414,6 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
         </Group>
       )}
       </Group>
-      {isSelected && !isLocked && (
-        <Transformer
-          ref={transformerRef}
-          boundBoxFunc={(oldBox, newBox) => {
-            // Limit minimum size
-            if (Math.abs(newBox.width) < 50 || Math.abs(newBox.height) < 50) {
-              return oldBox;
-            }
-            return newBox;
-          }}
-          rotateEnabled={true}
-          enabledAnchors={[
-            'top-left',
-            'top-right',
-            'bottom-left',
-            'bottom-right',
-          ]}
-        />
-      )}
     </>
   );
 }
