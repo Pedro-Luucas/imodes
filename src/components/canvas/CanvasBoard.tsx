@@ -1091,7 +1091,6 @@ export function CanvasBoard({
                 onLockToggle={handleCardLockToggle}
                 onAddToFrequentlyUsed={handleAddToSavedCards}
                 onSizeChange={handleCardSizeChange}
-                onRotationChange={handleCardRotationChange}
               />
             ))}
             {/*
