@@ -152,7 +152,7 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
     } else if (transformerRef.current) {
       transformerRef.current.nodes([]);
     }
-  }, [isSelected, isLocked]);
+  }, [isSelected, isLocked, card.id]);
 
   useEffect(() => {
     if (groupRef.current) {
@@ -188,7 +188,7 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
         currentGroup?.off('mouseleave', handleMouseLeave);
       };
     }
-  }, [isSelected]);
+  }, [isSelected, card.id]);
 
   // Handle transformer changes
   const handleTransform = () => {

@@ -140,11 +140,11 @@ export function CanvasHeader({
     
     try {
       await onSave();
-      toast.success('Canvas saved successfully');
+      toast.success(t('saveSuccess'));
       setIsMenuOpen(false);
     } catch (error) {
       console.error('Error saving canvas:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save canvas';
+      const errorMessage = error instanceof Error ? error.message : t('saveError');
       toast.error(errorMessage);
     }
   };
@@ -408,7 +408,7 @@ export function CanvasHeader({
           </Button>
 
           <Avatar className="size-10 rounded-lg shrink-0">
-            <AvatarImage src={avatarUrl || undefined} alt="User avatar" className="rounded-lg" />
+            <AvatarImage src={avatarUrl || undefined} alt={t('userAvatar')} className="rounded-lg" />
             <AvatarFallback className="rounded-lg bg-orange-400 text-white font-semibold text-sm">
               {getInitials()}
             </AvatarFallback>
@@ -440,7 +440,7 @@ export function CanvasHeader({
         <div className="bg-white border border-stroke rounded-2xl p-6 max-w-md w-full mx-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">
-              {isTherapist ? 'Patient Details' : 'Therapist Details'}
+              {isTherapist ? t('patientDetails') : t('therapistDetails')}
             </h3>
             <Button
               variant="ghost"
@@ -453,16 +453,16 @@ export function CanvasHeader({
           </div>
           {isTherapist && patientProfile && (
             <div className="space-y-2">
-              <p><strong>Name:</strong> {patientProfile.full_name || patientProfile.first_name}</p>
-              <p><strong>Email:</strong> {patientProfile.email}</p>
-              {patientProfile.phone && <p><strong>Phone:</strong> {patientProfile.phone}</p>}
+              <p><strong>{t('name')}</strong> {patientProfile.full_name || patientProfile.first_name}</p>
+              <p><strong>{t('email')}</strong> {patientProfile.email}</p>
+              {patientProfile.phone && <p><strong>{t('phone')}</strong> {patientProfile.phone}</p>}
             </div>
           )}
           {isPatient && therapistProfile && (
             <div className="space-y-2">
-              <p><strong>Name:</strong> {therapistProfile.full_name || therapistProfile.first_name}</p>
-              <p><strong>Email:</strong> {therapistProfile.email}</p>
-              {therapistProfile.phone && <p><strong>Phone:</strong> {therapistProfile.phone}</p>}
+              <p><strong>{t('name')}</strong> {therapistProfile.full_name || therapistProfile.first_name}</p>
+              <p><strong>{t('email')}</strong> {therapistProfile.email}</p>
+              {therapistProfile.phone && <p><strong>{t('phone')}</strong> {therapistProfile.phone}</p>}
             </div>
           )}
         </div>

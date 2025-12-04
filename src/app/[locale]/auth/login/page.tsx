@@ -283,7 +283,7 @@ export default function LoginPage() {
           <div className="flex flex-wrap items-center justify-center gap-1 text-center text-sm">
             <span className="text-foreground">{t("noAccount")}</span>
             <Link
-              href="/auth/register"
+              href="/auth/register/therapist"
               className="font-medium text-accent hover:underline"
             >
               {t("registerLink")}

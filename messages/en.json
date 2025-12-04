@@ -157,7 +157,7 @@
     }
   },
   "resetPassword": {
-    "title": "Reset Password",
+    "title": "Create new password",
     "subtitle": "Enter your new password",
     "password": "New Password",
     "passwordPlaceholder": "Enter your new password",
@@ -167,13 +167,17 @@
     "submitting": "Resetting...",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "success": "Password successfully reset! Redirecting to login...",
+    "success": "Password successfully reset!",
+    "redirectingToLogin": "Redirecting to login...",
     "invalidLink": "Invalid or expired reset link",
+    "backToSignIn": "Back to sign in",
+    "securityNotice": "Your password will be encrypted and stored securely",
     "errors": {
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 8 characters",
       "confirmPasswordRequired": "Password confirmation is required",
-      "passwordMismatch": "Passwords do not match"
+      "passwordMismatch": "Passwords do not match",
+      "resetFailed": "Failed to reset password. Please try again."
     }
   },
   "settings": {
@@ -326,7 +330,15 @@
       "sessionRenamed": "Session renamed successfully",
       "renameError": "Failed to rename session",
       "nameTooShort": "Name must be at least 1 character",
-      "nameTooLong": "Name must be at most 60 characters"
+      "nameTooLong": "Name must be at most 60 characters",
+      "saveSuccess": "Canvas saved successfully",
+      "saveError": "Failed to save canvas",
+      "patientDetails": "Patient Details",
+      "therapistDetails": "Therapist Details",
+      "name": "Name:",
+      "email": "Email:",
+      "phone": "Phone:",
+      "userAvatar": "User avatar"
     },
     "postItNote": {
       "clickToEdit": "Click to edit"

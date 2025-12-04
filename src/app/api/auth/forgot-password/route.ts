@@ -11,11 +11,13 @@ import { getApiMessages } from '@/lib/apiMessages';
  * Always returns success (security best practice to prevent email enumeration)
  */
 export async function POST(request: NextRequest) {
+  // Get locale from cookie, body, or default to 'en'
+  const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
   let messages = await getApiMessages();
   try {
     // Parse request body
     const body = await request.json();
-    const locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    const locale = typeof body?.locale === 'string' ? body.locale : cookieLocale || 'en';
     messages = await getApiMessages(locale);
 
     // Validate input with Zod
@@ -26,7 +28,7 @@ export async function POST(request: NextRequest) {
     const supabase = createSupabaseAnonClient();
 
     // Get the redirect URL for the password reset
-    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password`;
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${locale}/auth/reset-password`;
 
     // Send password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(email, {

@@ -157,7 +157,7 @@
     }
   },
   "resetPassword": {
-    "title": "Redefinir Senha",
+    "title": "Criar nova senha",
     "subtitle": "Digite sua nova senha",
     "password": "Nova Senha",
     "passwordPlaceholder": "Digite sua nova senha",
@@ -167,13 +167,17 @@
     "submitting": "Redefinindo...",
     "showPassword": "Mostrar senha",
     "hidePassword": "Ocultar senha",
-    "success": "Senha redefinida com sucesso! Redirecionando para o login...",
+    "success": "Senha redefinida com sucesso!",
+    "redirectingToLogin": "Redirecionando para o login...",
     "invalidLink": "Link de redefinição inválido ou expirado",
+    "backToSignIn": "Voltar para login",
+    "securityNotice": "Sua senha será criptografada e armazenada com segurança",
     "errors": {
       "passwordRequired": "A senha é obrigatória",
       "passwordMinLength": "A senha deve ter no mínimo 8 caracteres",
       "confirmPasswordRequired": "A confirmação de senha é obrigatória",
-      "passwordMismatch": "As senhas não coincidem"
+      "passwordMismatch": "As senhas não coincidem",
+      "resetFailed": "Falha ao redefinir a senha. Por favor, tente novamente."
     }
   },
   "settings": {
@@ -326,7 +330,15 @@
       "sessionRenamed": "Sessão renomeada com sucesso",
       "renameError": "Falha ao renomear sessão",
       "nameTooShort": "O nome deve ter pelo menos 1 caractere",
-      "nameTooLong": "O nome deve ter no máximo 60 caracteres"
+      "nameTooLong": "O nome deve ter no máximo 60 caracteres",
+      "saveSuccess": "Canvas salvo com sucesso",
+      "saveError": "Falha ao salvar canvas",
+      "patientDetails": "Detalhes do Paciente",
+      "therapistDetails": "Detalhes do Terapeuta",
+      "name": "Nome:",
+      "email": "E-mail:",
+      "phone": "Telefone:",
+      "userAvatar": "Avatar do usuário"
     },
     "postItNote": {
       "clickToEdit": "Clique para editar"

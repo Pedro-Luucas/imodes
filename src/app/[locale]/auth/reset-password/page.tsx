@@ -4,7 +4,7 @@ import { useState, FormEvent, useEffect, ReactNode } from "react";
 import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { resetPassword } from "@/lib/authClient";
 import { useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
+
+function ResetPasswordLayout({ children, securityNotice }: { children: ReactNode; securityNotice: string }) {
+  return (
+    <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8 sm:gap-10">
+        <div className="relative h-11 w-[186px] sm:h-[62px] sm:w-[266px]">
+          <Image
+            src="/imodes.png"
+            alt="iModes"
+            fill
+            className="object-contain mix-blend-darken"
+            priority
+          />
+        </div>
+        {children}
+        <p className="text-center text-sm text-muted-foreground leading-5">
+          {securityNotice}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function ResetPasswordPage() {
   usePageMetadata('Reset Password', 'Create a new password for your account.');
@@ -88,7 +110,7 @@ export default function ResetPasswordPage() {
         setApiError(
           error instanceof Error
             ? error.message
-            : "Failed to reset password. Please try again."
+            : t("errors.resetFailed")
         );
       } finally {
         setLoading(false);
@@ -143,47 +165,26 @@ export default function ResetPasswordPage() {
     return null;
   }
 
-  const Layout = ({ children }: { children: ReactNode }) => (
-    <div className="min-h-screen bg-page px-4 py-10 sm:px-8 sm:py-16">
-      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8 sm:gap-10">
-        <div className="relative h-11 w-[186px] sm:h-[62px] sm:w-[266px]">
-          <Image
-            src="/imodes.png"
-            alt="iModes"
-            fill
-            className="object-contain mix-blend-darken"
-            priority
-          />
-        </div>
-        {children}
-        <div className="text-center text-sm text-muted-foreground leading-5">
-          <p>Your password will be encrypted</p>
-          <p>and stored securely</p>
-        </div>
-      </div>
-    </div>
-  );
-
   if (success) {
     return (
-      <Layout>
+      <ResetPasswordLayout securityNotice={t("securityNotice")}>
         <div className="flex w-full flex-col gap-4 rounded-2xl border border-stroke bg-white p-6 text-center shadow-sm sm:p-10">
           <h1 className="text-lg font-bold leading-7 text-foreground sm:text-xl">
             {t("success")}
           </h1>
-          <p className="text-sm text-muted-foreground">Redirecting to login...</p>
+          <p className="text-sm text-muted-foreground">{t("redirectingToLogin")}</p>
         </div>
-      </Layout>
+      </ResetPasswordLayout>
     );
   }
 
   return (
-    <Layout>
+    <ResetPasswordLayout securityNotice={t("securityNotice")}>
       <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
-        <Link href="/auth/login" className="flex items-center gap-2 text-sm text-foreground">
+        <div className="flex items-center gap-2 text-sm text-foreground">
           <ArrowLeft className="h-4 w-4 text-foreground" />
-          <span>Create new password</span>
-        </Link>
+          <span>{t("title")}</span>
+        </div>
 
         {apiError && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
@@ -194,7 +195,7 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Label htmlFor="password" className="text-sm font-medium text-foreground">
-              New Password
+              {t("password")}
             </Label>
             <Input
               type="password"
@@ -212,7 +213,7 @@ export default function ResetPasswordPage() {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
-              Confirm Password
+              {t("confirmPassword")}
             </Label>
             <Input
               type="password"
@@ -233,7 +234,7 @@ export default function ResetPasswordPage() {
             disabled={loading || !accessToken || !refreshToken}
             className="mt-2 h-11 w-full text-sm font-medium sm:text-base"
           >
-            {loading ? t("submitting") : "Reset Password"}
+            {loading ? t("submitting") : t("submit")}
           </Button>
 
           <Button
@@ -242,10 +243,10 @@ export default function ResetPasswordPage() {
             onClick={() => router.push("/auth/login")}
             className="h-11 w-full text-sm font-medium sm:text-base"
           >
-            Back to sign in
+            {t("backToSignIn")}
           </Button>
         </form>
       </div>
-    </Layout>
+    </ResetPasswordLayout>
   );
 }
