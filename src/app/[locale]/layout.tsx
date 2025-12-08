@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -42,6 +43,10 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
+        <Script
+          src="https://t.contentsquare.net/uxa/037018af25c6a.js"
+          strategy="afterInteractive"
+        />
         <AuthInitializer />
         <NotificationInitializer />
         <Toaster />
