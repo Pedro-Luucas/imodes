@@ -23,16 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+//import {
+//  AlertDialog,
+//  AlertDialogAction,
+//  AlertDialogCancel,
+//  AlertDialogContent,
+//  AlertDialogDescription,
+//  AlertDialogFooter,
+//  AlertDialogHeader,
+//  AlertDialogTitle,
+//} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Loader2, Upload, Trash2, User } from 'lucide-react';
 
@@ -59,9 +59,9 @@ export default function PatientSettingsPage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoadingAvatar, setIsLoadingAvatar] = useState(true);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  // const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  // const [isDeleting, setIsDeleting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   
@@ -249,7 +249,7 @@ export default function PatientSettingsPage() {
       return;
     }
 
-    setIsDeleting(true);
+  //  setIsDeleting(true);
 
     try {
       await deleteAccount();
@@ -261,8 +261,8 @@ export default function PatientSettingsPage() {
       }, 1500);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('errors.deleteFailed'));
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
+     // setIsDeleting(false);
+    //  setShowDeleteDialog(false);
     }
   };
 
