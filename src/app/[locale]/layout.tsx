@@ -9,6 +9,7 @@ import { routing } from "@/i18n/routing";
 import { AuthInitializer } from "@/components/AuthInitializer";
 import { NotificationInitializer } from "@/components/NotificationInitializer";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -53,6 +54,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );

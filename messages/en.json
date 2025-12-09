@@ -546,7 +546,16 @@
       "noPatients": "No patients found",
       "noPatientsDesc": "Start by adding your first patient",
       "addPatientButton": "Add patient",
-      "devWarning": "This website is under development and construction. Some features are not yet available or may work differently than expected."
+      "devWarning": "This website is under development and construction. Some features are not yet available or may work differently than expected.",
+      "inviteInfoTitle": "What's New!",
+      "inviteInfoIntro": "The way to register patients has changed!",
+      "inviteInfoDescription": "It's now easier. Here's how:",
+      "inviteInfoStep1": "Click the \"Invite Patient\" button",
+      "inviteInfoStep2": "Click \"Generate Invite Link\"",
+      "inviteInfoStep3": "The site will create a special link",
+      "inviteInfoStep4": "Send that link to your patient",
+      "inviteInfoConclusion": "Your patient will use that link to register on the platform. Simple as that!",
+      "inviteInfoButton": "Got it!"
     },
     "addPatient": {
       "title": "Add Patient",

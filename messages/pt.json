@@ -546,7 +546,16 @@
       "noPatients": "Nenhum paciente encontrado",
       "noPatientsDesc": "Comece adicionando seu primeiro paciente",
       "addPatientButton": "Adicionar paciente",
-      "devWarning": "Este site está em desenvolvimento e construção. Algumas funcionalidades ainda não estão disponíveis ou podem funcionar de forma diferente do esperado."
+      "devWarning": "Este site está em desenvolvimento e construção. Algumas funcionalidades ainda não estão disponíveis ou podem funcionar de forma diferente do esperado.",
+      "inviteInfoTitle": "Novidade!",
+      "inviteInfoIntro": "O jeito de cadastrar pacientes mudou!",
+      "inviteInfoDescription": "Agora ficou mais fácil. Veja como fazer:",
+      "inviteInfoStep1": "Clique no botão \"Convidar Paciente\"",
+      "inviteInfoStep2": "Clique em \"Gerar Link de Convite\"",
+      "inviteInfoStep3": "O site vai criar um link especial",
+      "inviteInfoStep4": "Envie esse link para seu paciente",
+      "inviteInfoConclusion": "Seu paciente vai usar esse link para se cadastrar na plataforma. Simples assim!",
+      "inviteInfoButton": "Entendi!"
     },
     "addPatient": {
       "title": "Adicionar Paciente",

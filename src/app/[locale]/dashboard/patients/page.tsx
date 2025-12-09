@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, UserPlus, Calendar, Users, ClipboardList } from 'lucide-react';
+import { Plus, UserPlus, Calendar, Users, ClipboardList, Info } from 'lucide-react';
 import { useAuthProfile } from '@/stores/authStore';
 import type { Profile } from '@/types/auth';
 import { PatientDetailsDialog } from '@/components/dashboard/PatientDetailsDialog';
@@ -14,6 +14,15 @@ import { InvitePatientDialog } from '@/components/dashboard/InvitePatientDialog'
 import { CreateAssignmentDialog } from '@/components/dashboard/CreateAssignmentDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from '@/i18n/navigation';
+import { PatientsPageSkeleton } from '@/components/skeleton-loaders/patients';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Extended data for demonstration
 interface ExtendedPatient extends Profile {
@@ -45,6 +54,7 @@ export default function PatientsPage() {
   const [selectedPatientForAssignment, setSelectedPatientForAssignment] = useState<ExtendedPatient | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showInviteInfoDialog, setShowInviteInfoDialog] = useState(false);
   //const [avatarUrls, setAvatarUrls] = useState<Record<string, string | null>>({});
 
   // Redirect patients away from therapist dashboard
@@ -138,6 +148,21 @@ export default function PatientsPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Show invite info dialog once when page loads
+  useEffect(() => {
+    if (!loading) {
+      const hasSeenInviteInfo = localStorage.getItem('hasSeenInviteInfoDialog');
+      if (!hasSeenInviteInfo) {
+        setShowInviteInfoDialog(true);
+      }
+    }
+  }, [loading]);
+
+  const handleCloseInviteInfoDialog = () => {
+    localStorage.setItem('hasSeenInviteInfoDialog', 'true');
+    setShowInviteInfoDialog(false);
+  };
+
   // Load more patients
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -228,73 +253,7 @@ export default function PatientsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col gap-6 pt-6 pb-16 px-4 md:px-8 xl:px-40">
-        {/* Header Skeleton */}
-        <div className="flex flex-col gap-3 px-1 md:px-6 md:flex-row md:items-center md:justify-between">
-          <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-          <div className="hidden md:flex gap-2">
-            <div className="h-10 w-32 bg-muted animate-pulse rounded-xl" />
-          </div>
-        </div>
-
-        {/* Total Patients Skeleton */}
-        <div className="px-1 sm:px-6">
-          <div className="flex flex-col gap-2">
-            <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-            <div className="h-10 w-20 bg-muted animate-pulse rounded" />
-            <div className="h-3 w-28 bg-muted animate-pulse rounded" />
-          </div>
-        </div>
-
-        {/* CTA Skeleton */}
-        <div className="flex flex-col gap-3 px-1 sm:px-6 md:flex-row hidden">
-          <div className="h-12 w-full border-2 border-dashed border-input rounded-xl bg-muted/30" />
-          <div className="h-12 w-full rounded-xl bg-muted animate-pulse md:hidden" />
-        </div>
-
-        {/* Assignments Section Skeleton */}
-        <div className="px-1 sm:px-6">
-          <div className="h-6 w-32 bg-muted animate-pulse rounded mb-4" />
-          <div className="flex flex-col gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="border border-input rounded-2xl p-4">
-                <div className="flex flex-col gap-4">
-                  {/* Patient Header Skeleton */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-muted animate-pulse rounded-xl" />
-                      <div className="flex flex-col gap-2">
-                        <div className="h-4 w-28 bg-muted animate-pulse rounded" />
-                        <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-                      </div>
-                    </div>
-                    <div className="h-7 w-16 bg-muted animate-pulse rounded-full" />
-                  </div>
-
-                  {/* Patient Stats Skeleton */}
-                  <div className="flex flex-col divide-y divide-input rounded-xl border border-input">
-                    {[...Array(3)].map((_, statIndex) => (
-                      <div key={statIndex} className="flex items-center justify-between px-4 py-2">
-                        <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-                        <div className="h-3 w-10 bg-muted animate-pulse rounded" />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Action Buttons Skeleton */}
-                  <div className="flex flex-col gap-2 md:flex-row">
-                    <div className="h-11 w-full bg-muted animate-pulse rounded-lg" />
-                    <div className="h-11 w-full bg-muted animate-pulse rounded-lg" />
-                    <div className="hidden h-11 w-full bg-muted animate-pulse rounded-lg md:inline-flex" />
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <PatientsPageSkeleton />;
   }
 
   return (
@@ -540,6 +499,44 @@ export default function PatientsPage() {
           onAssignmentCreated={handleAssignmentCreated}
         />
       )}
+
+      {/* Invite Info Dialog - shows once to explain new invitation flow */}
+      <AlertDialog open={showInviteInfoDialog} onOpenChange={setShowInviteInfoDialog} >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <Info className="w-5 h-5 text-primary" />
+              </div>
+              <AlertDialogTitle className="text-xl">
+                {t('inviteInfoTitle')} 🎉
+              </AlertDialogTitle>
+            </div>
+          </AlertDialogHeader>
+          <div className="text-base leading-relaxed space-y-4 text-muted-foreground">
+            <p>
+              <strong>{t('inviteInfoIntro')}</strong>
+            </p>
+            <p>
+              {t('inviteInfoDescription')}
+            </p>
+            <ol className="list-decimal list-inside space-y-2 text-foreground">
+              <li>{t('inviteInfoStep1')}</li>
+              <li>{t('inviteInfoStep2')}</li>
+              <li>{t('inviteInfoStep3')}</li>
+              <li>{t('inviteInfoStep4')}</li>
+            </ol>
+            <p>
+              {t('inviteInfoConclusion')}
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleCloseInviteInfoDialog} className="w-full sm:w-auto">
+              {t('inviteInfoButton')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
