@@ -1,6 +1,7 @@
 'use client';
 
 import { CardCategory } from '@/types/canvas';
+import { sanitizeStorageUrl } from './urlSanitizer';
 
 export interface SavedCard {
   cardNumber: number;
@@ -33,11 +34,14 @@ export function saveCard(card: {
 
     const key = `${card.category}-${card.cardNumber}`;
     
+    // Sanitize the URL to ensure it's a public (non-expiring) URL
+    const sanitizedImageUrl = sanitizeStorageUrl(card.imageUrl);
+    
     // Add or update the saved card
     savedCardsMap.set(key, {
       cardNumber: card.cardNumber,
       category: card.category,
-      imageUrl: card.imageUrl,
+      imageUrl: sanitizedImageUrl,
       title: card.title,
       description: card.description,
       savedAt: Date.now(),
@@ -56,6 +60,7 @@ export function saveCard(card: {
 
 /**
  * Get all saved cards, sorted by saved date (newest first)
+ * Also sanitizes URLs to fix any previously stored expired signed URLs
  */
 export function getSavedCards(): SavedCard[] {
   if (typeof window === 'undefined') return [];
@@ -66,6 +71,11 @@ export function getSavedCards(): SavedCard[] {
 
     const savedCardsMap: Map<string, SavedCard> = new Map(JSON.parse(stored));
     const cards = Array.from(savedCardsMap.values())
+      .map(card => ({
+        ...card,
+        // Sanitize URL to fix any expired signed URLs
+        imageUrl: sanitizeStorageUrl(card.imageUrl),
+      }))
       .sort((a, b) => b.savedAt - a.savedAt); // Newest first
 
     return cards;

@@ -1,6 +1,7 @@
 'use client';
 
 import { CardCategory } from '@/types/canvas';
+import { sanitizeStorageUrl } from './urlSanitizer';
 
 export interface CardUsage {
   cardNumber: number;
@@ -37,11 +38,14 @@ export function trackCardUsage(card: {
     const key = `${card.category}-${card.cardNumber}`;
     const existing = usageMap.get(key);
 
+    // Sanitize the URL to ensure it's a public (non-expiring) URL
+    const sanitizedImageUrl = sanitizeStorageUrl(card.imageUrl);
+
     if (existing) {
       // Update existing entry
       existing.usageCount += 1;
       existing.lastUsed = Date.now();
-      existing.imageUrl = card.imageUrl || existing.imageUrl;
+      existing.imageUrl = sanitizedImageUrl || sanitizeStorageUrl(existing.imageUrl);
       existing.title = card.title;
       existing.description = card.description;
     } else {
@@ -49,7 +53,7 @@ export function trackCardUsage(card: {
       usageMap.set(key, {
         cardNumber: card.cardNumber,
         category: card.category,
-        imageUrl: card.imageUrl,
+        imageUrl: sanitizedImageUrl,
         title: card.title,
         description: card.description,
         usageCount: 1,
@@ -82,6 +86,7 @@ export function trackCardUsage(card: {
 
 /**
  * Get frequently used cards, sorted by usage count and last used
+ * Also sanitizes URLs to fix any previously stored expired signed URLs
  */
 export function getFrequentlyUsedCards(): CardUsage[] {
   if (typeof window === 'undefined') return [];
@@ -92,6 +97,11 @@ export function getFrequentlyUsedCards(): CardUsage[] {
 
     const usageMap: Map<string, CardUsage> = new Map(JSON.parse(stored));
     const cards = Array.from(usageMap.values())
+      .map(card => ({
+        ...card,
+        // Sanitize URL to fix any expired signed URLs
+        imageUrl: sanitizeStorageUrl(card.imageUrl),
+      }))
       .sort((a, b) => {
         // Sort by usage count (descending), then by last used (descending)
         if (b.usageCount !== a.usageCount) {

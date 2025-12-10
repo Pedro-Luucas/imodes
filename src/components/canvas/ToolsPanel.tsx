@@ -21,6 +21,48 @@ import { CardCategory, Gender } from '@/types/canvas';
 import { trackCardUsage, getFrequentlyUsedCards, type CardUsage } from '@/lib/cardUsageTracker';
 import { getSavedCards, removeSavedCard, type SavedCard } from '@/lib/savedCardsTracker';
 
+// Reusable card image component with error fallback
+function CardImage({ 
+  src, 
+  alt, 
+  fallbackText 
+}: { 
+  src?: string; 
+  alt: string; 
+  fallbackText: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  const handleError = useCallback(() => {
+    setHasError(true);
+  }, []);
+
+  if (!src || hasError) {
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
+        {fallbackText}
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={160}
+      height={160}
+      className="w-full h-full object-cover"
+      style={{
+        imageRendering: 'auto',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+      }}
+      loading="lazy"
+      onError={handleError}
+    />
+  );
+}
+
 interface ToolsPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -95,25 +137,11 @@ function CardsGrid({
                 cardNumber: card.cardNumber,
               })}
             >
-              {card.imageUrl ? (
-                <Image
-                  src={card.imageUrl}
-                  alt={card.name}
-                  width={160}
-                  height={160}
-                  className="w-full h-full object-cover"
-                  style={{
-                    imageRendering: 'auto',
-                    transform: 'translateZ(0)',
-                    backfaceVisibility: 'hidden',
-                  }}
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
-                  {card.name}
-                </div>
-              )}
+              <CardImage 
+                src={card.imageUrl} 
+                alt={card.name} 
+                fallbackText={card.name} 
+              />
             </div>
           ))}
         </div>
@@ -206,25 +234,11 @@ function FrequentlyUsedCards({
             className="aspect-square rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100"
             onClick={() => handleCardClick(cardUsage)}
           >
-            {cardUsage.imageUrl ? (
-              <Image
-                src={cardUsage.imageUrl}
-                alt={cardUsage.title}
-                width={160}
-                height={160}
-                className="w-full h-full object-cover"
-                style={{
-                  imageRendering: 'auto',
-                  transform: 'translateZ(0)',
-                  backfaceVisibility: 'hidden',
-                }}
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
-                {cardUsage.title}
-              </div>
-            )}
+            <CardImage 
+              src={cardUsage.imageUrl} 
+              alt={cardUsage.title} 
+              fallbackText={cardUsage.title} 
+            />
           </div>
         ))}
       </div>
@@ -314,25 +328,11 @@ function SavedCards({
             className="aspect-square rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100 relative group"
             onClick={() => handleCardClick(savedCard)}
           >
-            {savedCard.imageUrl ? (
-              <Image
-                src={savedCard.imageUrl}
-                alt={savedCard.title}
-                width={160}
-                height={160}
-                className="w-full h-full object-cover"
-                style={{
-                  imageRendering: 'auto',
-                  transform: 'translateZ(0)',
-                  backfaceVisibility: 'hidden',
-                }}
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xs text-center p-2">
-                {savedCard.title}
-              </div>
-            )}
+            <CardImage 
+              src={savedCard.imageUrl} 
+              alt={savedCard.title} 
+              fallbackText={savedCard.title} 
+            />
             {/* Remove button on hover */}
             <button
               className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 md:right-2 md:top-2 md:p-1.5"

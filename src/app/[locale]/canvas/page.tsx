@@ -467,6 +467,7 @@ const storeSessionRef = useRef<string | null>(null);
         }}*/
         currentDuration={currentDuration}
         onSessionRenamed={setSessionName}
+        onBackgroundClick={() => setIsToolsPanelOpen(false)}
       />
 
       {/* Canvas with Floating Controls */}
@@ -482,6 +483,7 @@ const storeSessionRef = useRef<string | null>(null);
           userRole={userRole}
           onSave={handleManualSave}
           onZoomChange={setZoomLevel}
+          onCanvasClick={() => setIsToolsPanelOpen(false)}
         />
 
         {/* Left Panel - Tools */}

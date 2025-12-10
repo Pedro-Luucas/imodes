@@ -55,6 +55,7 @@ interface CanvasHeaderProps {
 //  onNotesChange?: (notes: string) => void;
   currentDuration?: number; // Current session duration in seconds
   onSessionRenamed?: (newTitle: string) => void;
+  onBackgroundClick?: () => void;
 }
 
 export function CanvasHeader({
@@ -72,6 +73,7 @@ export function CanvasHeader({
 //  onNotesChange,
   currentDuration = 0,
   onSessionRenamed,
+  onBackgroundClick,
 }: CanvasHeaderProps) {
   const t = useTranslations('canvas.header');
   const locale = useLocale();
@@ -251,9 +253,33 @@ export function CanvasHeader({
     }
   };
 
+  const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Check if the click was on an interactive element (button, input, etc.)
+    const target = e.target as HTMLElement;
+    const interactiveElements = ['BUTTON', 'INPUT', 'A', 'SELECT', 'TEXTAREA'];
+    
+    // Check if target or any parent up to the header is interactive
+    let element: HTMLElement | null = target;
+    while (element && element !== e.currentTarget) {
+      if (
+        interactiveElements.includes(element.tagName) ||
+        element.getAttribute('role') === 'button' ||
+        element.getAttribute('role') === 'menuitem' ||
+        element.hasAttribute('data-radix-collection-item')
+      ) {
+        // Clicked on an interactive element, don't trigger background click
+        return;
+      }
+      element = element.parentElement;
+    }
+    
+    // Only trigger if clicking on the header background
+    onBackgroundClick?.();
+  };
+
   return (
     <>
-      <div className="bg-white border-b border-gray-200 w-full">
+      <div className="bg-white border-b border-gray-200 w-full" onClick={handleHeaderClick}>
         <div className="flex items-center justify-between px-2 py-1 md:px-6 md:py-4">
           {/* Left Section - Menu & Title */}
           <div className="flex items-center gap-4">

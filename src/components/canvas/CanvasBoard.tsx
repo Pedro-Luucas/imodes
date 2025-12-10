@@ -17,6 +17,7 @@ import { CanvasLoading } from './CanvasLoading';
 //import { PostItNoteComponent } from './PostItNote';
 import { preloadImagesWithPriority } from '@/lib/imagePreloader';
 import { saveCard } from '@/lib/savedCardsTracker';
+import { sanitizeStorageUrl } from '@/lib/urlSanitizer';
 import { useCanvasStore, canvasStore } from '@/stores/canvasStore';
 import { useCanvasRealtime } from '@/hooks/useCanvasRealtime';
 import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
@@ -47,6 +48,7 @@ interface CanvasBoardProps {
   userRole?: 'patient' | 'therapist';
   onSave?: () => Promise<void>;
   onZoomChange?: (zoomLevel: number) => void;
+  onCanvasClick?: () => void;
 }
 
 interface WindowWithCanvasCard extends Window {
@@ -82,6 +84,7 @@ export function CanvasBoard({
   sessionId,
   userRole,
   onZoomChange,
+  onCanvasClick,
 }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const cards = useCanvasStore((state) => state.cards);
@@ -447,6 +450,9 @@ export function CanvasBoard({
       const cardX = centerX - cardWidth / 2;
       const cardY = centerY - cardHeight / 2;
       
+      // Sanitize the URL to ensure it's a public (non-expiring) URL
+      const sanitizedImageUrl = sanitizeStorageUrl(cardData?.imageUrl);
+      
       const newCard: CanvasCardType = {
         id: cardId,
         x: cardX,
@@ -457,7 +463,7 @@ export function CanvasBoard({
         width: cardWidth,
         height: cardHeight,
         rotation: 0,
-        imageUrl: cardData?.imageUrl,
+        imageUrl: sanitizedImageUrl,
         category: cardData?.category,
         cardNumber: cardData?.cardNumber,
         gender: currentGender,
@@ -910,6 +916,9 @@ export function CanvasBoard({
         selectCard(null);
         selectNote(null);
       }
+
+      // Notify parent of rapid click (not a drag) on canvas
+      onCanvasClick?.();
   },
     [
       // addNote,
@@ -920,6 +929,7 @@ export function CanvasBoard({
       selectNote,
       // sessionId,
       // toolMode,
+      onCanvasClick,
     ]
   );
 
