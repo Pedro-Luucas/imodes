@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
@@ -15,8 +15,36 @@ export default function AuthLandingPage() {
   const isAuthenticated = useIsAuthenticated();
   const authLoading = useAuthLoading();
   const profile = useAuthProfile();
+  const [checkingRecovery, setCheckingRecovery] = useState(true);
 
   usePageMetadata(t("metaTitle"), t("metaDescription"));
+
+  // Check for password recovery tokens in URL hash and redirect to reset-password
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const type = hashParams.get("type");
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        // If this is a recovery (password reset) link, redirect to reset-password page
+        if (type === "recovery" && accessToken && refreshToken) {
+          // Get the current locale from pathname (e.g., /en/auth -> en)
+          const pathParts = window.location.pathname.split('/');
+          const locale = pathParts[1] || 'en';
+          
+          // Build the new URL with hash containing the tokens
+          const resetHash = `#access_token=${accessToken}&refresh_token=${refreshToken}`;
+          // Use window.location to ensure hash is preserved correctly
+          window.location.href = `/${locale}/auth/reset-password${resetHash}`;
+          return;
+        }
+      }
+      setCheckingRecovery(false);
+    }
+  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -33,8 +61,8 @@ export default function AuthLandingPage() {
     }
   }, [authLoading, isAuthenticated, profile, router]);
 
-  // Show loading while checking authentication
-  if (authLoading) {
+  // Show loading while checking authentication or recovery tokens
+  if (authLoading || checkingRecovery) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-page">
         <div className="text-center">

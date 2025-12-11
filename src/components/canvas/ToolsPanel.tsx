@@ -150,6 +150,79 @@ function CardsGrid({
   );
 }
 
+// Combined component for Boat & Wave cards
+function BoatAndWaveCardsGrid({ 
+  locale, 
+  onCardSelect,
+  isMobile 
+}: { 
+  locale: string;
+  onCardSelect?: (card: {
+    imageUrl?: string;
+    title: string;
+    description: string;
+    category: CardCategory;
+    cardNumber: number;
+  }) => void;
+  isMobile: boolean;
+}) {
+  const { cards: boatCards, loading: boatLoading, error: boatError } = useCardsData('boat', undefined, locale);
+  const { cards: waveCards, loading: waveLoading, error: waveError } = useCardsData('wave', undefined, locale);
+
+  const loading = boatLoading || waveLoading;
+  const error = boatError || waveError;
+  const allCards = [...boatCards, ...waveCards];
+
+  const handleCardClick = useCallback((card: {
+    imageUrl?: string;
+    title: string;
+    description: string;
+    category: CardCategory;
+    cardNumber: number;
+  }) => {
+    // Track card usage
+    trackCardUsage(card);
+    // Call the original onCardSelect callback
+    onCardSelect?.(card);
+  }, [onCardSelect]);
+
+  return (
+    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400 md:h-6 md:w-6" />
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-8 text-xs text-red-500 md:text-sm">
+          {error}
+        </div>
+      ) : (
+        <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
+          {allCards.map((card) => (
+            <div
+              key={card.path}
+              className="aspect-square rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100"
+              onClick={() => handleCardClick({
+                imageUrl: card.imageUrl,
+                title: card.name,
+                description: card.description,
+                category: card.category,
+                cardNumber: card.cardNumber,
+              })}
+            >
+              <CardImage 
+                src={card.imageUrl} 
+                alt={card.name} 
+                fallbackText={card.name} 
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Component to display frequently used cards
 function FrequentlyUsedCards({ 
   onCardSelect,
@@ -390,7 +463,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
         <CardsGrid category="strengths" genderFilter={gender} locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
       </div>
       <div className={expandedSection === 'boat' ? '' : 'hidden'}>
-        <CardsGrid category="boat" locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
+        <BoatAndWaveCardsGrid locale={locale} onCardSelect={handleCardSelect} isMobile={isMobile} />
       </div>
     </>
   );

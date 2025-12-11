@@ -81,8 +81,8 @@ export async function GET(
         const fullPath = `${pathPrefix}${file.name}`;
         
         // Extract card number from filename
-        // Format: Category_N_Description_Gender.jpg or similar
-        const numberMatch = file.name.match(/_(\d+)_/);
+        // Format: Category_N_Description_Gender.jpg or Category_N.jpg (for boat/wave)
+        const numberMatch = file.name.match(/_(\d+)[_.]/) || file.name.match(/_(\d+)$/);
         const cardNumber = numberMatch ? parseInt(numberMatch[1], 10) : 0;
         
         return {

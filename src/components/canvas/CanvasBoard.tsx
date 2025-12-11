@@ -17,7 +17,6 @@ import { CanvasLoading } from './CanvasLoading';
 //import { PostItNoteComponent } from './PostItNote';
 import { preloadImagesWithPriority } from '@/lib/imagePreloader';
 import { saveCard } from '@/lib/savedCardsTracker';
-import { sanitizeStorageUrl } from '@/lib/urlSanitizer';
 import { useCanvasStore, canvasStore } from '@/stores/canvasStore';
 import { useCanvasRealtime } from '@/hooks/useCanvasRealtime';
 import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
@@ -450,9 +449,6 @@ export function CanvasBoard({
       const cardX = centerX - cardWidth / 2;
       const cardY = centerY - cardHeight / 2;
       
-      // Sanitize the URL to ensure it's a public (non-expiring) URL
-      const sanitizedImageUrl = sanitizeStorageUrl(cardData?.imageUrl);
-      
       const newCard: CanvasCardType = {
         id: cardId,
         x: cardX,
@@ -463,7 +459,7 @@ export function CanvasBoard({
         width: cardWidth,
         height: cardHeight,
         rotation: 0,
-        imageUrl: sanitizedImageUrl,
+        imageUrl: cardData?.imageUrl,
         category: cardData?.category,
         cardNumber: cardData?.cardNumber,
         gender: currentGender,
