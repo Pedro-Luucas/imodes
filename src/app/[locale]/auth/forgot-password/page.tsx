@@ -55,10 +55,11 @@ export default function ForgotPasswordPage() {
         await forgotPassword(email);
         setSuccess(true);
       } catch (error) {
+        // Handle API errors - error.message is already translated from authClient
         setApiError(
           error instanceof Error
             ? error.message
-            : "Failed to send reset email. Please try again."
+            : t("errors.fallback", { defaultValue: "Failed to send reset email. Please try again." })
         );
       } finally {
         setLoading(false);

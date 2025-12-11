@@ -79,7 +79,8 @@
     "errors": {
       "emailRequired": "Email is required",
       "emailInvalid": "Invalid email",
-      "passwordRequired": "Password is required"
+      "passwordRequired": "Password is required",
+      "fallback": "Login failed. Please check your credentials."
     }
   },
   "register": {
@@ -126,7 +127,8 @@
       "passwordMinLength": "Password must be at least 8 characters",
       "confirmPasswordRequired": "Password confirmation is required",
       "passwordMismatch": "Passwords do not match",
-      "termsRequired": "You must accept the terms of use"
+      "termsRequired": "You must accept the terms of use",
+      "fallback": "Registration failed. Please try again."
     },
     "success": "Registration successful! Redirecting...",
     "patientInvite": {
@@ -153,7 +155,8 @@
     "checkEmail": "Please check your email",
     "errors": {
       "emailRequired": "Email is required",
-      "emailInvalid": "Invalid email"
+      "emailInvalid": "Invalid email",
+      "fallback": "Failed to send reset email. Please try again."
     }
   },
   "resetPassword": {
@@ -711,13 +714,14 @@
   "api": {
     "common": {
       "validationFailed": "Validation failed",
-      "unexpectedError": "An unexpected error occurred"
+      "unexpectedError": "An unexpected error occurred",
+      "networkError": "Connection error. Please check your internet and try again."
     },
     "auth": {
       "register": {
         "emailAvailabilityFailed": "Failed to verify email availability",
         "emailExists": "An account with this email already exists",
-        "signupFailed": "Registration failed",
+        "signupFailed": "Registration failed. Please try again.",
         "createUserFailed": "Failed to create user account",
         "inviteRequired": "A valid invite link is required to register as a patient",
         "inviteInvalid": "Invite link is invalid",
@@ -726,19 +730,40 @@
         "success": "Registration successful! Please check your email to confirm your account. Your profile will be created automatically once you verify your email address."
       },
       "login": {
-        "invalidCredentials": "Invalid credentials"
+        "invalidCredentials": "Invalid email or password",
+        "accountNotFound": "No account found with this email address",
+        "wrongPassword": "Incorrect password",
+        "emailNotVerified": "Please verify your email before logging in. Check your inbox for the confirmation link.",
+        "failed": "Login failed. Please try again."
       },
       "logout": {
-        "success": "Logged out successfully"
+        "success": "Logged out successfully",
+        "failed": "Logout failed. Please try again."
       },
       "forgotPassword": {
-        "success": "If an account exists with this email, a password reset link has been sent."
+        "success": "If an account exists with this email, a password reset link has been sent.",
+        "failed": "Failed to send password reset email. Please try again."
       },
       "resetPassword": {
         "invalidLink": "Invalid or expired reset link. Please request a new password reset.",
-        "updateFailed": "Failed to update password",
+        "updateFailed": "Failed to update password. Please try again.",
         "success": "Password successfully reset. Please log in with your new password."
       }
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "passwordMaxLength": "Password must not exceed 100 characters",
+      "fullNameRequired": "Full name is required",
+      "fullNameMaxLength": "Full name must not exceed 255 characters",
+      "firstNameRequired": "First name is required",
+      "firstNameMaxLength": "First name must not exceed 100 characters",
+      "roleInvalid": "Role must be either therapist or patient",
+      "inviteTokenInvalid": "Invalid invite token format",
+      "accessTokenRequired": "Access token is required",
+      "refreshTokenRequired": "Refresh token is required"
     }
   }
 }

@@ -3,6 +3,7 @@ import { createSupabaseAnonClient, createSupabaseServerClient } from '@/lib/supa
 import { registerSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
 import { getApiMessages } from '@/lib/apiMessages';
+import { mapZodErrorsToTranslated } from '@/lib/validationMessages';
 
 const logRegister = (...args: unknown[]) => console.log('[Register API]', ...args);
 
@@ -77,12 +78,15 @@ async function linkPatientToTherapist(
  */
 
 export async function POST(request: NextRequest) {
-  let messages = await getApiMessages();
+  // Get locale from cookie first, then from body
+  const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+  let messages = await getApiMessages(cookieLocale);
   let registerMessages = messages.auth.register;
+  
   try {
     // Parse request body
     const body = await request.json();
-    const submittedLocale = typeof body?.locale === 'string' ? body.locale : undefined;
+    const submittedLocale = typeof body?.locale === 'string' ? body.locale : cookieLocale;
     const localeForBody = submittedLocale ?? 'en';
     const bodyWithLocale = { ...body, locale: localeForBody };
     logRegister('Incoming payload', {
@@ -284,10 +288,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: messages.common.validationFailed,
-          details: error.issues.map((err) => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
+          details: mapZodErrorsToTranslated(error.issues, messages),
         },
         { status: 400 }
       );

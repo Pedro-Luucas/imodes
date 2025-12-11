@@ -134,8 +134,11 @@ export function RegisterForm({
         setSubmitSuccess(true);
         setApiError(response.message);
       } catch (error) {
+        // Handle API errors - error.message is already translated from authClient
         setApiError(
-          error instanceof Error ? error.message : "Registration failed. Please try again."
+          error instanceof Error 
+            ? error.message 
+            : t("errors.fallback", { defaultValue: "Registration failed. Please try again." })
         );
       } finally {
         setLoading(false);

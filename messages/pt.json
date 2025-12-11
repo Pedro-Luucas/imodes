@@ -79,7 +79,8 @@
     "errors": {
       "emailRequired": "O e-mail é obrigatório",
       "emailInvalid": "E-mail inválido",
-      "passwordRequired": "A senha é obrigatória"
+      "passwordRequired": "A senha é obrigatória",
+      "fallback": "Falha ao entrar. Verifique suas credenciais."
     }
   },
   "register": {
@@ -126,7 +127,8 @@
       "passwordMinLength": "A senha deve ter no mínimo 8 caracteres",
       "confirmPasswordRequired": "A confirmação de senha é obrigatória",
       "passwordMismatch": "As senhas não coincidem",
-      "termsRequired": "Você deve aceitar os termos de uso"
+      "termsRequired": "Você deve aceitar os termos de uso",
+      "fallback": "Falha no registro. Por favor, tente novamente."
     },
     "success": "Registro realizado com sucesso! Redirecionando...",
     "patientInvite": {
@@ -153,7 +155,8 @@
     "checkEmail": "Por favor, verifique seu e-mail",
     "errors": {
       "emailRequired": "O e-mail é obrigatório",
-      "emailInvalid": "E-mail inválido"
+      "emailInvalid": "E-mail inválido",
+      "fallback": "Falha ao enviar e-mail de redefinição. Por favor, tente novamente."
     }
   },
   "resetPassword": {
@@ -711,13 +714,14 @@
   "api": {
     "common": {
       "validationFailed": "Falha na validação",
-      "unexpectedError": "Ocorreu um erro inesperado"
+      "unexpectedError": "Ocorreu um erro inesperado",
+      "networkError": "Erro de conexão. Verifique sua internet e tente novamente."
     },
     "auth": {
       "register": {
         "emailAvailabilityFailed": "Não foi possível verificar a disponibilidade do e-mail",
         "emailExists": "Já existe uma conta com este e-mail",
-        "signupFailed": "Falha no registro",
+        "signupFailed": "Falha no registro. Por favor, tente novamente.",
         "createUserFailed": "Não foi possível criar a conta do usuário",
         "inviteRequired": "É necessário um convite válido para registrar como paciente",
         "inviteInvalid": "Link de convite inválido",
@@ -726,19 +730,40 @@
         "success": "Registro realizado com sucesso! Verifique seu e-mail para confirmar sua conta. Seu perfil será criado automaticamente após a confirmação."
       },
       "login": {
-        "invalidCredentials": "Credenciais inválidas"
+        "invalidCredentials": "E-mail ou senha inválidos",
+        "accountNotFound": "Nenhuma conta encontrada com este e-mail",
+        "wrongPassword": "Senha incorreta",
+        "emailNotVerified": "Por favor, verifique seu e-mail antes de entrar. Confira sua caixa de entrada para o link de confirmação.",
+        "failed": "Falha ao entrar. Por favor, tente novamente."
       },
       "logout": {
-        "success": "Logout realizado com sucesso"
+        "success": "Logout realizado com sucesso",
+        "failed": "Falha ao sair. Por favor, tente novamente."
       },
       "forgotPassword": {
-        "success": "Se existir uma conta com este e-mail, um link de redefinição foi enviado."
+        "success": "Se existir uma conta com este e-mail, um link de redefinição foi enviado.",
+        "failed": "Falha ao enviar e-mail de redefinição. Por favor, tente novamente."
       },
       "resetPassword": {
         "invalidLink": "Link de redefinição inválido ou expirado. Solicite uma nova redefinição.",
-        "updateFailed": "Não foi possível atualizar a senha",
+        "updateFailed": "Não foi possível atualizar a senha. Por favor, tente novamente.",
         "success": "Senha redefinida com sucesso. Entre com sua nova senha."
       }
+    },
+    "validation": {
+      "emailRequired": "O e-mail é obrigatório",
+      "emailInvalid": "Por favor, insira um e-mail válido",
+      "passwordRequired": "A senha é obrigatória",
+      "passwordMinLength": "A senha deve ter pelo menos 8 caracteres",
+      "passwordMaxLength": "A senha não pode exceder 100 caracteres",
+      "fullNameRequired": "O nome completo é obrigatório",
+      "fullNameMaxLength": "O nome completo não pode exceder 255 caracteres",
+      "firstNameRequired": "O primeiro nome é obrigatório",
+      "firstNameMaxLength": "O primeiro nome não pode exceder 100 caracteres",
+      "roleInvalid": "O papel deve ser terapeuta ou paciente",
+      "inviteTokenInvalid": "Formato de token de convite inválido",
+      "accessTokenRequired": "Token de acesso é obrigatório",
+      "refreshTokenRequired": "Token de atualização é obrigatório"
     }
   }
 }

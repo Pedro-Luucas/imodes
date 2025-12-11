@@ -120,11 +120,11 @@ export default function LoginPage() {
           }
         }
       } catch (error) {
-        // Handle API errors
+        // Handle API errors - error.message is already translated from authClient
         setApiError(
           error instanceof Error
             ? error.message
-            : "Login failed. Please check your credentials."
+            : t("errors.fallback", { defaultValue: "Login failed. Please check your credentials." })
         );
       } finally {
         setLoading(false);

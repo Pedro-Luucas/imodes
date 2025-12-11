@@ -12,12 +12,15 @@ import { getApiMessages } from '@/lib/apiMessages';
  * 2. Clearing authentication cookies
  */
 export async function POST(request: NextRequest) {
-  let messages = await getApiMessages();
+  // Get locale from cookie first, then from body
+  const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+  let messages = await getApiMessages(cookieLocale);
+  
   try {
-    let locale: string | undefined;
+    let locale: string | undefined = cookieLocale;
     try {
       const body = await request.json();
-      locale = typeof body?.locale === 'string' ? body.locale : undefined;
+      locale = typeof body?.locale === 'string' ? body.locale : cookieLocale;
     } catch {
       // Ignore body parsing errors (likely no body was sent)
     }

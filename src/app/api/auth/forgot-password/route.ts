@@ -3,6 +3,7 @@ import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { forgotPasswordSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
 import { getApiMessages } from '@/lib/apiMessages';
+import { mapZodErrorsToTranslated } from '@/lib/validationMessages';
 
 /**
  * POST /api/forgot-password
@@ -11,9 +12,10 @@ import { getApiMessages } from '@/lib/apiMessages';
  * Always returns success (security best practice to prevent email enumeration)
  */
 export async function POST(request: NextRequest) {
-  // Get locale from cookie, body, or default to 'en'
+  // Get locale from cookie first, then from body
   const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
-  let messages = await getApiMessages();
+  let messages = await getApiMessages(cookieLocale);
+  
   try {
     // Parse request body
     const body = await request.json();
@@ -51,10 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: messages.common.validationFailed,
-          details: error.issues.map((err) => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
+          details: mapZodErrorsToTranslated(error.issues, messages),
         },
         { status: 400 }
       );

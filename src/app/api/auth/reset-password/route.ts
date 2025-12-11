@@ -3,6 +3,7 @@ import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { resetPasswordSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
 import { getApiMessages } from '@/lib/apiMessages';
+import { mapZodErrorsToTranslated } from '@/lib/validationMessages';
 
 /**
  * POST /api/reset-password
@@ -10,12 +11,15 @@ import { getApiMessages } from '@/lib/apiMessages';
  * Resets the user's password using the access token from the reset email
  */
 export async function POST(request: NextRequest) {
-  let messages = await getApiMessages();
+  // Get locale from cookie first, then from body
+  const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+  let messages = await getApiMessages(cookieLocale);
   let resetMessages = messages.auth.resetPassword;
+  
   try {
     // Parse request body
     const body = await request.json();
-    const locale = typeof body?.locale === 'string' ? body.locale : undefined;
+    const locale = typeof body?.locale === 'string' ? body.locale : cookieLocale;
     messages = await getApiMessages(locale);
     resetMessages = messages.auth.resetPassword;
 
@@ -73,10 +77,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: messages.common.validationFailed,
-          details: error.issues.map((err) => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
+          details: mapZodErrorsToTranslated(error.issues, messages),
         },
         { status: 400 }
       );
