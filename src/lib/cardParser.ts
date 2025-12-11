@@ -2,7 +2,9 @@ import { ParsedCardData } from '@/types/canvas';
 
 /**
  * Parses card text files into structured card data
- * Format: Number, Name, Description (separated by newlines/empty lines)
+ * Supports two formats:
+ * 1. Single-line format: "1 Card Name" (number and name on same line)
+ * 2. Multi-line format: Number on one line, Name on next, Description follows
  */
 export function parseCardText(text: string): ParsedCardData[] {
   const cards: ParsedCardData[] = [];
@@ -10,16 +12,33 @@ export function parseCardText(text: string): ParsedCardData[] {
   
   let i = 0;
   
-  // Skip header lines (everything before first number)
-  while (i < lines.length && !/^\d+$/.test(lines[i])) {
+  // Skip header lines (everything before first line starting with a number)
+  while (i < lines.length && !/^\d+/.test(lines[i])) {
     i++;
   }
   
   // Parse cards
   while (i < lines.length) {
-    // Look for a number (card number)
-    if (/^\d+$/.test(lines[i])) {
-      const cardNumber = parseInt(lines[i], 10);
+    const line = lines[i];
+    
+    // Check for single-line format: "1 Card Name" or "1. Card Name"
+    const singleLineMatch = line.match(/^(\d+)[.\s]+(.+)$/);
+    if (singleLineMatch) {
+      const cardNumber = parseInt(singleLineMatch[1], 10);
+      const name = singleLineMatch[2].trim();
+      
+      cards.push({
+        number: cardNumber,
+        name: name,
+        description: '', // No description in single-line format
+      });
+      i++;
+      continue;
+    }
+    
+    // Check for multi-line format: number alone on a line
+    if (/^\d+$/.test(line)) {
+      const cardNumber = parseInt(line, 10);
       i++;
       
       // Get card name (next non-empty line)
@@ -29,7 +48,7 @@ export function parseCardText(text: string): ParsedCardData[] {
         
         // Get description (next non-empty line or until next number)
         let description = '';
-        while (i < lines.length && !/^\d+$/.test(lines[i])) {
+        while (i < lines.length && !/^\d+/.test(lines[i])) {
           if (lines[i].length > 0) {
             if (description.length > 0) {
               description += ' ';
