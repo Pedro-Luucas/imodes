@@ -94,6 +94,7 @@ interface CanvasStoreActions {
 
 export type CanvasStore = CanvasStoreState & CanvasStoreActions;
 
+// Default zoom is 60% actual which displays as 100% (with +40 offset)
 const initialState: CanvasStoreState = {
   sessionId: null,
   userRole: null,
@@ -101,10 +102,10 @@ const initialState: CanvasStoreState = {
   cards: [],
   notes: [],
   gender: 'male',
-  patientZoomLevel: 100,
-  therapistZoomLevel: 100,
+  patientZoomLevel: 60,
+  therapistZoomLevel: 60,
   therapistNotes: undefined,
-  displayScale: 1,
+  displayScale: 0.6,
   stagePosition: { x: 0, y: 0 },
   selectedCardId: null,
   selectedNoteId: null,
@@ -155,8 +156,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const cards = Array.isArray(state?.cards) ? state.cards.map((card) => ({ ...card })) : [];
       const notes = Array.isArray(state?.notes) ? state.notes.map((note) => ({ ...note })) : [];
       const gender = state?.gender ?? 'male';
-      const patientZoomLevel = state?.patientSettings?.zoomLevel ?? 100;
-      const therapistZoomLevel = state?.therapistSettings?.zoomLevel ?? 100;
+      // Default zoom is 60% actual which displays as 100% (with +40 offset)
+      const patientZoomLevel = state?.patientSettings?.zoomLevel ?? 60;
+      const therapistZoomLevel = state?.therapistSettings?.zoomLevel ?? 60;
       const therapistNotes = state?.therapistSettings?.notes ?? current.therapistNotes;
 
       const snapshot = createSnapshot({

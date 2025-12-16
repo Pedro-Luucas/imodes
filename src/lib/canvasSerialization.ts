@@ -80,13 +80,14 @@ export interface DeserializedCanvasState {
 }
 
 export function deserializeCanvasState(data: CanvasState | null): DeserializedCanvasState {
+  // Default zoom is 60% actual which displays as 100% (with +40 offset)
   if (!data) {
     return {
       cards: [],
       notes: [],
       gender: 'male',
-      patientZoomLevel: 100,
-      therapistZoomLevel: 100,
+      patientZoomLevel: 60,
+      therapistZoomLevel: 60,
     };
   }
 
@@ -125,8 +126,9 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
     cards,
     notes,
     gender: data.gender === 'female' ? 'female' : 'male',
-    patientZoomLevel: data.patientSettings?.zoomLevel ?? 100,
-    therapistZoomLevel: data.therapistSettings?.zoomLevel ?? 100,
+    // Default zoom is 60% actual which displays as 100% (with +40 offset)
+    patientZoomLevel: data.patientSettings?.zoomLevel ?? 60,
+    therapistZoomLevel: data.therapistSettings?.zoomLevel ?? 60,
     therapistNotes: data.therapistSettings?.notes,
     version: typeof data.version === 'number' ? data.version : undefined,
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,

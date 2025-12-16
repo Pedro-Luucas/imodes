@@ -58,18 +58,12 @@ export default function CanvasPage() {
   const tPage = useTranslations('canvas.page');
   
   const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text'>('select');
+  // Zoom offset: displayedZoom = actualZoom + 40
+  // So 60% actual appears as 100%, 70% actual appears as 110%, etc.
+  const ZOOM_DISPLAY_OFFSET = 40;
+  
   const [zoomLevel, setZoomLevel] = useState(() => {
-    // Check if we're on mobile during initial render (client-side only)
-    if (typeof window !== 'undefined') {
-      const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-      const hasTouchScreen = navigator.maxTouchPoints > 0;
-      const noHover = window.matchMedia('(hover: none)').matches;
-      const mobileUserAgent = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
-      const isMobileDevice = ((hasCoarsePointer || noHover) && hasTouchScreen) || mobileUserAgent;
-      return isMobileDevice ? 60 : 100;
-    }
+    // Default to 100% displayed (which is 60% actual)
     return 100;
   });
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
@@ -475,14 +469,14 @@ const storeSessionRef = useRef<string | null>(null);
         {/* Canvas Background - Full Screen */}
         <CanvasBoard 
           onAddCard={handleAddCard} 
-          scale={zoomLevel / 100}
+          scale={(zoomLevel - ZOOM_DISPLAY_OFFSET) / 100}
           gender={gender}
           locale={locale}
           toolMode={toolMode}
           sessionId={sessionId}
           userRole={userRole}
           onSave={handleManualSave}
-          onZoomChange={setZoomLevel}
+          onZoomChange={(actualZoom) => setZoomLevel(actualZoom + ZOOM_DISPLAY_OFFSET)}
           onCanvasClick={() => setIsToolsPanelOpen(false)}
         />
 
@@ -583,12 +577,13 @@ const storeSessionRef = useRef<string | null>(null);
           </div>
 
           {/* Zoom Controls */}
+          {/* Min displayed: 80% (40% actual), Max displayed: 240% (200% actual) */}
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
               size="icon"
               className="size-10"
-              onClick={() => setZoomLevel(Math.min(400, zoomLevel + 10))}
+              onClick={() => setZoomLevel(Math.min(240, zoomLevel + 10))}
               title={tControls('zoomIn')}
             >
               <Plus className="w-5 h-5" />
@@ -605,7 +600,7 @@ const storeSessionRef = useRef<string | null>(null);
               variant="secondary"
               size="icon"
               className="size-10"
-              onClick={() => setZoomLevel(Math.max(10, zoomLevel - 10))}
+              onClick={() => setZoomLevel(Math.max(80, zoomLevel - 10))}
               title={tControls('zoomOut')}
             >
               <Minus className="w-5 h-5" />

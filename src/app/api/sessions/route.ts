@@ -174,15 +174,16 @@ export async function POST(
     const sessionName = name || `Session - ${new Date().toLocaleDateString()}`;
 
     // Initialize empty canvas state
+    // Default zoom is 60% actual which displays as 100% (with +40 offset)
     const emptyState: CanvasState = {
       cards: [],
       notes: [],
       gender: 'male',
       patientSettings: {
-        zoomLevel: 100,
+        zoomLevel: 60,
       },
       therapistSettings: {
-        zoomLevel: 100,
+        zoomLevel: 60,
       },
       version: 0,
       updatedAt: new Date().toISOString(),

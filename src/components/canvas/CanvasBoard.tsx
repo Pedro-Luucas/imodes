@@ -163,7 +163,6 @@ export function CanvasBoard({
   const panStageStartRef = useRef({ x: 0, y: 0 });
   const panPointerStartRef = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
-  const rafRef = useRef<number | null>(null);
   const hasCenteredRef = useRef(false);
   const didPanRef = useRef(false);
   const dragDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -187,17 +186,15 @@ export function CanvasBoard({
     setGender(gender);
   }, [gender, setGender]);
 
-  // Initialize prevScaleRef on mount
+  // Sync zoom level to store based on user role (for persistence)
+  // Note: displayScale is updated in the zoom centering effect to avoid flickering
   useEffect(() => {
-    prevScaleRef.current = scale;
-    setDisplayScale(scale);
-    // Update zoom refs based on user role
     if (userRole === 'patient') {
       setZoomLevel('patient', scale * 100);
     } else if (userRole === 'therapist') {
       setZoomLevel('therapist', scale * 100);
     }
-  }, [scale, setDisplayScale, setZoomLevel, userRole]);
+  }, [scale, setZoomLevel, userRole]);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -344,66 +341,42 @@ export function CanvasBoard({
     hasCenteredRef.current = true;
   }, [dimensions.width, dimensions.height, sessionId, isHydrated, displayScale, setStagePosition]);
 
-  // Handle zoom centering on selected card or viewport center
+  // Handle zoom centering - always zoom on viewport center
   useEffect(() => {
+    // Skip if scale hasn't changed
     if (prevScaleRef.current === scale) return;
+    
+    // Skip if dimensions are not yet available
+    if (!dimensions.width || !dimensions.height) {
+      prevScaleRef.current = scale;
+      setDisplayScale(scale);
+      return;
+    }
 
     const oldScale = prevScaleRef.current;
     const newScale = scale;
     
-    // Calculate the new position first
-    let centerX: number;
-    let centerY: number;
+    // Always use viewport center for zoom - convert from screen coords to stage coords
+    const viewportCenterX = dimensions.width / 2;
+    const viewportCenterY = dimensions.height / 2;
+    const stageCenterX = (viewportCenterX - stagePositionRef.current.x) / oldScale;
+    const stageCenterY = (viewportCenterY - stagePositionRef.current.y) / oldScale;
 
-    // Determine center point: selected card center or viewport center
-    if (selectedCardId) {
-      const selectedCard = cards.find(card => card.id === selectedCardId);
-      if (selectedCard) {
-        // Center of the selected card (in stage coordinates)
-        centerX = selectedCard.x + selectedCard.width / 2;
-        centerY = selectedCard.y + selectedCard.height / 2;
-      } else {
-        // Fallback to viewport center if card not found
-        // Convert viewport center from screen coords to stage coords
-        centerX = (dimensions.width / 2 - stagePositionRef.current.x) / oldScale;
-        centerY = (dimensions.height / 2 - stagePositionRef.current.y) / oldScale;
-      }
-    } else {
-      // Viewport center when no card is selected
-      // Convert viewport center from screen coords to stage coords
-      centerX = (dimensions.width / 2 - stagePositionRef.current.x) / oldScale;
-      centerY = (dimensions.height / 2 - stagePositionRef.current.y) / oldScale;
-    }
-
-    // Calculate new stage position to keep the center point visually fixed
-    // Formula: newPos = oldPos + center * (oldScale - newScale)
+    // Calculate new stage position to keep viewport center visually fixed
+    // Formula: newPos = viewportCenter - stageCenter * newScale
     const newPosition = {
-      x: stagePositionRef.current.x + centerX * (oldScale - newScale),
-      y: stagePositionRef.current.y + centerY * (oldScale - newScale),
+      x: viewportCenterX - stageCenterX * newScale,
+      y: viewportCenterY - stageCenterY * newScale,
     };
 
-    // Cancel any pending RAF
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-    }
-
-    // Use requestAnimationFrame to batch scale and position updates in the same frame
-    // This prevents flickering by ensuring both update together
-    rafRef.current = requestAnimationFrame(() => {
-      // Update both scale and position in the same frame
-      setDisplayScale(newScale);
-      setStagePosition(newPosition);
-      prevScaleRef.current = newScale;
-      rafRef.current = null;
-    });
-
-    return () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [scale, selectedCardId, cards, dimensions.width, dimensions.height, setDisplayScale, setStagePosition]);
+    // Update refs first to keep them in sync
+    stagePositionRef.current = newPosition;
+    prevScaleRef.current = newScale;
+    
+    // Update state synchronously - React will batch these together
+    setDisplayScale(newScale);
+    setStagePosition(newPosition);
+  }, [scale, dimensions.width, dimensions.height, setDisplayScale, setStagePosition]);
 
   // Add card functionality - exposed via global method
   useEffect(() => {

@@ -124,7 +124,7 @@ function CardsGrid({
           {error}
         </div>
       ) : (
-        <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
+        <div className="grid grid-cols-2 gap-2">
           {cards.map((card) => (
             <div
               key={card.path}
@@ -197,7 +197,7 @@ function BoatAndWaveCardsGrid({
           {error}
         </div>
       ) : (
-        <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
+        <div className="grid grid-cols-2 gap-2">
           {allCards.map((card) => (
             <div
               key={card.path}
@@ -300,7 +300,7 @@ function FrequentlyUsedCards({
 
   return (
     <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-      <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
+      <div className="grid grid-cols-2 gap-2">
         {frequentCards.map((cardUsage) => (
           <div
             key={`${cardUsage.category}-${cardUsage.cardNumber}`}
@@ -394,7 +394,7 @@ function SavedCards({
 
   return (
     <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-      <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 gap-3'}`}>
+      <div className="grid grid-cols-2 gap-2">
         {savedCards.map((savedCard) => (
           <div
             key={`${savedCard.category}-${savedCard.cardNumber}`}
