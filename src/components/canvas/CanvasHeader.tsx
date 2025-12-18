@@ -12,7 +12,7 @@ import {
   UserRound,
   Save,
   Calendar,
-  Camera,
+  Bookmark,
 //  Undo2,
 //  Redo2,
 //  User,
@@ -31,8 +31,19 @@ import {
   DropdownMenuTrigger,
 //  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Gender } from '@/types/canvas';
 import { SessionDetailsPanel } from './SessionDetailsPanel';
+import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
 import type { Profile } from '@/types/auth';
 
 interface WindowWithCanvasCard extends Window {
@@ -85,7 +96,9 @@ export function CanvasHeader({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(sessionTitle || '');
   const [isRenaming, setIsRenaming] = useState(false);
-  const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
+  const [isSavingCheckpoint, setIsSavingCheckpoint] = useState(false);
+  const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
+  const [checkpointName, setCheckpointName] = useState('');
   
   const now = new Date();
   const displayTitle = sessionTitle || t('defaultTitle');
@@ -177,67 +190,89 @@ export function CanvasHeader({
 //    setIsMenuOpen(false);
 //  };
 
-  const handleTakeScreenshot = async () => {
+  const handleOpenCheckpointDialog = () => {
     if (!sessionId) {
-      toast.error(t('screenshotNoSession') || 'Cannot take screenshot without a session');
+      toast.error(t('checkpointNoSession') || 'Cannot save checkpoint without a session');
+      return;
+    }
+    setCheckpointName('');
+    setShowCheckpointDialog(true);
+    setIsMenuOpen(false);
+  };
+
+  const handleSaveCheckpoint = async () => {
+    if (!sessionId || !checkpointName.trim()) {
       return;
     }
 
-    setIsTakingScreenshot(true);
-    setIsMenuOpen(false);
+    setIsSavingCheckpoint(true);
+    setShowCheckpointDialog(false);
 
     try {
       const win = window as WindowWithCanvasCard;
-      if (!win._takeCanvasScreenshot) {
-        throw new Error('Screenshot function not available');
+      
+      // Get current canvas state
+      const canvasState = buildSerializableCanvasState();
+      
+      // Capture screenshot
+      let screenshotBlob: Blob | null = null;
+      if (win._takeCanvasScreenshot) {
+        screenshotBlob = await win._takeCanvasScreenshot();
       }
 
-      const blob = await win._takeCanvasScreenshot();
-      if (!blob) {
-        throw new Error('Failed to capture screenshot');
+      // Create a local data URL from the blob for the toast preview
+      let localImageUrl: string | null = null;
+      if (screenshotBlob) {
+        localImageUrl = URL.createObjectURL(screenshotBlob);
       }
 
       // Upload to API
       const formData = new FormData();
-      formData.append('screenshot', blob, 'screenshot.png');
+      formData.append('name', checkpointName.trim());
+      formData.append('state', JSON.stringify(canvasState));
+      if (screenshotBlob) {
+        formData.append('screenshot', screenshotBlob, 'screenshot.png');
+      }
 
-      // Create a local data URL from the blob for the toast preview
-      // This prevents flickering since the image is already in memory
-      const localImageUrl = URL.createObjectURL(blob);
-
-      const response = await fetch(`/api/sessions/${sessionId}/screenshot`, {
+      const response = await fetch(`/api/sessions/${sessionId}/checkpoints`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        URL.revokeObjectURL(localImageUrl);
+        if (localImageUrl) URL.revokeObjectURL(localImageUrl);
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload screenshot');
+        throw new Error(errorData.error || 'Failed to save checkpoint');
       }
 
       // Show success toast with image preview using local blob URL
       toast.success(
         <div className="flex flex-col gap-2">
-          <span>{t('screenshotSuccess') || 'Screenshot saved!'}</span>
-          <img 
-            src={localImageUrl} 
-            alt="Screenshot" 
-            className="rounded-md max-w-[200px] max-h-[150px] object-contain border border-gray-200"
-          />
+          <span>{t('checkpointSaved') || 'Checkpoint saved!'}</span>
+          {localImageUrl && (
+            <img 
+              src={localImageUrl} 
+              alt="Checkpoint" 
+              className="rounded-md max-w-[200px] max-h-[150px] object-contain border border-gray-200"
+            />
+          )}
         </div>,
         { 
           duration: 5000,
-          onDismiss: () => URL.revokeObjectURL(localImageUrl),
-          onAutoClose: () => URL.revokeObjectURL(localImageUrl),
+          onDismiss: () => localImageUrl && URL.revokeObjectURL(localImageUrl),
+          onAutoClose: () => localImageUrl && URL.revokeObjectURL(localImageUrl),
         }
       );
+
+      // Dispatch event to notify checkpoints list to refresh
+      window.dispatchEvent(new Event('checkpointCreated'));
     } catch (error) {
-      console.error('Error taking screenshot:', error);
-      const errorMessage = error instanceof Error ? error.message : t('screenshotError') || 'Failed to take screenshot';
+      console.error('Error saving checkpoint:', error);
+      const errorMessage = error instanceof Error ? error.message : t('checkpointError') || 'Failed to save checkpoint';
       toast.error(errorMessage);
     } finally {
-      setIsTakingScreenshot(false);
+      setIsSavingCheckpoint(false);
+      setCheckpointName('');
     }
   };
 
@@ -359,9 +394,9 @@ export function CanvasHeader({
                   <Save className="w-4 h-4 mr-2" />
                   {t('save')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleTakeScreenshot} disabled={isTakingScreenshot || !sessionId}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  {isTakingScreenshot ? (t('screenshotLoading') || 'Taking screenshot...') : (t('takeScreenshot') || 'Take Screenshot')}
+                <DropdownMenuItem onClick={handleOpenCheckpointDialog} disabled={isSavingCheckpoint || !sessionId}>
+                  <Bookmark className="w-4 h-4 mr-2" />
+                  {isSavingCheckpoint ? (t('checkpointLoading') || 'Saving...') : (t('saveCheckpoint') || 'Save Checkpoint')}
                 </DropdownMenuItem>
                 {/* <DropdownMenuItem onClick={handleUndo}>
                   <Undo2 className="w-4 h-4 mr-2" />
@@ -552,6 +587,42 @@ export function CanvasHeader({
         </div>
       </div>
     )}
+
+    {/* Checkpoint Name Dialog */}
+    <AlertDialog open={showCheckpointDialog} onOpenChange={setShowCheckpointDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('saveCheckpoint') || 'Save Checkpoint'}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('checkpointNameDescription') || 'Enter a name for this checkpoint to help you identify it later.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4">
+          <Input
+            value={checkpointName}
+            onChange={(e) => setCheckpointName(e.target.value)}
+            placeholder={t('checkpointNamePlaceholder') || 'Checkpoint name...'}
+            maxLength={100}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && checkpointName.trim()) {
+                e.preventDefault();
+                handleSaveCheckpoint();
+              }
+            }}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('cancel') || 'Cancel'}</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleSaveCheckpoint}
+            disabled={!checkpointName.trim() || isSavingCheckpoint}
+          >
+            {isSavingCheckpoint ? (t('checkpointLoading') || 'Saving...') : (t('save') || 'Save')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

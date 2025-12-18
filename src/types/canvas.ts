@@ -82,3 +82,13 @@ export interface CanvasSession {
   updated_at: string;
 }
 
+export interface SessionCheckpoint {
+  id: string;
+  session_id: string;
+  name: string;
+  screenshot_url: string | null;
+  state: CanvasState;
+  created_at: string;
+  created_by?: string;
+}
+

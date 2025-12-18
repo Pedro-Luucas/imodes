@@ -63,6 +63,7 @@ interface WindowWithCanvasCard extends Window {
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
   _takeCanvasScreenshot?: () => Promise<Blob | null>;
+  _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
 }
 
 const CARD_COLORS = [
@@ -118,6 +119,7 @@ export function CanvasBoard({
     undo,
     redo,
     markDirty,
+    applySnapshot,
   } = storeActionsRef.current;
 
   const { publish } = useCanvasRealtime({
@@ -583,6 +585,29 @@ export function CanvasBoard({
       delete win._takeCanvasScreenshot;
     };
   }, [takeScreenshot]);
+
+  // Restore canvas state from checkpoint
+  const restoreCanvasState = useCallback((state: import('@/types/canvas').CanvasState) => {
+    applySnapshot(state, { replaceHistory: true });
+    markDirty('interaction');
+
+    if (sessionId) {
+      void publish('state.snapshot', {
+        state,
+        origin: 'manual',
+      });
+    }
+  }, [applySnapshot, markDirty, publish, sessionId]);
+
+  // Expose restore function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._restoreCanvasState = restoreCanvasState;
+
+    return () => {
+      delete win._restoreCanvasState;
+    };
+  }, [restoreCanvasState]);
 
   const handleCardDragEnd = useCallback(
     (id: string, x: number, y: number) => {

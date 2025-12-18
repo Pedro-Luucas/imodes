@@ -342,11 +342,15 @@
       "email": "E-mail:",
       "phone": "Telefone:",
       "userAvatar": "Avatar do usuário",
-      "takeScreenshot": "Capturar Tela",
-      "screenshotLoading": "Capturando...",
-      "screenshotSuccess": "Captura salva!",
-      "screenshotError": "Falha ao capturar tela",
-      "screenshotNoSession": "Não é possível capturar sem uma sessão"
+      "saveCheckpoint": "Salvar Checkpoint",
+      "checkpointLoading": "Salvando...",
+      "checkpointSaved": "Checkpoint salvo!",
+      "checkpointError": "Falha ao salvar checkpoint",
+      "checkpointNoSession": "Não é possível salvar checkpoint sem uma sessão",
+      "checkpointNameDescription": "Digite um nome para este checkpoint para ajudá-lo a identificá-lo depois.",
+      "checkpointNamePlaceholder": "Nome do checkpoint...",
+      "checkpointLimitReached": "Número máximo de checkpoints atingido",
+      "cancel": "Cancelar"
     },
     "postItNote": {
       "clickToEdit": "Clique para editar"
@@ -370,9 +374,21 @@
       "boatAndWave": "Barco e Onda",
       "frequentlyUsed": "Frequentemente Usadas",
       "savedCards": "Cards Salvos",
+      "checkpoints": "Checkpoints",
       "noFrequentlyUsed": "Ainda não há cartas frequentemente usadas",
       "noSavedCards": "Ainda não há cartas salvas",
-      "removeFromSaved": "Remover dos salvos"
+      "noCheckpoints": "Ainda não há checkpoints salvos",
+      "noSessionForCheckpoints": "Nenhuma sessão disponível",
+      "checkpointsFetchError": "Falha ao carregar checkpoints",
+      "removeFromSaved": "Remover dos salvos",
+      "restoreCheckpoint": "Restaurar Checkpoint",
+      "restoreConfirm": "Isso substituirá o estado atual da tela. Todas as alterações não salvas serão perdidas. Tem certeza?",
+      "deleteCheckpoint": "Excluir Checkpoint",
+      "deleteConfirm": "Tem certeza de que deseja excluir este checkpoint? Esta ação não pode ser desfeita.",
+      "cancel": "Cancelar",
+      "restore": "Restaurar",
+      "delete": "Excluir",
+      "deleting": "Excluindo..."
     },
     "controls": {
       "cursorTool": "Ferramenta de Cursor",

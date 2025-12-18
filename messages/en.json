@@ -342,11 +342,15 @@
       "email": "Email:",
       "phone": "Phone:",
       "userAvatar": "User avatar",
-      "takeScreenshot": "Take Screenshot",
-      "screenshotLoading": "Taking screenshot...",
-      "screenshotSuccess": "Screenshot saved!",
-      "screenshotError": "Failed to take screenshot",
-      "screenshotNoSession": "Cannot take screenshot without a session"
+      "saveCheckpoint": "Save Checkpoint",
+      "checkpointLoading": "Saving...",
+      "checkpointSaved": "Checkpoint saved!",
+      "checkpointError": "Failed to save checkpoint",
+      "checkpointNoSession": "Cannot save checkpoint without a session",
+      "checkpointNameDescription": "Enter a name for this checkpoint to help you identify it later.",
+      "checkpointNamePlaceholder": "Checkpoint name...",
+      "checkpointLimitReached": "Maximum number of checkpoints reached",
+      "cancel": "Cancel"
     },
     "postItNote": {
       "clickToEdit": "Click to edit"
@@ -370,9 +374,21 @@
       "boatAndWave": "Boat & Wave",
       "frequentlyUsed": "Frequently Used",
       "savedCards": "Saved Cards",
+      "checkpoints": "Checkpoints",
       "noFrequentlyUsed": "No frequently used cards yet",
       "noSavedCards": "No saved cards yet",
-      "removeFromSaved": "Remove from saved"
+      "noCheckpoints": "No checkpoints saved yet",
+      "noSessionForCheckpoints": "No session available",
+      "checkpointsFetchError": "Failed to load checkpoints",
+      "removeFromSaved": "Remove from saved",
+      "restoreCheckpoint": "Restore Checkpoint",
+      "restoreConfirm": "This will replace the current canvas state. Any unsaved changes will be lost. Are you sure?",
+      "deleteCheckpoint": "Delete Checkpoint",
+      "deleteConfirm": "Are you sure you want to delete this checkpoint? This action cannot be undone.",
+      "cancel": "Cancel",
+      "restore": "Restore",
+      "delete": "Delete",
+      "deleting": "Deleting..."
     },
     "controls": {
       "cursorTool": "Cursor Tool",

@@ -45,6 +45,7 @@ interface WindowWithCanvasCard extends Window {
   _clearCanvas?: () => void;
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
+  _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
 }
 
 export default function CanvasPage() {
@@ -103,6 +104,13 @@ const storeSessionRef = useRef<string | null>(null);
       win._clearCanvas();
     }
     setShowClearDialog(false);
+  }, []);
+
+  const handleRestoreCheckpoint = useCallback((state: import('@/types/canvas').CanvasState) => {
+    const win = window as WindowWithCanvasCard;
+    if (win._restoreCanvasState) {
+      win._restoreCanvasState(state);
+    }
   }, []);
 
   // Get sessionId from URL query params
@@ -486,7 +494,9 @@ const storeSessionRef = useRef<string | null>(null);
           onClose={() => setIsToolsPanelOpen(false)}
           gender={gender}
           locale={locale}
+          sessionId={sessionId}
           onCardSelect={handleAddCard}
+          onRestoreCheckpoint={handleRestoreCheckpoint}
         />
         
         {!isToolsPanelOpen && (
