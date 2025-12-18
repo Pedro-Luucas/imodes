@@ -341,7 +341,12 @@
       "name": "Nome:",
       "email": "E-mail:",
       "phone": "Telefone:",
-      "userAvatar": "Avatar do usuário"
+      "userAvatar": "Avatar do usuário",
+      "takeScreenshot": "Capturar Tela",
+      "screenshotLoading": "Capturando...",
+      "screenshotSuccess": "Captura salva!",
+      "screenshotError": "Falha ao capturar tela",
+      "screenshotNoSession": "Não é possível capturar sem uma sessão"
     },
     "postItNote": {
       "clickToEdit": "Clique para editar"

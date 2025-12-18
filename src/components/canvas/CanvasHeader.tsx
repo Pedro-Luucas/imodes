@@ -12,7 +12,7 @@ import {
   UserRound,
   Save,
   Calendar,
-//  Camera,
+  Camera,
 //  Undo2,
 //  Redo2,
 //  User,
@@ -35,10 +35,9 @@ import { Gender } from '@/types/canvas';
 import { SessionDetailsPanel } from './SessionDetailsPanel';
 import type { Profile } from '@/types/auth';
 
-//interface WindowWithCanvasCard extends Window {
-//  _undoCanvas?: () => void;
-//  _redoCanvas?: () => void;
-//}
+interface WindowWithCanvasCard extends Window {
+  _takeCanvasScreenshot?: () => Promise<Blob | null>;
+}
 
 interface CanvasHeaderProps {
   sessionTitle?: string;
@@ -86,6 +85,7 @@ export function CanvasHeader({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(sessionTitle || '');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
   
   const now = new Date();
   const displayTitle = sessionTitle || t('defaultTitle');
@@ -176,13 +176,71 @@ export function CanvasHeader({
 //    setShowDetailsDialog(true);
 //    setIsMenuOpen(false);
 //  };
-//
-//  const handleTakeScreenshot = () => {
-//    // Placeholder
-//    toast.info('Screenshot feature coming soon');
-//    setIsMenuOpen(false);
-//  };
-//
+
+  const handleTakeScreenshot = async () => {
+    if (!sessionId) {
+      toast.error(t('screenshotNoSession') || 'Cannot take screenshot without a session');
+      return;
+    }
+
+    setIsTakingScreenshot(true);
+    setIsMenuOpen(false);
+
+    try {
+      const win = window as WindowWithCanvasCard;
+      if (!win._takeCanvasScreenshot) {
+        throw new Error('Screenshot function not available');
+      }
+
+      const blob = await win._takeCanvasScreenshot();
+      if (!blob) {
+        throw new Error('Failed to capture screenshot');
+      }
+
+      // Upload to API
+      const formData = new FormData();
+      formData.append('screenshot', blob, 'screenshot.png');
+
+      // Create a local data URL from the blob for the toast preview
+      // This prevents flickering since the image is already in memory
+      const localImageUrl = URL.createObjectURL(blob);
+
+      const response = await fetch(`/api/sessions/${sessionId}/screenshot`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        URL.revokeObjectURL(localImageUrl);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload screenshot');
+      }
+
+      // Show success toast with image preview using local blob URL
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <span>{t('screenshotSuccess') || 'Screenshot saved!'}</span>
+          <img 
+            src={localImageUrl} 
+            alt="Screenshot" 
+            className="rounded-md max-w-[200px] max-h-[150px] object-contain border border-gray-200"
+          />
+        </div>,
+        { 
+          duration: 5000,
+          onDismiss: () => URL.revokeObjectURL(localImageUrl),
+          onAutoClose: () => URL.revokeObjectURL(localImageUrl),
+        }
+      );
+    } catch (error) {
+      console.error('Error taking screenshot:', error);
+      const errorMessage = error instanceof Error ? error.message : t('screenshotError') || 'Failed to take screenshot';
+      toast.error(errorMessage);
+    } finally {
+      setIsTakingScreenshot(false);
+    }
+  };
+
 //  const handleScheduleFollowUp = () => {
 //    // Placeholder
 //    toast.info('Schedule follow-up feature coming soon');
@@ -301,11 +359,11 @@ export function CanvasHeader({
                   <Save className="w-4 h-4 mr-2" />
                   {t('save')}
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem onClick={handleTakeScreenshot}>
+                <DropdownMenuItem onClick={handleTakeScreenshot} disabled={isTakingScreenshot || !sessionId}>
                   <Camera className="w-4 h-4 mr-2" />
-                  Take Screenshot
+                  {isTakingScreenshot ? (t('screenshotLoading') || 'Taking screenshot...') : (t('takeScreenshot') || 'Take Screenshot')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleUndo}>
+                {/* <DropdownMenuItem onClick={handleUndo}>
                   <Undo2 className="w-4 h-4 mr-2" />
                   Undo
                 </DropdownMenuItem>

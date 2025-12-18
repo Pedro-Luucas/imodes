@@ -62,6 +62,7 @@ interface WindowWithCanvasCard extends Window {
   _manualSaveCanvas?: () => Promise<void>;
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
+  _takeCanvasScreenshot?: () => Promise<Blob | null>;
 }
 
 const CARD_COLORS = [
@@ -158,6 +159,7 @@ export function CanvasBoard({
   const [cardToAddToFrequentlyUsed, setCardToAddToFrequentlyUsed] =
     useState<CanvasCardType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
   const prevScaleRef = useRef<number>(scale);
   const stagePositionRef = useRef(stagePosition);
   const panStageStartRef = useRef({ x: 0, y: 0 });
@@ -505,6 +507,82 @@ export function CanvasBoard({
       delete win._redoCanvas;
     };
   }, [handleUndo, handleRedo]);
+
+  // Take screenshot function - captures viewport with grid background
+  const takeScreenshot = useCallback(async (): Promise<Blob | null> => {
+    const stage = stageRef.current;
+    if (!stage || !dimensions.width || !dimensions.height) {
+      return null;
+    }
+
+    // Create an offscreen canvas to composite the grid + stage content
+    const canvas = document.createElement('canvas');
+    const pixelRatio = window.devicePixelRatio || 1;
+    canvas.width = dimensions.width * pixelRatio;
+    canvas.height = dimensions.height * pixelRatio;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    // Scale for high DPI displays
+    ctx.scale(pixelRatio, pixelRatio);
+
+    // Draw the grid background
+    ctx.fillStyle = '#f7f7f7';
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+    // Draw grid lines
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.lineWidth = 1;
+
+    const gridSize = 32;
+    
+    // Vertical lines
+    for (let x = 0; x <= dimensions.width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, dimensions.height);
+      ctx.stroke();
+    }
+    
+    // Horizontal lines
+    for (let y = 0; y <= dimensions.height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(dimensions.width, y);
+      ctx.stroke();
+    }
+
+    // Get the stage content as an image
+    const stageDataUrl = stage.toDataURL({ pixelRatio });
+    
+    // Draw the stage content on top of the grid
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, 'image/png', 1.0);
+      };
+      img.onerror = () => {
+        resolve(null);
+      };
+      img.src = stageDataUrl;
+    });
+  }, [dimensions.width, dimensions.height]);
+
+  // Expose screenshot function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._takeCanvasScreenshot = takeScreenshot;
+
+    return () => {
+      delete win._takeCanvasScreenshot;
+    };
+  }, [takeScreenshot]);
 
   const handleCardDragEnd = useCallback(
     (id: string, x: number, y: number) => {
@@ -1040,6 +1118,7 @@ export function CanvasBoard({
       {showLoading && <CanvasLoading />}
       {!showLoading && dimensions.width > 0 && (
         <Stage
+          ref={stageRef}
           width={dimensions.width}
           height={dimensions.height}
           x={stagePosition.x}

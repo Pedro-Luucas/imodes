@@ -113,6 +113,7 @@ function CardsGrid({
     onCardSelect?.(card);
   }, [onCardSelect]);
 
+    
   return (
     <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
       {loading ? (

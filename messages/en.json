@@ -341,7 +341,12 @@
       "name": "Name:",
       "email": "Email:",
       "phone": "Phone:",
-      "userAvatar": "User avatar"
+      "userAvatar": "User avatar",
+      "takeScreenshot": "Take Screenshot",
+      "screenshotLoading": "Taking screenshot...",
+      "screenshotSuccess": "Screenshot saved!",
+      "screenshotError": "Failed to take screenshot",
+      "screenshotNoSession": "Cannot take screenshot without a session"
     },
     "postItNote": {
       "clickToEdit": "Click to edit"
