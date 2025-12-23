@@ -46,6 +46,7 @@ interface WindowWithCanvasCard extends Window {
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
   _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
+  _resetCardPosition?: () => void;
 }
 
 export default function CanvasPage() {
@@ -95,6 +96,15 @@ const storeSessionRef = useRef<string | null>(null);
     const win = window as WindowWithCanvasCard;
     if (win._addCanvasCard) {
       win._addCanvasCard(card);
+    }
+  }, []);
+
+  const handleCloseToolsPanel = useCallback(() => {
+    setIsToolsPanelOpen(false);
+    // Reset card position so next card starts at the default position
+    const win = window as WindowWithCanvasCard;
+    if (win._resetCardPosition) {
+      win._resetCardPosition();
     }
   }, []);
 
@@ -469,7 +479,7 @@ const storeSessionRef = useRef<string | null>(null);
         }}*/
         currentDuration={currentDuration}
         onSessionRenamed={setSessionName}
-        onBackgroundClick={() => setIsToolsPanelOpen(false)}
+        onBackgroundClick={handleCloseToolsPanel}
       />
 
       {/* Canvas with Floating Controls */}
@@ -485,13 +495,13 @@ const storeSessionRef = useRef<string | null>(null);
           userRole={userRole}
           onSave={handleManualSave}
           onZoomChange={(actualZoom) => setZoomLevel(actualZoom + ZOOM_DISPLAY_OFFSET)}
-          onCanvasClick={() => setIsToolsPanelOpen(false)}
+          onCanvasClick={handleCloseToolsPanel}
         />
 
         {/* Left Panel - Tools */}
         <ToolsPanel 
           isOpen={isToolsPanelOpen} 
-          onClose={() => setIsToolsPanelOpen(false)}
+          onClose={handleCloseToolsPanel}
           gender={gender}
           locale={locale}
           sessionId={sessionId}

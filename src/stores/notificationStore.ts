@@ -81,8 +81,50 @@ const useNotificationStore = create<NotificationState & { actions: NotificationA
             }
 
             if (data.type === 'notification') {
-              // Refetch notifications when we receive an update
-              await get().actions.fetchNotifications();
+              // Handle the notification event based on the event type
+              const { event: notifEvent, notification } = data;
+              
+              if (notifEvent === 'notification.created' && notification) {
+                // Add the new notification to the store directly
+                // This is more efficient than refetching all notifications
+                const { notifications } = get();
+                const exists = notifications.some((n) => n.id === notification.id);
+                
+                if (!exists) {
+                  const updatedNotifications = [notification, ...notifications];
+                  const unreadCount = updatedNotifications.filter((n) => !n.is_read).length;
+                  
+                  set({
+                    notifications: updatedNotifications,
+                    unreadCount,
+                  });
+                }
+              } else if (notifEvent === 'notification.updated' && notification) {
+                // Update existing notification
+                const { notifications } = get();
+                const updatedNotifications = notifications.map((n) =>
+                  n.id === notification.id ? notification : n
+                );
+                const unreadCount = updatedNotifications.filter((n) => !n.is_read).length;
+                
+                set({
+                  notifications: updatedNotifications,
+                  unreadCount,
+                });
+              } else if (notifEvent === 'notification.deleted' && notification) {
+                // Remove notification
+                const { notifications } = get();
+                const updatedNotifications = notifications.filter((n) => n.id !== notification.id);
+                const unreadCount = updatedNotifications.filter((n) => !n.is_read).length;
+                
+                set({
+                  notifications: updatedNotifications,
+                  unreadCount,
+                });
+              } else {
+                // Fallback: refetch if event type is unknown
+                await get().actions.fetchNotifications();
+              }
             }
 
             if (data.type === 'error') {

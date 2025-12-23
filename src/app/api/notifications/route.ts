@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { getUserFromCookie } from '@/lib/auth';
+import { broadcastNotification } from '@/lib/notificationBroadcast';
 import type {
   GetNotificationsResponse,
   CreateNotificationRequest,
@@ -117,6 +118,20 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create notification' },
         { status: 500 }
       );
+    }
+
+    // Broadcast the notification to the user's channel
+    // This replaces postgres_changes polling and is much more efficient
+    try {
+      await broadcastNotification(
+        supabase,
+        user_id,
+        'notification.created',
+        notification
+      );
+    } catch (broadcastError) {
+      // Log but don't fail the request - the notification was still created
+      console.error('Error broadcasting notification:', broadcastError);
     }
 
     return NextResponse.json({

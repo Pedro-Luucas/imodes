@@ -64,6 +64,7 @@ interface WindowWithCanvasCard extends Window {
   _redoCanvas?: () => void;
   _takeCanvasScreenshot?: () => Promise<Blob | null>;
   _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
+  _resetCardPosition?: () => void;
 }
 
 const CARD_COLORS = [
@@ -176,6 +177,8 @@ export function CanvasBoard({
   const pinchStartDistanceRef = useRef(0);
   const pinchStartScaleRef = useRef(1);
   const pinchCenterRef = useRef({ x: 0, y: 0 });
+  // Track last card position for cascading offset
+  const lastCardPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleUndo = useCallback(() => {
     undo();
@@ -405,26 +408,35 @@ export function CanvasBoard({
       const stagePos = stagePositionRef.current ?? { x: 0, y: 0 };
       const scale = displayScale || 1;
 
-      let centerX: number;
-      let centerY: number;
+      let cardX: number;
+      let cardY: number;
 
-      if (viewportWidth > 0 && viewportHeight > 0) {
-        // Viewport center in screen coordinates
-        const viewportCenterX = viewportWidth / 2;
-        const viewportCenterY = viewportHeight / 2;
-
-        // Convert to stage coordinates
-        centerX = (viewportCenterX - stagePos.x) / scale;
-        centerY = (viewportCenterY - stagePos.y) / scale;
+      if (lastCardPositionRef.current) {
+        // Subsequent card: center it at the top-left corner of the previous card
+        cardX = lastCardPositionRef.current.x - cardWidth / 2;
+        cardY = lastCardPositionRef.current.y - cardHeight / 2;
       } else {
-        // Fallback to keeping relative to current stage origin if dimensions are unavailable
-        centerX = -stagePos.x / scale;
-        centerY = -stagePos.y / scale;
-      }
+        // First card: position at 75% width and 50% height of viewport
+        if (viewportWidth > 0 && viewportHeight > 0) {
+          // 75% from left edge, 50% from top edge in screen coordinates
+          const targetScreenX = viewportWidth * 0.75;
+          const targetScreenY = viewportHeight * 0.5;
 
-      // Position card so its center is at the computed center
-      const cardX = centerX - cardWidth / 2;
-      const cardY = centerY - cardHeight / 2;
+          // Convert to stage coordinates
+          const centerX = (targetScreenX - stagePos.x) / scale;
+          const centerY = (targetScreenY - stagePos.y) / scale;
+
+          // Position card so its center is at the computed point
+          cardX = centerX - cardWidth / 2;
+          cardY = centerY - cardHeight / 2;
+        } else {
+          // Fallback to keeping relative to current stage origin if dimensions are unavailable
+          const centerX = -stagePos.x / scale;
+          const centerY = -stagePos.y / scale;
+          cardX = centerX - cardWidth / 2;
+          cardY = centerY - cardHeight / 2;
+        }
+      }
       
       const newCard: CanvasCardType = {
         id: cardId,
@@ -444,6 +456,9 @@ export function CanvasBoard({
 
       addCard(newCard);
       markDirty('interaction');
+
+      // Save this card's top-left position for the next card to cascade from
+      lastCardPositionRef.current = { x: cardX, y: cardY };
 
       if (newCard.imageUrl) {
         preloadImagesWithPriority([newCard.imageUrl]).catch(() => undefined);
@@ -608,6 +623,21 @@ export function CanvasBoard({
       delete win._restoreCanvasState;
     };
   }, [restoreCanvasState]);
+
+  // Reset card position - called when toolspanel closes
+  const resetCardPosition = useCallback(() => {
+    lastCardPositionRef.current = null;
+  }, []);
+
+  // Expose reset function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._resetCardPosition = resetCardPosition;
+
+    return () => {
+      delete win._resetCardPosition;
+    };
+  }, [resetCardPosition]);
 
   const handleCardDragEnd = useCallback(
     (id: string, x: number, y: number) => {
