@@ -138,7 +138,7 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
     therapistNotes: data.therapistSettings?.notes,
     version: typeof data.version === 'number' ? data.version : undefined,
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
-    drawPaths: Array.isArray(data.drawPaths) ? data.drawPaths.map((path: any) => ({ ...path })) : [],
+    drawPaths: Array.isArray(data.drawPaths) ? data.drawPaths.map((path: DrawPath) => ({ ...path })) : [],
   };
 }
 

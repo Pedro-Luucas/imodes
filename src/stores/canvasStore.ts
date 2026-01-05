@@ -810,6 +810,6 @@ export const canvasStore = {
 };
 
 if (typeof window !== 'undefined') {
-  (window as any).canvasStore = canvasStore;
+  (window as unknown as { canvasStore: unknown }).canvasStore = canvasStore;
 }
 

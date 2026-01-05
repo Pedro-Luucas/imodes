@@ -23,7 +23,6 @@ import {
 import { Gender, CardCategory } from '@/types/canvas';
 import {
   MousePointer2,
-  Type,
   Undo2,
   Redo2,
   Plus,
@@ -31,7 +30,6 @@ import {
   Trash2,
   Pencil,
   Palette,
-  Circle,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {

@@ -727,7 +727,7 @@ export function CanvasBoard({
     [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
   );
 
-  const handleCardRotationChange = useCallback(
+  /* const handleCardRotationChange = useCallback(
     (id: string, rotation: number) => {
       updateCard(id, { rotation }, { skipHistory: true });
 
@@ -745,7 +745,7 @@ export function CanvasBoard({
       }
     },
     [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
-  );
+  ); */
 
   const handleAddToSavedCards = useCallback((id: string) => {
     const card = cards.find((c) => c.id === id);
@@ -975,7 +975,7 @@ export function CanvasBoard({
       const touch = touches[0];
       startCanvasPan(touch.clientX, touch.clientY);
     }
-  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale]);
+  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale, toolMode]);
 
   const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (toolMode === 'draw' && isDrawing) {
@@ -1042,7 +1042,7 @@ export function CanvasBoard({
     if (!touch) return;
     e.evt.preventDefault();
     moveCanvasPan(touch.clientX, touch.clientY);
-  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole]);
+  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole, isDrawing, toolMode]);
 
   const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (toolMode === 'draw' && isDrawing && currentPath) {

@@ -60,10 +60,11 @@ export async function uploadFile(
 
   try {
     await s3Client.send(command);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If it's a deserialization error, log the raw response body
-    if (error.name === 'Error' && error.message.includes('not expected')) {
-      const response = (error as any).$response;
+    const s3Error = error as { name?: string; message?: string; $response?: { body?: ReadableStream; statusCode?: number; headers?: Record<string, string> } };
+    if (s3Error.name === 'Error' && s3Error.message?.includes('not expected')) {
+      const response = s3Error.$response;
       if (response && response.body) {
         try {
           // Try to read the body as string to see what the server sent
@@ -170,7 +171,7 @@ export async function listFiles(
   });
 
   const response = await s3Client.send(command);
-  
+
   if (!response.Contents) {
     return [];
   }
