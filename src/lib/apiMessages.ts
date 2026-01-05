@@ -23,6 +23,7 @@ const getLocaleFromCookies = async (): Promise<string | undefined> => {
     }
   } catch {
     // cookies() is only available in server contexts; ignore failures elsewhere
+    // starting
   }
 
   return undefined;
