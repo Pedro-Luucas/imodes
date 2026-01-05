@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
@@ -150,6 +150,34 @@ export async function getSignedUrl(
 
   const signedUrl = await awsGetSignedUrl(s3Client, command, { expiresIn });
   return signedUrl;
+}
+
+/**
+ * Lists files in a bucket with optional prefix
+ * @param bucket - The bucket name
+ * @param prefix - Optional prefix to filter files (e.g., "session-id/")
+ * @returns Array of file keys
+ */
+export async function listFiles(
+  bucket: string,
+  prefix?: string
+): Promise<string[]> {
+  const s3Client = createS3Client();
+
+  const command = new ListObjectsV2Command({
+    Bucket: bucket,
+    Prefix: prefix,
+  });
+
+  const response = await s3Client.send(command);
+  
+  if (!response.Contents) {
+    return [];
+  }
+
+  return response.Contents
+    .filter((obj) => obj.Key)
+    .map((obj) => obj.Key as string);
 }
 
 /**

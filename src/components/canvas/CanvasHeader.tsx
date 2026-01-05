@@ -12,7 +12,7 @@ import {
   UserRound,
   Save,
   Calendar,
-//  Camera,
+  Bookmark,
 //  Undo2,
 //  Redo2,
 //  User,
@@ -31,14 +31,24 @@ import {
   DropdownMenuTrigger,
 //  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Gender } from '@/types/canvas';
 import { SessionDetailsPanel } from './SessionDetailsPanel';
+import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
 import type { Profile } from '@/types/auth';
 
-//interface WindowWithCanvasCard extends Window {
-//  _undoCanvas?: () => void;
-//  _redoCanvas?: () => void;
-//}
+interface WindowWithCanvasCard extends Window {
+  _takeCanvasScreenshot?: () => Promise<Blob | null>;
+}
 
 interface CanvasHeaderProps {
   sessionTitle?: string;
@@ -86,6 +96,9 @@ export function CanvasHeader({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(sessionTitle || '');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isSavingCheckpoint, setIsSavingCheckpoint] = useState(false);
+  const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
+  const [checkpointName, setCheckpointName] = useState('');
   
   const now = new Date();
   const displayTitle = sessionTitle || t('defaultTitle');
@@ -176,13 +189,93 @@ export function CanvasHeader({
 //    setShowDetailsDialog(true);
 //    setIsMenuOpen(false);
 //  };
-//
-//  const handleTakeScreenshot = () => {
-//    // Placeholder
-//    toast.info('Screenshot feature coming soon');
-//    setIsMenuOpen(false);
-//  };
-//
+
+  const handleOpenCheckpointDialog = () => {
+    if (!sessionId) {
+      toast.error(t('checkpointNoSession') || 'Cannot save checkpoint without a session');
+      return;
+    }
+    setCheckpointName('');
+    setShowCheckpointDialog(true);
+    setIsMenuOpen(false);
+  };
+
+  const handleSaveCheckpoint = async () => {
+    if (!sessionId || !checkpointName.trim()) {
+      return;
+    }
+
+    setIsSavingCheckpoint(true);
+    setShowCheckpointDialog(false);
+
+    try {
+      const win = window as WindowWithCanvasCard;
+      
+      // Get current canvas state
+      const canvasState = buildSerializableCanvasState();
+      
+      // Capture screenshot
+      let screenshotBlob: Blob | null = null;
+      if (win._takeCanvasScreenshot) {
+        screenshotBlob = await win._takeCanvasScreenshot();
+      }
+
+      // Create a local data URL from the blob for the toast preview
+      let localImageUrl: string | null = null;
+      if (screenshotBlob) {
+        localImageUrl = URL.createObjectURL(screenshotBlob);
+      }
+
+      // Upload to API
+      const formData = new FormData();
+      formData.append('name', checkpointName.trim());
+      formData.append('state', JSON.stringify(canvasState));
+      if (screenshotBlob) {
+        formData.append('screenshot', screenshotBlob, 'screenshot.png');
+      }
+
+      const response = await fetch(`/api/sessions/${sessionId}/checkpoints`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        if (localImageUrl) URL.revokeObjectURL(localImageUrl);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save checkpoint');
+      }
+
+      // Show success toast with image preview using local blob URL
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <span>{t('checkpointSaved') || 'Checkpoint saved!'}</span>
+          {localImageUrl && (
+            <img 
+              src={localImageUrl} 
+              alt="Checkpoint" 
+              className="rounded-md max-w-[200px] max-h-[150px] object-contain border border-gray-200"
+            />
+          )}
+        </div>,
+        { 
+          duration: 5000,
+          onDismiss: () => localImageUrl && URL.revokeObjectURL(localImageUrl),
+          onAutoClose: () => localImageUrl && URL.revokeObjectURL(localImageUrl),
+        }
+      );
+
+      // Dispatch event to notify checkpoints list to refresh
+      window.dispatchEvent(new Event('checkpointCreated'));
+    } catch (error) {
+      console.error('Error saving checkpoint:', error);
+      const errorMessage = error instanceof Error ? error.message : t('checkpointError') || 'Failed to save checkpoint';
+      toast.error(errorMessage);
+    } finally {
+      setIsSavingCheckpoint(false);
+      setCheckpointName('');
+    }
+  };
+
 //  const handleScheduleFollowUp = () => {
 //    // Placeholder
 //    toast.info('Schedule follow-up feature coming soon');
@@ -301,11 +394,11 @@ export function CanvasHeader({
                   <Save className="w-4 h-4 mr-2" />
                   {t('save')}
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem onClick={handleTakeScreenshot}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Take Screenshot
+                <DropdownMenuItem onClick={handleOpenCheckpointDialog} disabled={isSavingCheckpoint || !sessionId}>
+                  <Bookmark className="w-4 h-4 mr-2" />
+                  {isSavingCheckpoint ? (t('checkpointLoading') || 'Saving...') : (t('saveCheckpoint') || 'Save Checkpoint')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleUndo}>
+                {/* <DropdownMenuItem onClick={handleUndo}>
                   <Undo2 className="w-4 h-4 mr-2" />
                   Undo
                 </DropdownMenuItem>
@@ -494,6 +587,42 @@ export function CanvasHeader({
         </div>
       </div>
     )}
+
+    {/* Checkpoint Name Dialog */}
+    <AlertDialog open={showCheckpointDialog} onOpenChange={setShowCheckpointDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('saveCheckpoint') || 'Save Checkpoint'}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('checkpointNameDescription') || 'Enter a name for this checkpoint to help you identify it later.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4">
+          <Input
+            value={checkpointName}
+            onChange={(e) => setCheckpointName(e.target.value)}
+            placeholder={t('checkpointNamePlaceholder') || 'Checkpoint name...'}
+            maxLength={100}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && checkpointName.trim()) {
+                e.preventDefault();
+                handleSaveCheckpoint();
+              }
+            }}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('cancel') || 'Cancel'}</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleSaveCheckpoint}
+            disabled={!checkpointName.trim() || isSavingCheckpoint}
+          >
+            {isSavingCheckpoint ? (t('checkpointLoading') || 'Saving...') : (t('save') || 'Save')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

@@ -46,6 +46,8 @@ interface WindowWithCanvasCard extends Window {
   _clearCanvas?: () => void;
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
+  _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
+  _resetCardPosition?: () => void;
 }
 
 export default function CanvasPage() {
@@ -100,12 +102,28 @@ export default function CanvasPage() {
     }
   }, []);
 
+  const handleCloseToolsPanel = useCallback(() => {
+    setIsToolsPanelOpen(false);
+    // Reset card position so next card starts at the default position
+    const win = window as WindowWithCanvasCard;
+    if (win._resetCardPosition) {
+      win._resetCardPosition();
+    }
+  }, []);
+
   const handleClearCanvas = useCallback(() => {
     const win = window as WindowWithCanvasCard;
     if (win._clearCanvas) {
       win._clearCanvas();
     }
     setShowClearDialog(false);
+  }, []);
+
+  const handleRestoreCheckpoint = useCallback((state: import('@/types/canvas').CanvasState) => {
+    const win = window as WindowWithCanvasCard;
+    if (win._restoreCanvasState) {
+      win._restoreCanvasState(state);
+    }
   }, []);
 
   // Get sessionId from URL query params
@@ -467,7 +485,7 @@ export default function CanvasPage() {
         }}*/
         currentDuration={currentDuration}
         onSessionRenamed={setSessionName}
-        onBackgroundClick={() => setIsToolsPanelOpen(false)}
+        onBackgroundClick={handleCloseToolsPanel}
       />
 
       {/* Canvas with Floating Controls */}
@@ -485,16 +503,18 @@ export default function CanvasPage() {
           userRole={userRole}
           onSave={handleManualSave}
           onZoomChange={(actualZoom) => setZoomLevel(actualZoom + ZOOM_DISPLAY_OFFSET)}
-          onCanvasClick={() => setIsToolsPanelOpen(false)}
+          onCanvasClick={handleCloseToolsPanel}
         />
 
         {/* Left Panel - Tools */}
-        <ToolsPanel
-          isOpen={isToolsPanelOpen}
+        <ToolsPanel 
+          isOpen={isToolsPanelOpen} 
           onClose={() => setIsToolsPanelOpen(false)}
           gender={gender}
           locale={locale}
+          sessionId={sessionId}
           onCardSelect={handleAddCard}
+          onRestoreCheckpoint={handleRestoreCheckpoint}
         />
 
         {!isToolsPanelOpen && (

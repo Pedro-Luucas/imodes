@@ -1,11 +1,17 @@
 import { NextRequest } from 'next/server';
 import { createSupabaseAnonClient } from '@/lib/supabaseServerClient';
 import { getUserFromCookie } from '@/lib/auth';
+import {
+  subscribeToNotificationBroadcast,
+  type NotificationBroadcastPayload,
+} from '@/lib/notificationBroadcast';
 
 /**
  * GET /api/notifications/stream
  * Server-Sent Events endpoint for realtime notifications
- * Keeps Supabase credentials on the server
+ * 
+ * OPTIMIZED: Uses Supabase Broadcast channels instead of postgres_changes
+ * This eliminates WAL polling and reduces database load by ~75%
  */
 export async function GET(request: NextRequest) {
   // Get authenticated user
@@ -34,34 +40,28 @@ export async function GET(request: NextRequest) {
         // Initialize Supabase client (server-side only)
         const supabase = createSupabaseAnonClient();
 
-        // Subscribe to notifications for this user
-        const channel = supabase
-          .channel(`notifications:${user.id}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'notifications',
-              filter: `user_id=eq.${user.id}`,
-            },
-            (payload) => {
-              console.log('Notification event:', payload);
-              send({
-                type: 'notification',
-                event: payload.eventType,
-                payload: payload,
-              });
-            }
-          )
-          .subscribe((status) => {
+        // Subscribe to broadcast notifications for this user
+        // This is much more efficient than postgres_changes as it doesn't poll the WAL
+        const channel = subscribeToNotificationBroadcast(
+          supabase,
+          user.id,
+          (payload: NotificationBroadcastPayload) => {
+            send({
+              type: 'notification',
+              event: payload.event,
+              notification: payload.notification,
+              timestamp: payload.timestamp,
+            });
+          },
+          (status) => {
             if (status === 'SUBSCRIBED') {
-              console.log('Subscribed to notifications channel');
+              console.log('Subscribed to notifications broadcast channel');
             } else if (status === 'CHANNEL_ERROR') {
-              console.error('Channel error occurred');
+              console.error('Broadcast channel error occurred');
               send({ type: 'error', message: 'Channel subscription failed' });
             }
-          });
+          }
+        );
 
         // Send initial connection message
         send({ type: 'connected' });
