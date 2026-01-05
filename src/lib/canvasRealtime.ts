@@ -14,6 +14,7 @@ export type CanvasRealtimeEventType =
   | 'note.patch'
   | 'note.remove'
   | 'drawPath.add'
+  | 'drawPath.patch'
   | 'drawPath.remove'
   | 'state.snapshot'
   | 'state.request';
@@ -26,6 +27,7 @@ export interface CanvasRealtimePayloadMap {
   'note.patch': { id: string; patch: Partial<PostItNote> };
   'note.remove': { id: string };
   'drawPath.add': { path: DrawPath };
+  'drawPath.patch': { id: string; patch: Partial<DrawPath> };
   'drawPath.remove': { id: string };
   'state.snapshot': { state: CanvasState; origin: 'autosave' | 'resync' | 'manual' };
   'state.request': { sinceVersion?: number };

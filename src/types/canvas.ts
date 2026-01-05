@@ -41,6 +41,8 @@ export interface DrawPath {
   color: string;
   strokeWidth: number;
   opacity?: number;
+  x?: number;
+  y?: number;
 }
 
 export interface PostItNote {

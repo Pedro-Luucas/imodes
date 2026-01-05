@@ -94,6 +94,7 @@ export function CanvasBoard({
   const cards = useCanvasStore((state) => state.cards);
   const drawPaths = useCanvasStore((state) => state.drawPaths);
   const selectedCardId = useCanvasStore((state) => state.selectedCardId);
+  const selectedDrawPathId = useCanvasStore((state) => state.selectedDrawPathId);
   const displayScale = useCanvasStore((state) => state.displayScale);
   const stagePosition = useCanvasStore((state) => state.stagePosition);
   const currentGender = useCanvasStore((state) => state.gender);
@@ -125,6 +126,9 @@ export function CanvasBoard({
     redo,
     markDirty,
     addDrawPath,
+    updateDrawPath,
+    removeDrawPath,
+    selectDrawPath,
   } = storeActionsRef.current;
 
   const { publish } = useCanvasRealtime({
@@ -634,6 +638,52 @@ export function CanvasBoard({
     }
   }, [cardToAddToFrequentlyUsed, t]);
 
+  const handleDrawPathSelect = useCallback(
+    (id: string) => {
+      selectDrawPath(id);
+    },
+    [selectDrawPath]
+  );
+
+  const handleDrawPathDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      updateDrawPath(id, { x, y }, { skipHistory: true });
+
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveHistorySnapshot();
+      }, 300);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('drawPath.patch', {
+          id,
+          patch: { x, y },
+        });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateDrawPath]
+  );
+
+  const handleDrawPathDelete = useCallback(
+    (id: string) => {
+      removeDrawPath(id);
+      if (selectedDrawPathId === id) {
+        selectDrawPath(null);
+      }
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('drawPath.remove', { id });
+      }
+    },
+    [markDirty, publish, removeDrawPath, selectDrawPath, selectedDrawPathId, sessionId]
+  );
+
   const handleCardSelect = useCallback(
     (id: string) => {
       selectCard(id);
@@ -1089,37 +1139,32 @@ export function CanvasBoard({
   //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
   // );
   //
-  // // Delete selected note on Delete/Backspace key (but not cards)
-  // useEffect(() => {
-  //   const handleKeyDown = (e: KeyboardEvent) => {
-  //     // Only delete notes, not cards
-  //     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNoteId && !selectedCardId) {
-  //       // Check if user is typing in an input/textarea - don't delete in that case
-  //       const activeElement = document.activeElement;
-  //       if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-  //         return;
-  //       }
-  //       removeNote(selectedNoteId);
-  //       selectNote(null);
-  //       markDirty('interaction');
-  //
-  //       if (sessionId) {
-  //         void publish('note.remove', { id: selectedNoteId });
-  //       }
-  //     }
-  //   };
-  //
-  //   window.addEventListener('keydown', handleKeyDown);
-  //   return () => window.removeEventListener('keydown', handleKeyDown);
-  // }, [
-  //   markDirty,
-  //   publish,
-  //   removeNote,
-  //   selectedCardId,
-  //   selectedNoteId,
-  //   selectNote,
-  //   sessionId,
-  // ]);
+  // Delete selected card or drawing on Delete/Backspace key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input/textarea - don't delete in that case
+      const activeElement = document.activeElement;
+      if (
+        activeElement &&
+        (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')
+      ) {
+        return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const sid = selectedCardId;
+        const did = selectedDrawPathId;
+        if (sid) {
+          handleCardDelete(sid);
+        } else if (did) {
+          handleDrawPathDelete(did);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCardId, selectedDrawPathId, handleCardDelete, handleDrawPathDelete]);
 
   return (
     <div
@@ -1173,6 +1218,9 @@ export function CanvasBoard({
             {drawPaths.map((path) => (
               <Line
                 key={path.id}
+                id={path.id}
+                x={path.x || 0}
+                y={path.y || 0}
                 points={path.points}
                 stroke={path.color}
                 strokeWidth={path.strokeWidth}
@@ -1180,6 +1228,25 @@ export function CanvasBoard({
                 lineCap="round"
                 lineJoin="round"
                 globalCompositeOperation="source-over"
+                draggable={toolMode === 'select'}
+                onClick={() => handleDrawPathSelect(path.id)}
+                onTap={() => handleDrawPathSelect(path.id)}
+                onDragEnd={(e) => handleDrawPathDragEnd(path.id, e.target.x(), e.target.y())}
+                opacity={selectedDrawPathId === path.id ? 0.8 : 1}
+                shadowBlur={selectedDrawPathId === path.id ? 5 : 0}
+                shadowColor={path.color}
+                onMouseEnter={(e) => {
+                  if (toolMode === 'select') {
+                    const stage = e.target.getStage();
+                    if (stage) stage.container().style.cursor = 'move';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (toolMode === 'select') {
+                    const stage = e.target.getStage();
+                    if (stage) stage.container().style.cursor = 'default';
+                  }
+                }}
               />
             ))}
             {currentPath && (

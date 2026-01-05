@@ -39,6 +39,7 @@ interface CanvasStoreState {
 
   selectedCardId: string | null;
   selectedNoteId: string | null;
+  selectedDrawPathId: string | null;
 
   history: CanvasHistorySnapshot[];
   historyIndex: number;
@@ -68,6 +69,7 @@ interface CanvasStoreActions {
 
   selectCard: (id: string | null) => void;
   selectNote: (id: string | null) => void;
+  selectDrawPath: (id: string | null) => void;
 
   addCard: (card: CanvasCard, options?: { skipHistory?: boolean }) => void;
   updateCard: (id: string, patch: Partial<CanvasCard>, options?: { skipHistory?: boolean }) => void;
@@ -117,6 +119,7 @@ const initialState: CanvasStoreState = {
   stagePosition: { x: 0, y: 0 },
   selectedCardId: null,
   selectedNoteId: null,
+  selectedDrawPathId: null,
   history: [],
   historyIndex: -1,
   isApplyingRemote: false,
@@ -298,6 +301,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ...state,
       selectedCardId: id,
       selectedNoteId: id ? null : state.selectedNoteId,
+      selectedDrawPathId: id ? null : state.selectedDrawPathId,
     }));
   },
 
@@ -306,6 +310,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ...state,
       selectedNoteId: id,
       selectedCardId: id ? null : state.selectedCardId,
+      selectedDrawPathId: id ? null : state.selectedDrawPathId,
+    }));
+  },
+
+  selectDrawPath: (id) => {
+    set((state) => ({
+      ...state,
+      selectedDrawPathId: id,
+      selectedCardId: id ? null : state.selectedCardId,
+      selectedNoteId: id ? null : state.selectedNoteId,
     }));
   },
 
@@ -699,6 +713,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         drawPaths: snapshot.drawPaths.map((path) => ({ ...path })),
         selectedCardId: null,
         selectedNoteId: null,
+        selectedDrawPathId: null,
       };
     });
   },
@@ -721,6 +736,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         drawPaths: snapshot.drawPaths.map((path) => ({ ...path })),
         selectedCardId: null,
         selectedNoteId: null,
+        selectedDrawPathId: null,
       };
     });
   },

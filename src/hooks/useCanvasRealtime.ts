@@ -192,6 +192,16 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
+      'drawPath.patch': (event) => {
+        if (event.clientId === clientId || event.sessionId !== sessionId) return;
+        const storeApi = canvasStore.getState();
+        storeApi.markApplyingRemote(true);
+        try {
+          storeApi.updateDrawPath(event.payload.id, event.payload.patch, { skipHistory: true });
+        } finally {
+          storeApi.markApplyingRemote(false);
+        }
+      },
       'drawPath.remove': (event) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
