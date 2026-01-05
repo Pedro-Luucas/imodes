@@ -23,6 +23,7 @@ const buildSnapshotFromStore = (version: number, updatedAt: string): CanvasState
     therapistNotes: state.therapistNotes,
     version,
     updatedAt,
+    drawPaths: state.drawPaths,
   });
 };
 
@@ -154,6 +155,7 @@ export const buildSerializableCanvasState = () => {
     therapistNotes: state.therapistNotes,
     version: state.lastSavedVersion,
     updatedAt: state.lastUpdatedAt,
+    drawPaths: state.drawPaths,
   });
 };
 
