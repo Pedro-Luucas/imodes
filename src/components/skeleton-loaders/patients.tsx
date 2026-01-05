@@ -27,7 +27,7 @@ export function PatientsPageSkeleton() {
           {[...Array(4)].map((_, i) => (
             <Card
               key={i}
-              className="border border-input rounded-2xl p-4 shadow-sm"
+              className="border border-input/30 rounded-2xl p-4 shadow-sm"
             >
               <div className="flex flex-col gap-4">
                 {/* Patient Header */}
@@ -46,18 +46,18 @@ export function PatientsPageSkeleton() {
                 </div>
 
                 {/* Patient Stats */}
-                <div className="flex flex-col divide-y divide-input rounded-xl border border-input">
+                <div className="flex flex-col divide-y divide-input/30 rounded-xl border border-input/30">
                   <div className="flex items-center justify-between px-4 py-2">
                     <div className="h-4 w-16 bg-muted animate-pulse rounded" />
-                    <div className="h-4 w-8 bg-muted animate-pulse rounded" />
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2">
-                    <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                    <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
                   </div>
                   <div className="flex items-center justify-between px-4 py-2">
                     <div className="h-4 w-16 bg-muted animate-pulse rounded" />
-                    <div className="h-4 w-14 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2">
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
                   </div>
                 </div>
 
