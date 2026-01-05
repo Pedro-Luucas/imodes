@@ -10,6 +10,7 @@ import { AuthInitializer } from "@/components/AuthInitializer";
 import { NotificationInitializer } from "@/components/NotificationInitializer";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -55,6 +56,7 @@ export default async function RootLayout({
           {children}
         </NextIntlClientProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
