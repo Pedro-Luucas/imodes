@@ -42,7 +42,7 @@ export function SessionDetailsPanel({
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -71,11 +71,13 @@ export function SessionDetailsPanel({
 
       // Update therapist settings with notes
       const updatedData = {
-        ...session.data,
+        ...(session?.data || {}),
         therapistSettings: {
-          ...session.data.therapistSettings,
+          ...(session?.data?.therapistSettings || {}),
           notes: notes,
         },
+        // Ensure we don't drop drawPaths when saving notes
+        drawPaths: session?.data?.drawPaths || [],
       };
 
       // Save to session

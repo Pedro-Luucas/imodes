@@ -303,10 +303,12 @@ export default function CanvasPage() {
 
       const updatedTimeSpent = [...existingTimeSpent, newEntry];
 
-      // Update session data
+      // Update only the timeSpent field specifically to avoid overwriting state
       const updatedData = {
-        ...session.data,
+        ...(session?.data || {}),
         timeSpent: updatedTimeSpent,
+        // Ensure we don't accidentally drop drawPaths if they exist in the current session data
+        drawPaths: session?.data?.drawPaths || [],
       };
 
       // Save to session
@@ -362,8 +364,9 @@ export default function CanvasPage() {
               };
               const updatedTimeSpent = [...existingTimeSpent, newEntry];
               const updatedData = {
-                ...session.data,
+                ...(session?.data || {}),
                 timeSpent: updatedTimeSpent,
+                drawPaths: session?.data?.drawPaths || [],
               };
               // Use fetch with keepalive for reliable save on page unload
               fetch(`/api/sessions/${sessionId}`, {
