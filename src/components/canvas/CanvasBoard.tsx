@@ -65,6 +65,9 @@ interface WindowWithCanvasCard extends Window {
   _manualSaveCanvas?: () => Promise<void>;
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
+  _takeCanvasScreenshot?: () => Promise<Blob | null>;
+  _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
+  _resetCardPosition?: () => void;
 }
 
 const CARD_COLORS = [
@@ -129,6 +132,7 @@ export function CanvasBoard({
     updateDrawPath,
     removeDrawPath,
     selectDrawPath,
+    applySnapshot,
   } = storeActionsRef.current;
 
   const { publish } = useCanvasRealtime({
@@ -170,6 +174,7 @@ export function CanvasBoard({
   const [cardToAddToFrequentlyUsed, setCardToAddToFrequentlyUsed] =
     useState<CanvasCardType | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
   const prevScaleRef = useRef<number>(scale);
   const stagePositionRef = useRef(stagePosition);
   const panStageStartRef = useRef({ x: 0, y: 0 });
@@ -184,6 +189,8 @@ export function CanvasBoard({
   const pinchStartDistanceRef = useRef(0);
   const pinchStartScaleRef = useRef(1);
   const pinchCenterRef = useRef({ x: 0, y: 0 });
+  // Track last card position for cascading offset
+  const lastCardPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleUndo = useCallback(() => {
     undo();
@@ -413,27 +420,35 @@ export function CanvasBoard({
       const stagePos = stagePositionRef.current ?? { x: 0, y: 0 };
       const scale = displayScale || 1;
 
-      let centerX: number;
-      let centerY: number;
+      let cardX: number;
+      let cardY: number;
 
-      if (viewportWidth > 0 && viewportHeight > 0) {
-        // Viewport center in screen coordinates
-        const viewportCenterX = viewportWidth / 2;
-        const viewportCenterY = viewportHeight / 2;
-
-        // Convert to stage coordinates
-        centerX = (viewportCenterX - stagePos.x) / scale;
-        centerY = (viewportCenterY - stagePos.y) / scale;
+      if (lastCardPositionRef.current) {
+        // Subsequent card: center it at the top-left corner of the previous card
+        cardX = lastCardPositionRef.current.x - cardWidth / 2;
+        cardY = lastCardPositionRef.current.y - cardHeight / 2;
       } else {
-        // Fallback to keeping relative to current stage origin if dimensions are unavailable
-        centerX = -stagePos.x / scale;
-        centerY = -stagePos.y / scale;
+        // First card: position at 75% width and 50% height of viewport
+        if (viewportWidth > 0 && viewportHeight > 0) {
+          // 75% from left edge, 50% from top edge in screen coordinates
+          const targetScreenX = viewportWidth * 0.75;
+          const targetScreenY = viewportHeight * 0.5;
+
+          // Convert to stage coordinates
+          const centerX = (targetScreenX - stagePos.x) / scale;
+          const centerY = (targetScreenY - stagePos.y) / scale;
+
+          // Position card so its center is at the computed point
+          cardX = centerX - cardWidth / 2;
+          cardY = centerY - cardHeight / 2;
+        } else {
+          // Fallback to keeping relative to current stage origin if dimensions are unavailable
+          const centerX = -stagePos.x / scale;
+          const centerY = -stagePos.y / scale;
+          cardX = centerX - cardWidth / 2;
+          cardY = centerY - cardHeight / 2;
+        }
       }
-
-      // Position card so its center is at the computed center
-      const cardX = centerX - cardWidth / 2;
-      const cardY = centerY - cardHeight / 2;
-
       const newCard: CanvasCardType = {
         id: cardId,
         x: cardX,
@@ -452,6 +467,9 @@ export function CanvasBoard({
 
       addCard(newCard);
       markDirty('interaction');
+
+      // Save this card's top-left position for the next card to cascade from
+      lastCardPositionRef.current = { x: cardX, y: cardY };
 
       if (newCard.imageUrl) {
         preloadImagesWithPriority([newCard.imageUrl]).catch(() => undefined);
@@ -517,6 +535,120 @@ export function CanvasBoard({
       delete win._redoCanvas;
     };
   }, [handleUndo, handleRedo]);
+
+  // Take screenshot function - captures viewport with grid background
+  const takeScreenshot = useCallback(async (): Promise<Blob | null> => {
+    const stage = stageRef.current;
+    if (!stage || !dimensions.width || !dimensions.height) {
+      return null;
+    }
+
+    // Create an offscreen canvas to composite the grid + stage content
+    const canvas = document.createElement('canvas');
+    const pixelRatio = window.devicePixelRatio || 1;
+    canvas.width = dimensions.width * pixelRatio;
+    canvas.height = dimensions.height * pixelRatio;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    // Scale for high DPI displays
+    ctx.scale(pixelRatio, pixelRatio);
+
+    // Draw the grid background
+    ctx.fillStyle = '#f7f7f7';
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+    // Draw grid lines
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.lineWidth = 1;
+
+    const gridSize = 32;
+
+    // Vertical lines
+    for (let x = 0; x <= dimensions.width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, dimensions.height);
+      ctx.stroke();
+    }
+
+    // Horizontal lines
+    for (let y = 0; y <= dimensions.height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(dimensions.width, y);
+      ctx.stroke();
+    }
+
+    // Get the stage content as an image
+    const stageDataUrl = stage.toDataURL({ pixelRatio });
+
+    // Draw the stage content on top of the grid
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, 'image/png', 1.0);
+      };
+      img.onerror = () => {
+        resolve(null);
+      };
+      img.src = stageDataUrl;
+    });
+  }, [dimensions.width, dimensions.height]);
+
+  // Expose screenshot function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._takeCanvasScreenshot = takeScreenshot;
+
+    return () => {
+      delete win._takeCanvasScreenshot;
+    };
+  }, [takeScreenshot]);
+
+  // Restore canvas state from checkpoint
+  const restoreCanvasState = useCallback((state: import('@/types/canvas').CanvasState) => {
+    applySnapshot(state, { replaceHistory: true });
+    markDirty('interaction');
+
+    if (sessionId) {
+      void publish('state.snapshot', {
+        state,
+        origin: 'manual',
+      });
+    }
+  }, [applySnapshot, markDirty, publish, sessionId]);
+
+  // Expose restore function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._restoreCanvasState = restoreCanvasState;
+
+    return () => {
+      delete win._restoreCanvasState;
+    };
+  }, [restoreCanvasState]);
+
+  // Reset card position - called when toolspanel closes
+  const resetCardPosition = useCallback(() => {
+    lastCardPositionRef.current = null;
+  }, []);
+
+  // Expose reset function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._resetCardPosition = resetCardPosition;
+
+    return () => {
+      delete win._resetCardPosition;
+    };
+  }, [resetCardPosition]);
 
   const handleCardDragEnd = useCallback(
     (id: string, x: number, y: number) => {
@@ -595,7 +727,7 @@ export function CanvasBoard({
     [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
   );
 
-  const handleCardRotationChange = useCallback(
+  /* const handleCardRotationChange = useCallback(
     (id: string, rotation: number) => {
       updateCard(id, { rotation }, { skipHistory: true });
 
@@ -613,7 +745,7 @@ export function CanvasBoard({
       }
     },
     [markDirty, publish, saveHistorySnapshot, sessionId, updateCard]
-  );
+  ); */
 
   const handleAddToSavedCards = useCallback((id: string) => {
     const card = cards.find((c) => c.id === id);
@@ -843,7 +975,7 @@ export function CanvasBoard({
       const touch = touches[0];
       startCanvasPan(touch.clientX, touch.clientY);
     }
-  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale]);
+  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale, toolMode]);
 
   const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (toolMode === 'draw' && isDrawing) {
@@ -910,7 +1042,7 @@ export function CanvasBoard({
     if (!touch) return;
     e.evt.preventDefault();
     moveCanvasPan(touch.clientX, touch.clientY);
-  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole]);
+  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole, isDrawing, toolMode]);
 
   const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (toolMode === 'draw' && isDrawing && currentPath) {
@@ -1181,6 +1313,7 @@ export function CanvasBoard({
       {showLoading && <CanvasLoading />}
       {!showLoading && dimensions.width > 0 && (
         <Stage
+          ref={stageRef}
           width={dimensions.width}
           height={dimensions.height}
           x={stagePosition.x}

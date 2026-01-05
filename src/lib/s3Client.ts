@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
@@ -20,8 +20,14 @@ export function createS3Client() {
   }
 
   // Extract project ID from Supabase URL if needed
-  // Format: https://project-id.supabase.co/storage/v1/s3
-  const s3Endpoint = `${supabaseUrl}/storage/v1/s3`;
+  // Clean the URL to avoid double slashes and ensure correct S3 endpoint
+  const baseUrl = supabaseUrl.replace(/\/$/, '');
+
+  // Use the provided S3 endpoint if it looks like one, otherwise construct it
+  let s3Endpoint = baseUrl;
+  if (!baseUrl.includes('/storage/v1/s3')) {
+    s3Endpoint = `${baseUrl}/storage/v1/s3`;
+  }
 
   return new S3Client({
     region,
@@ -30,7 +36,7 @@ export function createS3Client() {
       secretAccessKey,
     },
     endpoint: s3Endpoint,
-    forcePathStyle: true, // Required for S3-compatible storage
+    forcePathStyle: true,
   });
 }
 
@@ -52,7 +58,30 @@ export async function uploadFile(
     ContentType: contentType,
   });
 
-  await s3Client.send(command);
+  try {
+    await s3Client.send(command);
+  } catch (error: unknown) {
+    // If it's a deserialization error, log the raw response body
+    const s3Error = error as { name?: string; message?: string; $response?: { body?: ReadableStream; statusCode?: number; headers?: Record<string, string> } };
+    if (s3Error.name === 'Error' && s3Error.message?.includes('not expected')) {
+      const response = s3Error.$response;
+      if (response && response.body) {
+        try {
+          // Try to read the body as string to see what the server sent
+          const bodyStr = await new Response(response.body).text();
+          console.error('S3 Deserialization Error Details:', {
+            statusCode: response.statusCode,
+            headers: response.headers,
+            body: bodyStr,
+            region: process.env.AWS_REGION || 'us-east-1 (default)'
+          });
+        } catch (e) {
+          console.error('Could not read error response body');
+        }
+      }
+    }
+    throw error;
+  }
 }
 
 /**
@@ -74,9 +103,9 @@ export async function deleteFile(bucket: string, key: string): Promise<void> {
     } catch (headError: unknown) {
       // If file doesn't exist, that's fine - nothing to delete
       if (
-        headError instanceof Error && 
-        (headError.name === 'NoSuchKey' || 
-         (headError as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404)
+        headError instanceof Error &&
+        (headError.name === 'NoSuchKey' ||
+          (headError as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404)
       ) {
         console.log(`File ${key} does not exist in bucket ${bucket}, skipping deletion`);
         return;
@@ -125,6 +154,34 @@ export async function getSignedUrl(
 }
 
 /**
+ * Lists files in a bucket with optional prefix
+ * @param bucket - The bucket name
+ * @param prefix - Optional prefix to filter files (e.g., "session-id/")
+ * @returns Array of file keys
+ */
+export async function listFiles(
+  bucket: string,
+  prefix?: string
+): Promise<string[]> {
+  const s3Client = createS3Client();
+
+  const command = new ListObjectsV2Command({
+    Bucket: bucket,
+    Prefix: prefix,
+  });
+
+  const response = await s3Client.send(command);
+
+  if (!response.Contents) {
+    return [];
+  }
+
+  return response.Contents
+    .filter((obj) => obj.Key)
+    .map((obj) => obj.Key as string);
+}
+
+/**
  * Extracts the file key from a Supabase Storage URL or signed URL
  */
 export function extractKeyFromUrl(url: string): string | null {
@@ -132,22 +189,22 @@ export function extractKeyFromUrl(url: string): string | null {
     // Handle signed URLs or regular URLs
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/');
-    
+
     // For Supabase storage URLs, the format is typically:
     // /storage/v1/object/[public|sign]/bucket-name/file-key
     // or for S3 paths: /bucket-name/file-key
-    
+
     const bucketIndex = pathParts.indexOf('avatar');
     if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
       // Return everything after the bucket name
       return pathParts.slice(bucketIndex + 1).join('/');
     }
-    
+
     // If it's just a key without full URL
     if (!url.includes('http')) {
       return url;
     }
-    
+
     return null;
   } catch {
     // If URL parsing fails, assume it's just a key

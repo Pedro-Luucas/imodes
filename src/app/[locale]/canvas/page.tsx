@@ -23,14 +23,21 @@ import {
 import { Gender, CardCategory } from '@/types/canvas';
 import {
   MousePointer2,
-  Type,
   Undo2,
   Redo2,
   Plus,
   Minus,
   Trash2,
   Pencil,
+  Palette,
 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import type { Profile } from '@/types/auth';
 import { canvasStore, type CanvasSaveReason } from '@/stores/canvasStore';
 import { startCanvasAutosave, flushCanvasChanges } from '@/lib/canvasPersistence';
@@ -46,6 +53,8 @@ interface WindowWithCanvasCard extends Window {
   _clearCanvas?: () => void;
   _undoCanvas?: () => void;
   _redoCanvas?: () => void;
+  _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
+  _resetCardPosition?: () => void;
 }
 
 export default function CanvasPage() {
@@ -100,12 +109,28 @@ export default function CanvasPage() {
     }
   }, []);
 
+  const handleCloseToolsPanel = useCallback(() => {
+    setIsToolsPanelOpen(false);
+    // Reset card position so next card starts at the default position
+    const win = window as WindowWithCanvasCard;
+    if (win._resetCardPosition) {
+      win._resetCardPosition();
+    }
+  }, []);
+
   const handleClearCanvas = useCallback(() => {
     const win = window as WindowWithCanvasCard;
     if (win._clearCanvas) {
       win._clearCanvas();
     }
     setShowClearDialog(false);
+  }, []);
+
+  const handleRestoreCheckpoint = useCallback((state: import('@/types/canvas').CanvasState) => {
+    const win = window as WindowWithCanvasCard;
+    if (win._restoreCanvasState) {
+      win._restoreCanvasState(state);
+    }
   }, []);
 
   // Get sessionId from URL query params
@@ -303,10 +328,12 @@ export default function CanvasPage() {
 
       const updatedTimeSpent = [...existingTimeSpent, newEntry];
 
-      // Update session data
+      // Update only the timeSpent field specifically to avoid overwriting state
       const updatedData = {
-        ...session.data,
+        ...(session?.data || {}),
         timeSpent: updatedTimeSpent,
+        // Ensure we don't accidentally drop drawPaths if they exist in the current session data
+        drawPaths: session?.data?.drawPaths || [],
       };
 
       // Save to session
@@ -362,8 +389,9 @@ export default function CanvasPage() {
               };
               const updatedTimeSpent = [...existingTimeSpent, newEntry];
               const updatedData = {
-                ...session.data,
+                ...(session?.data || {}),
                 timeSpent: updatedTimeSpent,
+                drawPaths: session?.data?.drawPaths || [],
               };
               // Use fetch with keepalive for reliable save on page unload
               fetch(`/api/sessions/${sessionId}`, {
@@ -464,7 +492,7 @@ export default function CanvasPage() {
         }}*/
         currentDuration={currentDuration}
         onSessionRenamed={setSessionName}
-        onBackgroundClick={() => setIsToolsPanelOpen(false)}
+        onBackgroundClick={handleCloseToolsPanel}
       />
 
       {/* Canvas with Floating Controls */}
@@ -482,7 +510,7 @@ export default function CanvasPage() {
           userRole={userRole}
           onSave={handleManualSave}
           onZoomChange={(actualZoom) => setZoomLevel(actualZoom + ZOOM_DISPLAY_OFFSET)}
-          onCanvasClick={() => setIsToolsPanelOpen(false)}
+          onCanvasClick={handleCloseToolsPanel}
         />
 
         {/* Left Panel - Tools */}
@@ -491,7 +519,9 @@ export default function CanvasPage() {
           onClose={() => setIsToolsPanelOpen(false)}
           gender={gender}
           locale={locale}
+          sessionId={sessionId}
           onCardSelect={handleAddCard}
+          onRestoreCheckpoint={handleRestoreCheckpoint}
         />
 
         {!isToolsPanelOpen && (
@@ -571,25 +601,75 @@ export default function CanvasPage() {
             </Button>
 
             {toolMode === 'draw' && (
-              <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-gray-200 h-10 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                <input
-                  type="color"
-                  value={strokeColor}
-                  onChange={(e) => setStrokeColor(e.target.value)}
-                  className="w-6 h-6 rounded cursor-pointer border border-gray-200 p-0 overflow-hidden"
-                  title={tControls('color') || 'Color'}
-                />
-                <select
-                  value={strokeWidth}
-                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                  className="h-7 text-[10px] md:text-xs border-gray-200 rounded bg-transparent focus:ring-0"
-                  title={tControls('thickness') || 'Thickness'}
-                >
-                  <option value={2}>2px</option>
-                  <option value={4}>4px</option>
-                  <option value={8}>8px</option>
-                  <option value={12}>16px</option>
-                </select>
+              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
+                {/* Color Swatches */}
+                <div className="flex items-center gap-1.5">
+                  {[
+                    '#18181b', // charcoal
+                    '#ef4444', // red
+                    '#22c55e', // green
+                    '#3b82f6', // blue
+                    '#f59e0b', // amber
+                    '#a855f7', // purple
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setStrokeColor(color)}
+                      className={cn(
+                        "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                        strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                      )}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+
+                  {/* Custom Color Picker */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                        <Palette className="size-3.5 text-gray-500" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-3" side="top" align="center">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
+                        <input
+                          type="color"
+                          value={strokeColor}
+                          onChange={(e) => setStrokeColor(e.target.value)}
+                          className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Thickness Selection */}
+                <div className="flex items-center gap-1">
+                  {[4, 8, 12].map((width) => (
+                    <button
+                      key={width}
+                      onClick={() => setStrokeWidth(width)}
+                      className={cn(
+                        "h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                        strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                      )}
+                      title={`${width}px`}
+                    >
+                      <div
+                        className="bg-current rounded-full"
+                        style={{
+                          width: '16px',
+                          height: `${Math.min(width, 14)}px`,
+                          opacity: strokeWidth === width ? 1 : 0.6
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

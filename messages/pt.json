@@ -341,7 +341,16 @@
       "name": "Nome:",
       "email": "E-mail:",
       "phone": "Telefone:",
-      "userAvatar": "Avatar do usuário"
+      "userAvatar": "Avatar do usuário",
+      "saveCheckpoint": "Salvar Trabalho",
+      "checkpointLoading": "Salvando...",
+      "checkpointSaved": "Trabalho salvo!",
+      "checkpointError": "Falha ao salvar trabalho",
+      "checkpointNoSession": "Não é possível salvar trabalho sem uma sessão",
+      "checkpointNameDescription": "Digite um nome para este trabalho salvo para ajudá-lo a identificá-lo depois.",
+      "checkpointNamePlaceholder": "Nome do trabalho salvo...",
+      "checkpointLimitReached": "Número máximo de trabalhos salvos atingido",
+      "cancel": "Cancelar"
     },
     "postItNote": {
       "clickToEdit": "Clique para editar"
@@ -365,9 +374,21 @@
       "boatAndWave": "Barco e Onda",
       "frequentlyUsed": "Frequentemente Usadas",
       "savedCards": "Cards Salvos",
+      "checkpoints": "Trabalhos Salvos",
       "noFrequentlyUsed": "Ainda não há cartas frequentemente usadas",
       "noSavedCards": "Ainda não há cartas salvas",
-      "removeFromSaved": "Remover dos salvos"
+      "noCheckpoints": "Ainda não há trabalhos salvos",
+      "noSessionForCheckpoints": "Nenhuma sessão disponível",
+      "checkpointsFetchError": "Falha ao carregar trabalhos salvos",
+      "removeFromSaved": "Remover dos salvos",
+      "restoreCheckpoint": "Restaurar Trabalho Salvo",
+      "restoreConfirm": "Isso substituirá o estado atual da tela. Todas as alterações não salvas serão perdidas. Tem certeza?",
+      "deleteCheckpoint": "Excluir Trabalho Salvo",
+      "deleteConfirm": "Tem certeza de que deseja excluir este trabalho salvo? Esta ação não pode ser desfeita.",
+      "cancel": "Cancelar",
+      "restore": "Restaurar",
+      "delete": "Excluir",
+      "deleting": "Excluindo..."
     },
     "controls": {
       "cursorTool": "Ferramenta de Cursor",

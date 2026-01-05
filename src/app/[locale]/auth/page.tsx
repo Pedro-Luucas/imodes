@@ -2,22 +2,37 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { Globe } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useIsAuthenticated, useAuthLoading, useAuthProfile } from "@/stores/authStore";
 
 export default function AuthLandingPage() {
   const t = useTranslations("authLanding");
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = useLocale();
   const isAuthenticated = useIsAuthenticated();
   const authLoading = useAuthLoading();
   const profile = useAuthProfile();
   const [checkingRecovery, setCheckingRecovery] = useState(true);
 
   usePageMetadata(t("metaTitle"), t("metaDescription"));
+
+  const handleLanguageChange = (newLocale: string) => {
+    // Navigate to the same path but with the new locale
+    router.replace(pathname, { locale: newLocale });
+  };
 
   // Check for password recovery tokens in URL hash and redirect to reset-password
   useEffect(() => {
@@ -91,8 +106,21 @@ export default function AuthLandingPage() {
           />
         </div>
 
-        <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 shadow-sm sm:p-10">
-          <div className="flex flex-col gap-2 text-center">
+        <div className="flex w-full flex-col gap-6 rounded-2xl border border-stroke bg-white p-6 pt-0 shadow-sm sm:p-6 sm:pb-21 sm:pt-6">
+        <div className="flex justify-end">
+            <Select value={locale} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-auto gap-2" size="sm">
+                <Globe className="size-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="pt">Português</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-2 text-center pt-0 sm:pt-0">
             <h1 className="text-lg font-bold leading-7 text-foreground sm:text-xl">
               {t("title")}
             </h1>

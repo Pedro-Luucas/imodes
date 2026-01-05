@@ -34,7 +34,7 @@ export async function GET(
 
     // Check authorization
     const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
-    
+
     if (!authorized || !profile) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -154,7 +154,7 @@ export async function PUT(
 
     // Check authorization
     const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
-    
+
     if (!authorized || !profile) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -297,7 +297,7 @@ export async function DELETE(
 
     // Check authorization
     const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
-    
+
     if (!authorized || !profile) {
       return NextResponse.json(
         { error: 'Unauthorized' },

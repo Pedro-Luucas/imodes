@@ -4,6 +4,7 @@ import type {
   Gender,
   PostItNote,
   TherapistSettings,
+  DrawPath,
 } from '@/types/canvas';
 
 /**
@@ -19,6 +20,7 @@ export interface SerializeCanvasStateOptions {
   therapistNotes?: string;
   version?: number;
   updatedAt?: string;
+  drawPaths?: DrawPath[];
 }
 
 export function serializeCanvasState({
@@ -30,6 +32,7 @@ export function serializeCanvasState({
   therapistNotes,
   version,
   updatedAt,
+  drawPaths,
 }: SerializeCanvasStateOptions): CanvasState {
   // Ensure all cards have width and height explicitly set
   const serializedCards: CanvasCard[] = cards.map((card) => ({
@@ -41,7 +44,7 @@ export function serializeCanvasState({
   const therapistSettings: TherapistSettings = {
     zoomLevel: therapistZoomLevel,
   };
-  
+
   if (therapistNotes !== undefined) {
     therapistSettings.notes = therapistNotes;
   }
@@ -60,6 +63,7 @@ export function serializeCanvasState({
     therapistSettings,
     version,
     updatedAt,
+    drawPaths: drawPaths?.map((path: DrawPath) => ({ ...path })),
   };
 }
 
@@ -77,6 +81,7 @@ export interface DeserializedCanvasState {
   therapistNotes?: string;
   version?: number;
   updatedAt?: string;
+  drawPaths: DrawPath[];
 }
 
 export function deserializeCanvasState(data: CanvasState | null): DeserializedCanvasState {
@@ -88,27 +93,28 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
       gender: 'male',
       patientZoomLevel: 60,
       therapistZoomLevel: 60,
+      drawPaths: [],
     };
   }
 
   // Ensure cards have all required properties, especially width and height
   const cards: CanvasCard[] = Array.isArray(data.cards)
     ? data.cards.map((card) => ({
-        id: String(card?.id || ''),
-        x: typeof card?.x === 'number' ? card.x : 0,
-        y: typeof card?.y === 'number' ? card.y : 0,
-        title: String(card?.title || ''),
-        description: String(card?.description || ''),
-        color: String(card?.color || '#0ea5e9'),
-        width: typeof card?.width === 'number' && card.width > 0 ? card.width : 280,
-        height: typeof card?.height === 'number' && card.height > 0 ? card.height : 320,
-        rotation: typeof card?.rotation === 'number' ? card.rotation : 0,
-        imageUrl: card?.imageUrl ? String(card.imageUrl) : undefined,
-        category: card?.category,
-        cardNumber: card?.cardNumber,
-        gender: card?.gender,
-        locked: Boolean(card?.locked || false),
-      }))
+      id: String(card?.id || ''),
+      x: typeof card?.x === 'number' ? card.x : 0,
+      y: typeof card?.y === 'number' ? card.y : 0,
+      title: String(card?.title || ''),
+      description: String(card?.description || ''),
+      color: String(card?.color || '#0ea5e9'),
+      width: typeof card?.width === 'number' && card.width > 0 ? card.width : 280,
+      height: typeof card?.height === 'number' && card.height > 0 ? card.height : 320,
+      rotation: typeof card?.rotation === 'number' ? card.rotation : 0,
+      imageUrl: card?.imageUrl ? String(card.imageUrl) : undefined,
+      category: card?.category,
+      cardNumber: card?.cardNumber,
+      gender: card?.gender,
+      locked: Boolean(card?.locked || false),
+    }))
     : [];
 
   const rawNotes = Array.isArray(data.notes) ? data.notes : [];
@@ -132,6 +138,7 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
     therapistNotes: data.therapistSettings?.notes,
     version: typeof data.version === 'number' ? data.version : undefined,
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : undefined,
+    drawPaths: Array.isArray(data.drawPaths) ? data.drawPaths.map((path: DrawPath) => ({ ...path })) : [],
   };
 }
 

@@ -14,10 +14,21 @@ import {
   FolderOpen,
   ChevronLeft,
   Loader2,
+  Bookmark,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useCardsData } from '@/hooks/useCardsData';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { CardCategory, Gender } from '@/types/canvas';
+import { CardCategory, Gender, CanvasState, SessionCheckpoint } from '@/types/canvas';
 import { trackCardUsage, getFrequentlyUsedCards, type CardUsage } from '@/lib/cardUsageTracker';
 import { getSavedCards, removeSavedCard, type SavedCard } from '@/lib/savedCardsTracker';
 
@@ -68,6 +79,7 @@ interface ToolsPanelProps {
   onClose: () => void;
   gender: Gender;
   locale: string;
+  sessionId?: string | null;
   onCardSelect?: (card: {
     imageUrl?: string;
     title: string;
@@ -75,6 +87,7 @@ interface ToolsPanelProps {
     category: CardCategory;
     cardNumber: number;
   }) => void;
+  onRestoreCheckpoint?: (state: CanvasState) => void;
 }
 
 // Separate component for card grid to ensure hooks are called at top level
@@ -113,6 +126,7 @@ function CardsGrid({
     onCardSelect?.(card);
   }, [onCardSelect]);
 
+    
   return (
     <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
       {loading ? (
@@ -426,7 +440,244 @@ function SavedCards({
   );
 }
 
-export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: ToolsPanelProps) {
+// Component to display checkpoints
+function CheckpointsGrid({ 
+  sessionId,
+  onRestoreCheckpoint,
+  isExpanded,
+  isMobile,
+  onClose
+}: { 
+  sessionId?: string | null;
+  onRestoreCheckpoint?: (state: CanvasState) => void;
+  isExpanded?: boolean;
+  isMobile: boolean;
+  onClose?: () => void;
+}) {
+  const t = useTranslations('canvas.tools');
+  const [checkpoints, setCheckpoints] = useState<SessionCheckpoint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedCheckpoint, setSelectedCheckpoint] = useState<SessionCheckpoint | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchCheckpoints = useCallback(async () => {
+    if (!sessionId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/checkpoints`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch checkpoints');
+      }
+      const data = await response.json();
+      setCheckpoints(data.checkpoints || []);
+    } catch (err) {
+      console.error('Error fetching checkpoints:', err);
+      setError(t('checkpointsFetchError') || 'Failed to load checkpoints');
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId, t]);
+
+  useEffect(() => {
+    if (isExpanded && sessionId) {
+      fetchCheckpoints();
+    }
+  }, [isExpanded, sessionId, fetchCheckpoints]);
+
+  // Listen for checkpoint created events
+  useEffect(() => {
+    const handleCheckpointCreated = () => {
+      if (isExpanded) {
+        fetchCheckpoints();
+      }
+    };
+
+    window.addEventListener('checkpointCreated', handleCheckpointCreated);
+    return () => {
+      window.removeEventListener('checkpointCreated', handleCheckpointCreated);
+    };
+  }, [isExpanded, fetchCheckpoints]);
+
+  const handleCheckpointClick = useCallback((checkpoint: SessionCheckpoint) => {
+    setSelectedCheckpoint(checkpoint);
+    setShowRestoreDialog(true);
+  }, []);
+
+  const handleConfirmRestore = useCallback(() => {
+    if (selectedCheckpoint && onRestoreCheckpoint) {
+      onRestoreCheckpoint(selectedCheckpoint.state);
+      setShowRestoreDialog(false);
+      setSelectedCheckpoint(null);
+      if (isMobile) {
+        onClose?.();
+      }
+    }
+  }, [selectedCheckpoint, onRestoreCheckpoint, isMobile, onClose]);
+
+  const handleDeleteClick = useCallback((e: React.MouseEvent, checkpoint: SessionCheckpoint) => {
+    e.stopPropagation();
+    setSelectedCheckpoint(checkpoint);
+    setShowDeleteDialog(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!selectedCheckpoint || !sessionId) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(
+        `/api/sessions/${sessionId}/checkpoints/${selectedCheckpoint.id}`,
+        { method: 'DELETE' }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete checkpoint');
+      }
+      
+      // Remove from local state
+      setCheckpoints(prev => prev.filter(c => c.id !== selectedCheckpoint.id));
+      setShowDeleteDialog(false);
+      setSelectedCheckpoint(null);
+    } catch (err) {
+      console.error('Error deleting checkpoint:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [selectedCheckpoint, sessionId]);
+
+  if (!sessionId) {
+    return (
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">
+          {t('noSessionForCheckpoints') || 'No session available'}
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400 md:h-6 md:w-6" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="py-8 text-center text-xs text-red-500 md:text-sm">{error}</div>
+      </div>
+    );
+  }
+
+  if (checkpoints.length === 0) {
+    return (
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">
+          {t('noCheckpoints') || 'No checkpoints saved yet'}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+        <div className="grid grid-cols-2 gap-2">
+          {checkpoints.map((checkpoint) => (
+            <div
+              key={checkpoint.id}
+              className="rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100 relative group"
+              onClick={() => handleCheckpointClick(checkpoint)}
+            >
+              <div className="aspect-video">
+                {checkpoint.screenshot_url ? (
+                  <img
+                    src={checkpoint.screenshot_url}
+                    alt={checkpoint.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                    <Bookmark className="h-6 w-6 text-blue-400" />
+                  </div>
+                )}
+              </div>
+              <div className="p-2">
+                <p className="text-xs font-medium truncate">{checkpoint.name}</p>
+                <p className="text-[10px] text-gray-500">
+                  {new Date(checkpoint.created_at).toLocaleDateString()}
+                </p>
+              </div>
+              {/* Delete button on hover */}
+              <button
+                className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 md:right-2 md:top-2 md:p-1.5"
+                onClick={(e) => handleDeleteClick(e, checkpoint)}
+                title={t('deleteCheckpoint') || 'Delete checkpoint'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('restoreCheckpoint') || 'Restore Checkpoint'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('restoreConfirm') || 'This will replace the current canvas state. Any unsaved changes will be lost. Are you sure?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRestore}>
+              {t('restore') || 'Restore'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteCheckpoint') || 'Delete Checkpoint'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteConfirm') || 'Are you sure you want to delete this checkpoint? This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>{t('cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? (t('deleting') || 'Deleting...') : (t('delete') || 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardSelect, onRestoreCheckpoint }: ToolsPanelProps) {
   const t = useTranslations('canvas.tools');
   const isMobile = useIsMobile();
   const [expandedSection, setExpandedSection] = useState<string | null>('modes');
@@ -598,6 +849,33 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, onCardSelect }: To
             </button>
             {expandedSection === 'saved' && (
               <SavedCards onCardSelect={handleCardSelect} isExpanded={expandedSection === 'saved'} isMobile={isMobile} />
+            )}
+          </div>
+
+          {/* Checkpoints Section */}
+          <div>
+            <button
+              onClick={() => toggleSection('checkpoints')}
+              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+            >
+              <div className="flex items-center gap-2">
+                <Bookmark className="h-4 w-4 text-blue-500 md:h-5 md:w-5" />
+                <span className="text-xs font-medium md:text-sm">{t('checkpoints') || 'Checkpoints'}</span>
+              </div>
+              {expandedSection === 'checkpoints' ? (
+                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+            {expandedSection === 'checkpoints' && (
+              <CheckpointsGrid 
+                sessionId={sessionId} 
+                onRestoreCheckpoint={onRestoreCheckpoint} 
+                isExpanded={expandedSection === 'checkpoints'} 
+                isMobile={isMobile}
+                onClose={onClose}
+              />
             )}
           </div>
         </div>

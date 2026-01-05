@@ -809,3 +809,7 @@ export const canvasStore = {
   subscribe: useCanvasStore.subscribe,
 };
 
+if (typeof window !== 'undefined') {
+  (window as unknown as { canvasStore: unknown }).canvasStore = canvasStore;
+}
+
