@@ -324,7 +324,7 @@
       "gender": "Gender",
       "male": "Male",
       "female": "Female",
-      "save": "Save", 
+      "save": "Save",
       "leaveSession": "Leave Session",
       "session": "Session",
       "defaultTitle": "Session title",
@@ -380,7 +380,10 @@
       "clearCanvasTitle": "Clear Canvas",
       "clearCanvasMessage": "Are you sure you want to clear the entire canvas?.",
       "cancel": "Cancel",
-      "clear": "Clear"
+      "clear": "Clear",
+      "drawTool": "Drawing Tool",
+      "color": "Color",
+      "thickness": "Thickness"
     },
     "page": {
       "tools": "Tools"

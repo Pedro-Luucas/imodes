@@ -29,6 +29,7 @@ import {
   Plus,
   Minus,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import { canvasStore, type CanvasSaveReason } from '@/stores/canvasStore';
@@ -56,12 +57,14 @@ export default function CanvasPage() {
   const locale = (params.locale as string) || 'en';
   const tControls = useTranslations('canvas.controls');
   const tPage = useTranslations('canvas.page');
-  
-  const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text'>('select');
+
+  const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'draw'>('select');
+  const [strokeColor, setStrokeColor] = useState('#000000');
+  const [strokeWidth, setStrokeWidth] = useState(2);
   // Zoom offset: displayedZoom = actualZoom + 40
   // So 60% actual appears as 100%, 70% actual appears as 110%, etc.
   const ZOOM_DISPLAY_OFFSET = 40;
-  
+
   const [zoomLevel, setZoomLevel] = useState(() => {
     // Default to 100% displayed (which is 60% actual)
     return 100;
@@ -81,7 +84,7 @@ export default function CanvasPage() {
   const [currentDuration, setCurrentDuration] = useState<number>(0); // Current session duration in seconds
   const sessionStartTimeRef = useRef<Date | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-const storeSessionRef = useRef<string | null>(null);
+  const storeSessionRef = useRef<string | null>(null);
 
   const handleAddCard = useCallback((card?: {
     imageUrl?: string;
@@ -162,7 +165,7 @@ const storeSessionRef = useRef<string | null>(null);
           if (patientsResponse.ok) {
             const patientsData = await patientsResponse.json();
             const patients = patientsData.patients || [];
-            
+
             if (patients.length === 0) {
               // No patients, create playground session directly
               await createSession(null, 'playground');
@@ -198,7 +201,7 @@ const storeSessionRef = useRef<string | null>(null);
           const data = await response.json();
           const session = data.session;
           setSessionName(session?.name || null);
-          
+
           // Load notes from session data
           /*if (session?.data?.therapistSettings?.notes) {
             setSessionNotes(session.data.therapistSettings.notes);
@@ -291,7 +294,7 @@ const storeSessionRef = useRef<string | null>(null);
 
       // Get existing timeSpent array or create new one
       const existingTimeSpent = session?.data?.timeSpent || [];
-      
+
       // Add new entry
       const newEntry = {
         timestamp: startTime.toISOString(),
@@ -386,7 +389,7 @@ const storeSessionRef = useRef<string | null>(null);
     // Cleanup: Save timer data when leaving canvas
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      
+
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
@@ -444,7 +447,7 @@ const storeSessionRef = useRef<string | null>(null);
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-gray-50">
       {/* Header */}
-      <CanvasHeader 
+      <CanvasHeader
         gender={gender}
         onGenderChange={setGender}
         sessionTitle={sessionName || undefined}
@@ -467,12 +470,14 @@ const storeSessionRef = useRef<string | null>(null);
       {/* Canvas with Floating Controls */}
       <div className="flex-1 relative overflow-hidden">
         {/* Canvas Background - Full Screen */}
-        <CanvasBoard 
-          onAddCard={handleAddCard} 
+        <CanvasBoard
+          onAddCard={handleAddCard}
           scale={(zoomLevel - ZOOM_DISPLAY_OFFSET) / 100}
           gender={gender}
           locale={locale}
           toolMode={toolMode}
+          strokeColor={strokeColor}
+          strokeWidth={strokeWidth}
           sessionId={sessionId}
           userRole={userRole}
           onSave={handleManualSave}
@@ -481,18 +486,18 @@ const storeSessionRef = useRef<string | null>(null);
         />
 
         {/* Left Panel - Tools */}
-        <ToolsPanel 
-          isOpen={isToolsPanelOpen} 
+        <ToolsPanel
+          isOpen={isToolsPanelOpen}
           onClose={() => setIsToolsPanelOpen(false)}
           gender={gender}
           locale={locale}
           onCardSelect={handleAddCard}
         />
-        
+
         {!isToolsPanelOpen && (
           <div className="absolute left-6 top-6 z-10">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="h-auto px-4 py-2 gap-14"
               onClick={() => setIsToolsPanelOpen(true)}
             >
@@ -538,12 +543,57 @@ const storeSessionRef = useRef<string | null>(null);
               title={tControls('textTool')}
             >
               <Type className="w-5 h-5" />
-            </Button>*/}  
+            </Button>*/}
           </div>
         </div>
 
         {/* Bottom Right - Controls */}
         <div className="absolute right-6 bottom-6 z-10 flex items-center gap-6">
+          {/* Tool Modes */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant={toolMode === 'select' ? 'default' : 'secondary'}
+              size="icon"
+              className="size-10"
+              onClick={() => setToolMode('select')}
+              title={tControls('cursorTool')}
+            >
+              <MousePointer2 className="w-5 h-5" />
+            </Button>
+            <Button
+              variant={toolMode === 'draw' ? 'default' : 'secondary'}
+              size="icon"
+              className="size-10"
+              onClick={() => setToolMode(toolMode === 'draw' ? 'select' : 'draw')}
+              title={tControls('drawTool') || 'Draw'}
+            >
+              <Pencil className="w-5 h-5" />
+            </Button>
+
+            {toolMode === 'draw' && (
+              <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-gray-200 h-10 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                <input
+                  type="color"
+                  value={strokeColor}
+                  onChange={(e) => setStrokeColor(e.target.value)}
+                  className="w-6 h-6 rounded cursor-pointer border border-gray-200 p-0 overflow-hidden"
+                  title={tControls('color') || 'Color'}
+                />
+                <select
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  className="h-7 text-[10px] md:text-xs border-gray-200 rounded bg-transparent focus:ring-0"
+                  title={tControls('thickness') || 'Thickness'}
+                >
+                  <option value={2}>2px</option>
+                  <option value={4}>4px</option>
+                  <option value={8}>8px</option>
+                  <option value={12}>16px</option>
+                </select>
+              </div>
+            )}
+          </div>
+
           {/* Undo/Redo */}
           <div className="flex items-center gap-2">
             <Button

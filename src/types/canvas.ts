@@ -33,7 +33,17 @@ export interface ParsedCardData {
   description: string;
 }
 
-export type ToolMode = 'select' | 'hand' | 'text';
+export type ToolMode = 'select' | 'hand' | 'text' | 'draw';
+
+export interface DrawPath {
+  id: string;
+  points: number[];
+  color: string;
+  strokeWidth: number;
+  opacity?: number;
+  x?: number;
+  y?: number;
+}
 
 export interface PostItNote {
   id: string;
@@ -62,6 +72,7 @@ export interface TimeSpentEntry {
 export interface CanvasState {
   cards: CanvasCard[];
   notes: PostItNote[];
+  drawPaths?: DrawPath[];
   gender: Gender;
   patientSettings: PatientSettings;
   therapistSettings: TherapistSettings;

@@ -25,12 +25,21 @@ if (supabaseUrl) {
   }
 }
 
+// Add specific storage domain if not already included
+if (!remotePatterns.some(p => p.hostname === 'pqqgajlpmdfwhbxahlfg.supabase.co')) {
+  remotePatterns.push({
+    protocol: 'https',
+    hostname: 'pqqgajlpmdfwhbxahlfg.supabase.co',
+    pathname: '/storage/v1/**',
+  });
+}
+
 const nextConfig: NextConfig = {
   devIndicators: false,
   images: remotePatterns.length
     ? {
-        remotePatterns,
-      }
+      remotePatterns,
+    }
     : undefined,
 };
 

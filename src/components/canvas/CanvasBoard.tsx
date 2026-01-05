@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Stage, Layer } from 'react-konva';
+import { Stage, Layer, Line, Group } from 'react-konva';
 import Konva from 'konva';
 import { toast } from 'sonner';
 import {
@@ -10,6 +10,7 @@ import {
   Gender,
   CardCategory,
   ToolMode,
+  DrawPath,
   // PostItNote,
 } from '@/types/canvas';
 import { CanvasCard } from './CanvasCard';
@@ -48,6 +49,8 @@ interface CanvasBoardProps {
   onSave?: () => Promise<void>;
   onZoomChange?: (zoomLevel: number) => void;
   onCanvasClick?: () => void;
+  strokeColor?: string;
+  strokeWidth?: number;
 }
 
 interface WindowWithCanvasCard extends Window {
@@ -76,25 +79,30 @@ const CARD_COLORS = [
 const MIN_SCALE = 0.4;
 const MAX_SCALE = 2;
 
-export function CanvasBoard({ 
-  scale = 1, 
-  gender = 'male', 
+export function CanvasBoard({
+  scale = 1,
+  gender = 'male',
   toolMode = 'select',
   sessionId,
   userRole,
   onZoomChange,
   onCanvasClick,
+  strokeColor = '#000000',
+  strokeWidth = 2,
 }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const cards = useCanvasStore((state) => state.cards);
-  //const notes = useCanvasStore((state) => state.notes);
+  const drawPaths = useCanvasStore((state) => state.drawPaths);
   const selectedCardId = useCanvasStore((state) => state.selectedCardId);
-  //const selectedNoteId = useCanvasStore((state) => state.selectedNoteId);
+  const selectedDrawPathId = useCanvasStore((state) => state.selectedDrawPathId);
   const displayScale = useCanvasStore((state) => state.displayScale);
   const stagePosition = useCanvasStore((state) => state.stagePosition);
   const currentGender = useCanvasStore((state) => state.gender);
   const isHydrated = useCanvasStore((state) => state.isHydrated);
   const lastSavedVersion = useCanvasStore((state) => state.lastSavedVersion);
+
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [currentPath, setCurrentPath] = useState<number[] | null>(null);
 
   const storeActionsRef = useRef(canvasStore.getState());
   const {
@@ -117,6 +125,10 @@ export function CanvasBoard({
     undo,
     redo,
     markDirty,
+    addDrawPath,
+    updateDrawPath,
+    removeDrawPath,
+    selectDrawPath,
   } = storeActionsRef.current;
 
   const { publish } = useCanvasRealtime({
@@ -208,25 +220,25 @@ export function CanvasBoard({
   // Monitor console errors for Konva/Brave shield issues
   useEffect(() => {
     let hasShownWarning = false;
-    
+
     const checkAndShowWarning = (errorMessage: string) => {
       // Check if we've already shown the warning
       if (hasShownWarning) {
         return;
       }
-      
+
       const lowerMessage = errorMessage.toLowerCase();
-      
+
       // Check for Konva errors related to Brave shield or similar issues
       const isKonvaError = lowerMessage.includes('konva') || lowerMessage.includes('konvajs');
-      const isBraveShieldError = 
+      const isBraveShieldError =
         lowerMessage.includes('brave shield') ||
         lowerMessage.includes('brave') ||
         lowerMessage.includes('shield') ||
         lowerMessage.includes('breaks konva') ||
         lowerMessage.includes('breaks konvajs') ||
         lowerMessage.includes('installhook');
-      
+
       if (isKonvaError && isBraveShieldError) {
         hasShownWarning = true;
         toast.warning('Canvas Compatibility Warning', {
@@ -235,15 +247,15 @@ export function CanvasBoard({
         });
       }
     };
-    
+
     // Store original console.error
     const originalError = console.error;
-    
+
     // Override console.error to intercept errors
     console.error = (...args: unknown[]) => {
       // Call original console.error first
       originalError.apply(console, args);
-      
+
       // Convert all arguments to string for pattern matching
       const errorMessage = args
         .map(arg => {
@@ -256,18 +268,18 @@ export function CanvasBoard({
           }
         })
         .join(' ');
-      
+
       checkAndShowWarning(errorMessage);
     };
-    
+
     // Also listen to window error events as a backup
     const handleError = (event: ErrorEvent) => {
       const errorMessage = event.message || String(event.error || '');
       checkAndShowWarning(errorMessage);
     };
-    
+
     window.addEventListener('error', handleError);
-    
+
     // Cleanup: restore original console.error and remove listener
     return () => {
       console.error = originalError;
@@ -300,7 +312,7 @@ export function CanvasBoard({
 
     // Get current cards from the store
     const currentCards = canvasStore.getState().cards;
-    
+
     let centeredPosition: { x: number; y: number };
 
     if (currentCards.length > 0) {
@@ -345,7 +357,7 @@ export function CanvasBoard({
   useEffect(() => {
     // Skip if scale hasn't changed
     if (prevScaleRef.current === scale) return;
-    
+
     // Skip if dimensions are not yet available
     if (!dimensions.width || !dimensions.height) {
       prevScaleRef.current = scale;
@@ -355,7 +367,7 @@ export function CanvasBoard({
 
     const oldScale = prevScaleRef.current;
     const newScale = scale;
-    
+
     // Always use viewport center for zoom - convert from screen coords to stage coords
     const viewportCenterX = dimensions.width / 2;
     const viewportCenterY = dimensions.height / 2;
@@ -372,7 +384,7 @@ export function CanvasBoard({
     // Update refs first to keep them in sync
     stagePositionRef.current = newPosition;
     prevScaleRef.current = newScale;
-    
+
     // Update state synchronously - React will batch these together
     setDisplayScale(newScale);
     setStagePosition(newPosition);
@@ -389,7 +401,7 @@ export function CanvasBoard({
     }) => {
       const colorIndex = cards.length % CARD_COLORS.length;
       const cardId = Date.now().toString();
-      
+
       const cardWidth = 280;
       const cardHeight = 320;
 
@@ -421,7 +433,7 @@ export function CanvasBoard({
       // Position card so its center is at the computed center
       const cardX = centerX - cardWidth / 2;
       const cardY = centerY - cardHeight / 2;
-      
+
       const newCard: CanvasCardType = {
         id: cardId,
         x: cardX,
@@ -626,6 +638,52 @@ export function CanvasBoard({
     }
   }, [cardToAddToFrequentlyUsed, t]);
 
+  const handleDrawPathSelect = useCallback(
+    (id: string) => {
+      selectDrawPath(id);
+    },
+    [selectDrawPath]
+  );
+
+  const handleDrawPathDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      updateDrawPath(id, { x, y }, { skipHistory: true });
+
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveHistorySnapshot();
+      }, 300);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('drawPath.patch', {
+          id,
+          patch: { x, y },
+        });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateDrawPath]
+  );
+
+  const handleDrawPathDelete = useCallback(
+    (id: string) => {
+      removeDrawPath(id);
+      if (selectedDrawPathId === id) {
+        selectDrawPath(null);
+      }
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('drawPath.remove', { id });
+      }
+    },
+    [markDirty, publish, removeDrawPath, selectDrawPath, selectedDrawPathId, sessionId]
+  );
+
   const handleCardSelect = useCallback(
     (id: string) => {
       selectCard(id);
@@ -671,20 +729,65 @@ export function CanvasBoard({
   }, [setStagePosition]);
 
   const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (e.target !== e.target.getStage()) return;
     if (e.evt.button !== 0) return;
+
+    if (toolMode === 'draw') {
+      const stage = e.target.getStage();
+      if (!stage) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
+      const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
+
+      setIsDrawing(true);
+      setCurrentPath([stageX, stageY]);
+      return;
+    }
+
+    if (e.target !== e.target.getStage()) return;
     e.evt.preventDefault();
     startCanvasPan(e.evt.clientX, e.evt.clientY);
-  }, [startCanvasPan]);
+  }, [startCanvasPan, toolMode, displayScale]);
 
   const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (toolMode === 'draw' && isDrawing) {
+      const stage = e.target.getStage();
+      if (!stage) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
+      const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
+
+      setCurrentPath((prev) => (prev ? [...prev, stageX, stageY] : [stageX, stageY]));
+      return;
+    }
+
     if (!isPanningRef.current) return;
     moveCanvasPan(e.evt.clientX, e.evt.clientY);
-  }, [moveCanvasPan]);
+  }, [moveCanvasPan, toolMode, isDrawing, displayScale]);
 
   const handleStageMouseUp = useCallback(() => {
+    if (toolMode === 'draw' && isDrawing && currentPath) {
+      const newPath: DrawPath = {
+        id: Date.now().toString(),
+        points: currentPath,
+        color: strokeColor,
+        strokeWidth: strokeWidth,
+      };
+      addDrawPath(newPath);
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('drawPath.add', { path: newPath });
+      }
+    }
+
+    setIsDrawing(false);
+    setCurrentPath(null);
     stopCanvasPan();
-  }, [stopCanvasPan]);
+  }, [stopCanvasPan, toolMode, isDrawing, currentPath, strokeColor, strokeWidth, addDrawPath, markDirty, sessionId, publish]);
 
   const handleStageMouseLeave = useCallback(() => {
     stopCanvasPan();
@@ -706,11 +809,24 @@ export function CanvasBoard({
   }, []);
 
   const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (toolMode === 'draw') {
+      const stage = e.target.getStage();
+      if (!stage) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
+      const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
+
+      setIsDrawing(true);
+      setCurrentPath([stageX, stageY]);
+      return;
+    }
     if (e.target !== e.target.getStage()) return;
     e.evt.preventDefault();
-    
+
     const touches = e.evt.touches;
-    
+
     // Two finger touch - start pinch zoom
     if (touches.length === 2) {
       isPinchingRef.current = true;
@@ -721,7 +837,7 @@ export function CanvasBoard({
       pinchCenterRef.current = center;
       return;
     }
-    
+
     // Single finger touch - start panning
     if (touches.length === 1) {
       const touch = touches[0];
@@ -730,36 +846,48 @@ export function CanvasBoard({
   }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale]);
 
   const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (toolMode === 'draw' && isDrawing) {
+      const stage = e.target.getStage();
+      if (!stage) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
+      const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
+
+      setCurrentPath((prev) => (prev ? [...prev, stageX, stageY] : [stageX, stageY]));
+      return;
+    }
     const touches = e.evt.touches;
-    
+
     // Handle pinch zoom
     if (isPinchingRef.current && touches.length === 2) {
       e.evt.preventDefault();
-      
+
       const currentDistance = getTouchDistance(touches[0], touches[1]);
       const currentCenter = getTouchCenter(touches[0], touches[1]);
-      
+
       // Calculate new scale based on pinch distance change
       const scaleFactor = currentDistance / pinchStartDistanceRef.current;
       let newScale = pinchStartScaleRef.current * scaleFactor;
       newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-      
+
       if (newScale !== displayScale) {
         // Calculate the center point in stage coordinates using the initial pinch center
         const centerX = (pinchCenterRef.current.x - stagePositionRef.current.x) / displayScale;
         const centerY = (pinchCenterRef.current.y - stagePositionRef.current.y) / displayScale;
-        
+
         // Calculate position adjustment to keep pinch center fixed
         const newPosition = {
           x: currentCenter.x - centerX * newScale,
           y: currentCenter.y - centerY * newScale,
         };
-        
+
         setDisplayScale(newScale);
         setStagePosition(newPosition);
         stagePositionRef.current = newPosition;
         prevScaleRef.current = newScale;
-        
+
         if (onZoomChange) {
           onZoomChange(newScale * 100);
         }
@@ -770,12 +898,12 @@ export function CanvasBoard({
           setZoomLevel('therapist', zoomPercent);
         }
       }
-      
+
       // Update pinch center for panning while pinching
       pinchCenterRef.current = currentCenter;
       return;
     }
-    
+
     // Handle single-finger panning
     if (!isPanningRef.current) return;
     const touch = touches[0] || e.evt.changedTouches[0];
@@ -785,6 +913,21 @@ export function CanvasBoard({
   }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole]);
 
   const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (toolMode === 'draw' && isDrawing && currentPath) {
+      const newPath: DrawPath = {
+        id: Date.now().toString(),
+        points: currentPath,
+        color: strokeColor,
+        strokeWidth: strokeWidth,
+      };
+      addDrawPath(newPath);
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('drawPath.add', { path: newPath });
+      }
+    }
+
     // If we were pinching and now have 1 or 0 fingers, stop pinching
     if (isPinchingRef.current) {
       isPinchingRef.current = false;
@@ -795,8 +938,11 @@ export function CanvasBoard({
         return;
       }
     }
+
+    setIsDrawing(false);
+    setCurrentPath(null);
     stopCanvasPan();
-  }, [stopCanvasPan, startCanvasPan]);
+  }, [stopCanvasPan, startCanvasPan, toolMode, isDrawing, currentPath, strokeColor, strokeWidth, addDrawPath, markDirty, sessionId, publish]);
 
   const handleStageTouchCancel = useCallback(() => {
     isPinchingRef.current = false;
@@ -888,7 +1034,7 @@ export function CanvasBoard({
 
       // Notify parent of rapid click (not a drag) on canvas
       onCanvasClick?.();
-  },
+    },
     [
       // addNote,
       // displayScale,
@@ -993,41 +1139,36 @@ export function CanvasBoard({
   //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
   // );
   //
-  // // Delete selected note on Delete/Backspace key (but not cards)
-  // useEffect(() => {
-  //   const handleKeyDown = (e: KeyboardEvent) => {
-  //     // Only delete notes, not cards
-  //     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNoteId && !selectedCardId) {
-  //       // Check if user is typing in an input/textarea - don't delete in that case
-  //       const activeElement = document.activeElement;
-  //       if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-  //         return;
-  //       }
-  //       removeNote(selectedNoteId);
-  //       selectNote(null);
-  //       markDirty('interaction');
-  //
-  //       if (sessionId) {
-  //         void publish('note.remove', { id: selectedNoteId });
-  //       }
-  //     }
-  //   };
-  //
-  //   window.addEventListener('keydown', handleKeyDown);
-  //   return () => window.removeEventListener('keydown', handleKeyDown);
-  // }, [
-  //   markDirty,
-  //   publish,
-  //   removeNote,
-  //   selectedCardId,
-  //   selectedNoteId,
-  //   selectNote,
-  //   sessionId,
-  // ]);
+  // Delete selected card or drawing on Delete/Backspace key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input/textarea - don't delete in that case
+      const activeElement = document.activeElement;
+      if (
+        activeElement &&
+        (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')
+      ) {
+        return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const sid = selectedCardId;
+        const did = selectedDrawPathId;
+        if (sid) {
+          handleCardDelete(sid);
+        } else if (did) {
+          handleDrawPathDelete(did);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCardId, selectedDrawPathId, handleCardDelete, handleDrawPathDelete]);
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="absolute inset-0 w-full h-full bg-[#f7f7f7]"
       style={{
         backgroundImage: `
@@ -1059,19 +1200,66 @@ export function CanvasBoard({
           onTap={handleStageClick}
         >
           <Layer>
-            {cards.map((card) => (
-              <CanvasCard
-                key={card.id}
-                card={card}
-                isSelected={selectedCardId === card.id}
-                onSelect={() => handleCardSelect(card.id)}
-                onDragEnd={handleCardDragEnd}
-                onDelete={handleCardDelete}
-                onLockToggle={handleCardLockToggle}
-                onAddToFrequentlyUsed={handleAddToSavedCards}
-                onSizeChange={handleCardSizeChange}
+            <Group listening={toolMode === 'select'}>
+              {cards.map((card) => (
+                <CanvasCard
+                  key={card.id}
+                  card={card}
+                  isSelected={selectedCardId === card.id}
+                  onSelect={() => handleCardSelect(card.id)}
+                  onDragEnd={handleCardDragEnd}
+                  onDelete={handleCardDelete}
+                  onLockToggle={handleCardLockToggle}
+                  onAddToFrequentlyUsed={handleAddToSavedCards}
+                  onSizeChange={handleCardSizeChange}
+                />
+              ))}
+            </Group>
+            {drawPaths.map((path) => (
+              <Line
+                key={path.id}
+                id={path.id}
+                x={path.x || 0}
+                y={path.y || 0}
+                points={path.points}
+                stroke={path.color}
+                strokeWidth={path.strokeWidth}
+                tension={0.5}
+                lineCap="round"
+                lineJoin="round"
+                globalCompositeOperation="source-over"
+                draggable={toolMode === 'select'}
+                onClick={() => handleDrawPathSelect(path.id)}
+                onTap={() => handleDrawPathSelect(path.id)}
+                onDragEnd={(e) => handleDrawPathDragEnd(path.id, e.target.x(), e.target.y())}
+                opacity={selectedDrawPathId === path.id ? 0.8 : 1}
+                shadowBlur={selectedDrawPathId === path.id ? 5 : 0}
+                shadowColor={path.color}
+                onMouseEnter={(e) => {
+                  if (toolMode === 'select') {
+                    const stage = e.target.getStage();
+                    if (stage) stage.container().style.cursor = 'move';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (toolMode === 'select') {
+                    const stage = e.target.getStage();
+                    if (stage) stage.container().style.cursor = 'default';
+                  }
+                }}
               />
             ))}
+            {currentPath && (
+              <Line
+                points={currentPath}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+                tension={0.5}
+                lineCap="round"
+                lineJoin="round"
+                globalCompositeOperation="source-over"
+              />
+            )}
             {/*
             // {notes.map((note) => (
             //   <PostItNoteComponent

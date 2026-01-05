@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { CanvasCard, CanvasState, Gender, PostItNote } from '@/types/canvas';
+import type { CanvasCard, CanvasState, Gender, PostItNote, DrawPath } from '@/types/canvas';
 
 const MAX_HISTORY_LENGTH = 50;
 
@@ -17,6 +17,7 @@ export type CanvasSaveReason = 'interaction' | 'autosave' | 'remote-sync' | 'man
 export interface CanvasHistorySnapshot {
   cards: CanvasCard[];
   notes: PostItNote[];
+  drawPaths: DrawPath[];
 }
 
 interface CanvasStoreState {
@@ -26,6 +27,7 @@ interface CanvasStoreState {
 
   cards: CanvasCard[];
   notes: PostItNote[];
+  drawPaths: DrawPath[];
   gender: Gender;
 
   patientZoomLevel: number;
@@ -37,6 +39,7 @@ interface CanvasStoreState {
 
   selectedCardId: string | null;
   selectedNoteId: string | null;
+  selectedDrawPathId: string | null;
 
   history: CanvasHistorySnapshot[];
   historyIndex: number;
@@ -66,6 +69,7 @@ interface CanvasStoreActions {
 
   selectCard: (id: string | null) => void;
   selectNote: (id: string | null) => void;
+  selectDrawPath: (id: string | null) => void;
 
   addCard: (card: CanvasCard, options?: { skipHistory?: boolean }) => void;
   updateCard: (id: string, patch: Partial<CanvasCard>, options?: { skipHistory?: boolean }) => void;
@@ -77,6 +81,11 @@ interface CanvasStoreActions {
   updateNote: (id: string, patch: Partial<PostItNote>, options?: { skipHistory?: boolean }) => void;
   removeNote: (id: string, options?: { skipHistory?: boolean }) => void;
   bringNoteToFront: (id: string, options?: { skipHistory?: boolean }) => void;
+
+  setDrawPaths: (paths: DrawPath[], options?: { skipHistory?: boolean }) => void;
+  addDrawPath: (path: DrawPath, options?: { skipHistory?: boolean }) => void;
+  updateDrawPath: (id: string, patch: Partial<DrawPath>, options?: { skipHistory?: boolean }) => void;
+  removeDrawPath: (id: string, options?: { skipHistory?: boolean }) => void;
 
   setGender: (gender: Gender) => void;
   setZoomLevel: (role: 'therapist' | 'patient', zoomLevel: number) => void;
@@ -101,6 +110,7 @@ const initialState: CanvasStoreState = {
   clientId: createClientId(),
   cards: [],
   notes: [],
+  drawPaths: [],
   gender: 'male',
   patientZoomLevel: 60,
   therapistZoomLevel: 60,
@@ -109,6 +119,7 @@ const initialState: CanvasStoreState = {
   stagePosition: { x: 0, y: 0 },
   selectedCardId: null,
   selectedNoteId: null,
+  selectedDrawPathId: null,
   history: [],
   historyIndex: -1,
   isApplyingRemote: false,
@@ -121,6 +132,7 @@ const initialState: CanvasStoreState = {
 const createSnapshot = (state: CanvasStoreState): CanvasHistorySnapshot => ({
   cards: state.cards.map((card) => ({ ...card })),
   notes: state.notes.map((note) => ({ ...note })),
+  drawPaths: state.drawPaths.map((path) => ({ ...path })),
 });
 
 const pushHistory = (
@@ -165,6 +177,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         ...current,
         cards,
         notes,
+        drawPaths: Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [],
         gender,
       });
 
@@ -177,6 +190,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         userRole: role,
         cards,
         notes,
+        drawPaths: Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [],
         gender,
         patientZoomLevel,
         therapistZoomLevel,
@@ -209,6 +223,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         ...state,
         cards,
         notes,
+        drawPaths: Array.isArray(snapshotState.drawPaths) ? snapshotState.drawPaths.map((path) => ({ ...path })) : [],
         gender,
       });
 
@@ -218,6 +233,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         ...state,
         cards,
         notes,
+        drawPaths: Array.isArray(snapshotState.drawPaths) ? snapshotState.drawPaths.map((path) => ({ ...path })) : [],
         gender,
         patientZoomLevel,
         therapistZoomLevel,
@@ -285,6 +301,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ...state,
       selectedCardId: id,
       selectedNoteId: id ? null : state.selectedNoteId,
+      selectedDrawPathId: id ? null : state.selectedDrawPathId,
     }));
   },
 
@@ -293,6 +310,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ...state,
       selectedNoteId: id,
       selectedCardId: id ? null : state.selectedCardId,
+      selectedDrawPathId: id ? null : state.selectedDrawPathId,
+    }));
+  },
+
+  selectDrawPath: (id) => {
+    set((state) => ({
+      ...state,
+      selectedDrawPathId: id,
+      selectedCardId: id ? null : state.selectedCardId,
+      selectedNoteId: id ? null : state.selectedNoteId,
     }));
   },
 
@@ -404,14 +431,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           ...state,
           cards: [],
           notes: [],
+          drawPaths: [],
         });
         ({ history, historyIndex } = pushHistory(state, snapshot));
       }
-
       return {
         ...state,
         cards: [],
         notes: [],
+        drawPaths: [],
         selectedCardId: null,
         selectedNoteId: null,
         history,
@@ -517,6 +545,90 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     });
   },
 
+  setDrawPaths: (paths, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const drawPaths = [...paths];
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, drawPaths });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        drawPaths,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
+  addDrawPath: (path, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const drawPaths = [...state.drawPaths, { ...path }];
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, drawPaths });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        drawPaths,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
+  updateDrawPath: (id, patch, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const drawPaths = state.drawPaths.map((path) => (path.id === id ? { ...path, ...patch } : path));
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, drawPaths });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        drawPaths,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
+  removeDrawPath: (id, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const drawPaths = state.drawPaths.filter((path) => path.id !== id);
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, drawPaths });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        drawPaths,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
   setGender: (gender) => {
     set((state) => {
       if (state.gender === gender) {
@@ -598,8 +710,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         historyIndex: newIndex,
         cards: snapshot.cards.map((card) => ({ ...card })),
         notes: snapshot.notes.map((note) => ({ ...note })),
+        drawPaths: snapshot.drawPaths.map((path) => ({ ...path })),
         selectedCardId: null,
         selectedNoteId: null,
+        selectedDrawPathId: null,
       };
     });
   },
@@ -619,8 +733,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         historyIndex: newIndex,
         cards: snapshot.cards.map((card) => ({ ...card })),
         notes: snapshot.notes.map((note) => ({ ...note })),
+        drawPaths: snapshot.drawPaths.map((path) => ({ ...path })),
         selectedCardId: null,
         selectedNoteId: null,
+        selectedDrawPathId: null,
       };
     });
   },
@@ -667,6 +783,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 export const canvasStoreSelectors = {
   cards: (state: CanvasStore) => state.cards,
   notes: (state: CanvasStore) => state.notes,
+  drawPaths: (state: CanvasStore) => state.drawPaths,
   gender: (state: CanvasStore) => state.gender,
   displayScale: (state: CanvasStore) => state.displayScale,
   stagePosition: (state: CanvasStore) => state.stagePosition,
