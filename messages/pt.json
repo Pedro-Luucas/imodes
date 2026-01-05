@@ -380,7 +380,10 @@
       "clearCanvasTitle": "Limpar Tela",
       "clearCanvasMessage": "Tem certeza de que deseja limpar toda a tela?",
       "cancel": "Cancelar",
-      "clear": "Limpar"
+      "clear": "Limpar",
+      "drawTool": "Ferramenta de Desenho",
+      "color": "Cor",
+      "thickness": "Espessura"
     },
     "page": {
       "tools": "Ferramentas"

@@ -182,6 +182,26 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
+      'drawPath.add': (event) => {
+        if (event.clientId === clientId || event.sessionId !== sessionId) return;
+        const storeApi = canvasStore.getState();
+        storeApi.markApplyingRemote(true);
+        try {
+          storeApi.addDrawPath(event.payload.path, { skipHistory: true });
+        } finally {
+          storeApi.markApplyingRemote(false);
+        }
+      },
+      'drawPath.remove': (event) => {
+        if (event.clientId === clientId || event.sessionId !== sessionId) return;
+        const storeApi = canvasStore.getState();
+        storeApi.markApplyingRemote(true);
+        try {
+          storeApi.removeDrawPath(event.payload.id, { skipHistory: true });
+        } finally {
+          storeApi.markApplyingRemote(false);
+        }
+      },
       'state.snapshot': (event) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         handleSnapshotBroadcast(event.payload.state, event.version, event.payload.state.updatedAt);

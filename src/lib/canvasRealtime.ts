@@ -2,7 +2,7 @@
 
 import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import { createSupabaseClient } from '@/lib/supabaseClient';
-import type { CanvasCard, CanvasState, PostItNote } from '@/types/canvas';
+import type { CanvasCard, CanvasState, PostItNote, DrawPath } from '@/types/canvas';
 
 export const canvasChannelName = (sessionId: string) => `session:${sessionId}:canvas`;
 
@@ -13,6 +13,8 @@ export type CanvasRealtimeEventType =
   | 'note.add'
   | 'note.patch'
   | 'note.remove'
+  | 'drawPath.add'
+  | 'drawPath.remove'
   | 'state.snapshot'
   | 'state.request';
 
@@ -23,6 +25,8 @@ export interface CanvasRealtimePayloadMap {
   'note.add': { note: PostItNote };
   'note.patch': { id: string; patch: Partial<PostItNote> };
   'note.remove': { id: string };
+  'drawPath.add': { path: DrawPath };
+  'drawPath.remove': { id: string };
   'state.snapshot': { state: CanvasState; origin: 'autosave' | 'resync' | 'manual' };
   'state.request': { sinceVersion?: number };
 }
