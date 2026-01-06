@@ -115,7 +115,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-12 lg:px-0">
+    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-12 lg:px-6">
       <header className="space-y-2 text-center">
         <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">{page('title')}</p>
         <h1 className="text-3xl font-semibold text-foreground">{page('workspaceReady')}</h1>

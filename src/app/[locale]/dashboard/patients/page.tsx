@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, UserPlus, Calendar, Users, ClipboardList, Info } from 'lucide-react';
+import { Plus, UserPlus, Calendar, Users, ClipboardList, Info, AlertTriangle } from 'lucide-react';
 import { useAuthProfile } from '@/stores/authStore';
 import type { Profile } from '@/types/auth';
 import { PatientDetailsDialog } from '@/components/dashboard/PatientDetailsDialog';
@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DevWarning } from '@/components/dashboard/DevWarning';
 
 // Extended data for demonstration
 interface ExtendedPatient extends Profile {
@@ -285,9 +286,7 @@ export default function PatientsPage() {
             <p className="text-5xl font-bold text-primary leading-tight">
               {stats.totalPatients}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {t('devWarning')}
-            </p>
+              <DevWarning text={t('devWarning')} />
           </div>
         </div>
 
