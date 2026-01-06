@@ -83,7 +83,7 @@ export function useCanvasRealtime({
   );
 
   const handleSnapshotBroadcast = useCallback(
-    (snapshot: CanvasState, version?: number, updatedAt?: string) => {
+    (snapshot: CanvasState, version?: number, updatedAt?: string, replaceHistory = true) => {
       const storeApi = canvasStore.getState();
       storeApi.markApplyingRemote(true);
       try {
@@ -93,7 +93,7 @@ export function useCanvasRealtime({
             version,
             updatedAt,
           },
-          { replaceHistory: true }
+          { replaceHistory }
         );
         if (typeof version === 'number' && updatedAt) {
           storeApi.setLastPersistedVersion(version, updatedAt);
@@ -214,7 +214,9 @@ export function useCanvasRealtime({
       },
       'state.snapshot': (event) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
-        handleSnapshotBroadcast(event.payload.state, event.version, event.payload.state.updatedAt);
+        // For manual snapshots (undo/redo), preserve local history
+        const replaceHistory = event.payload.origin !== 'manual';
+        handleSnapshotBroadcast(event.payload.state, event.version, event.payload.state.updatedAt, replaceHistory);
       },
       'state.request': async (event) => {
         if (event.sessionId !== sessionId) return;

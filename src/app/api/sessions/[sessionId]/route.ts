@@ -32,16 +32,6 @@ export async function GET(
   try {
     const { sessionId } = await context.params;
 
-    // Check authorization
-    const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
-
-    if (!authorized || !profile) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
     const supabase = createSupabaseServerClient();
 
     // Get session
@@ -55,6 +45,24 @@ export async function GET(
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
+      );
+    }
+
+    // Demonstration sessions can be accessed without authentication
+    if (session.type === 'demonstration') {
+      return NextResponse.json(
+        { session: session as CanvasSession },
+        { status: 200 }
+      );
+    }
+
+    // For non-demo sessions, check authorization
+    const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
+
+    if (!authorized || !profile) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
       );
     }
 
@@ -152,16 +160,6 @@ export async function PUT(
     const body = await request.json();
     const { data: canvasState } = body;
 
-    // Check authorization
-    const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
-
-    if (!authorized || !profile) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
     const supabase = createSupabaseServerClient();
 
     // Get existing session to verify access
@@ -175,6 +173,43 @@ export async function PUT(
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
+      );
+    }
+
+    // Demonstration sessions can be updated without authentication
+    if (existingSession.type === 'demonstration') {
+      // Update session data
+      const { data: updatedSession, error: updateError } = await supabase
+        .from('imodes_session')
+        .update({
+          data: canvasState,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating demonstration session:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update session' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(
+        { session: updatedSession as CanvasSession },
+        { status: 200 }
+      );
+    }
+
+    // For non-demo sessions, check authorization
+    const { authorized, profile } = await hasRole(['therapist', 'patient', 'admin']);
+
+    if (!authorized || !profile) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
       );
     }
 

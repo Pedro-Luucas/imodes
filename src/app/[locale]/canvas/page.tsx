@@ -30,6 +30,8 @@ import {
   Trash2,
   Pencil,
   Palette,
+  Maximize2,
+  Eraser,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -55,6 +57,7 @@ interface WindowWithCanvasCard extends Window {
   _redoCanvas?: () => void;
   _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
   _resetCardPosition?: () => void;
+  _fitToScreen?: () => void;
 }
 
 export default function CanvasPage() {
@@ -68,8 +71,9 @@ export default function CanvasPage() {
   const tPage = useTranslations('canvas.page');
 
   const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'draw'>('select');
-  const [strokeColor, setStrokeColor] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(2);
+  const [strokeColor, setStrokeColor] = useState('#f59e0b');
+  const [strokeWidth, setStrokeWidth] = useState(8);
+  const [isEraserMode, setIsEraserMode] = useState(false);
   // Zoom offset: displayedZoom = actualZoom + 40
   // So 60% actual appears as 100%, 70% actual appears as 110%, etc.
   const ZOOM_DISPLAY_OFFSET = 40;
@@ -143,7 +147,17 @@ export default function CanvasPage() {
   useEffect(() => {
     // Check searchParams directly to avoid race condition with state update
     const sessionIdFromUrl = searchParams.get('sessionId');
-    if (sessionIdFromUrl || !profile || creatingSessionRef.current || showPatientDialog) return;
+    
+    // Skip auto-create if:
+    // - Already has sessionId in URL
+    // - Is demo session (starts with "demo-")
+    // - No profile (for demo sessions, profile is optional)
+    // - Already creating or showing dialog
+    if (sessionIdFromUrl || 
+        sessionIdFromUrl?.startsWith('demo-') || 
+        !profile || 
+        creatingSessionRef.current || 
+        showPatientDialog) return;
 
     const createSession = async (patientId: string | null = null, type: string = 'session') => {
       creatingSessionRef.current = true;
@@ -217,7 +231,45 @@ export default function CanvasPage() {
 
   // Load session data when sessionId changes
   useEffect(() => {
-    if (!sessionId || !profile) return;
+    if (!sessionId) return;
+
+    // Handle demo sessions (no DB, use localStorage)
+    if (sessionId.startsWith('demo-')) {
+      const loadDemoSession = async () => {
+        const { loadDemoSession, getInitialDemoState, isDemoSession } = await import('@/lib/demoSessionStorage');
+        
+        if (!isDemoSession(sessionId)) return;
+
+        const demoState = loadDemoSession(sessionId) || getInitialDemoState();
+        setSessionName(`Demo Session`);
+        setSessionType('demonstration');
+        setPatientProfile(null);
+        setTherapistProfile(null);
+
+        // Determine role from URL param or default to therapist
+        // For demo, we map student/professor to therapist role for canvas functionality
+        const roleParam = searchParams.get('role') as 'therapist' | 'patient' | 'student' | 'professor' | null;
+        let demoRole: 'therapist' | 'patient' = 'therapist';
+        if (roleParam === 'patient') {
+          demoRole = 'patient';
+        } else if (roleParam === 'student' || roleParam === 'professor' || roleParam === 'therapist') {
+          demoRole = 'therapist'; // Map student/professor to therapist role for canvas
+        }
+
+        canvasStore.getState().hydrateFromServer({
+          sessionId,
+          role: demoRole,
+          state: demoState,
+          updatedAt: demoState.updatedAt,
+        });
+      };
+
+      loadDemoSession();
+      return;
+    }
+
+    // Regular sessions require profile
+    if (!profile) return;
 
     const loadSessionData = async () => {
       try {
@@ -353,8 +405,11 @@ export default function CanvasPage() {
     }
   }, []);
 
-  // Start timer when canvas opens (for therapists)
+  // Start timer when canvas opens (for therapists, skip for demo sessions)
   useEffect(() => {
+    // Skip timer for demo sessions
+    if (sessionId?.startsWith('demo-')) return;
+    
     const isTherapist = profile?.role === 'therapist';
     if (!isTherapist || !sessionId) return;
 
@@ -450,7 +505,14 @@ export default function CanvasPage() {
     }
   }, [sessionId]);
 
-  const userRole = profile?.role === 'patient' ? 'patient' : profile?.role === 'therapist' ? 'therapist' : undefined;
+  // Determine user role: for demo sessions, get from URL param; otherwise from profile
+  const sessionIdFromUrl = searchParams.get('sessionId');
+  const isDemoSession = sessionIdFromUrl?.startsWith('demo-');
+  const demoRoleParam = searchParams.get('role') as 'therapist' | 'patient' | 'student' | 'professor' | null;
+  
+  const userRole = isDemoSession
+    ? (demoRoleParam === 'patient' ? 'patient' : 'therapist') // Map student/professor to therapist
+    : (profile?.role === 'patient' ? 'patient' : profile?.role === 'therapist' ? 'therapist' : undefined);
 
   useEffect(() => {
     const storeApi = canvasStore.getState();
@@ -492,6 +554,7 @@ export default function CanvasPage() {
         }}*/
         currentDuration={currentDuration}
         onSessionRenamed={setSessionName}
+        isDemoSession={isDemoSession}
         onBackgroundClick={handleCloseToolsPanel}
       />
 
@@ -506,6 +569,7 @@ export default function CanvasPage() {
           toolMode={toolMode}
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
+          isEraserMode={isEraserMode}
           sessionId={sessionId}
           userRole={userRole}
           onSave={handleManualSave}
@@ -594,7 +658,20 @@ export default function CanvasPage() {
               variant={toolMode === 'draw' ? 'default' : 'secondary'}
               size="icon"
               className="size-10"
-              onClick={() => setToolMode(toolMode === 'draw' ? 'select' : 'draw')}
+              onClick={() => {
+                if (toolMode === 'draw' && isEraserMode) {
+                  // If already in draw mode with eraser, turn off eraser mode
+                  setIsEraserMode(false);
+                } else if (toolMode === 'draw') {
+                  // If already in draw mode (without eraser), exit draw mode
+                  setToolMode('select');
+                  setIsEraserMode(false); // Reset eraser mode when exiting draw mode
+                } else {
+                  // Enter draw mode
+                  setToolMode('draw');
+                  setIsEraserMode(false); // Reset eraser mode when entering draw mode
+                }
+              }}
               title={tControls('drawTool') || 'Draw'}
             >
               <Pencil className="w-5 h-5" />
@@ -614,7 +691,7 @@ export default function CanvasPage() {
                   ].map((color) => (
                     <button
                       key={color}
-                      onClick={() => setStrokeColor(color)}
+                      onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
                       className={cn(
                         "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
                         strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
@@ -652,7 +729,7 @@ export default function CanvasPage() {
                   {[4, 8, 12].map((width) => (
                     <button
                       key={width}
-                      onClick={() => setStrokeWidth(width)}
+                      onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
                       className={cn(
                         "h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
                         strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
@@ -670,6 +747,20 @@ export default function CanvasPage() {
                     </button>
                   ))}
                 </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Eraser Button */}
+                <button
+                  onClick={() => setIsEraserMode(true)}
+                  className={cn(
+                    "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                    isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                  )}
+                  title={tControls('eraser')}
+                >
+                  <Eraser className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>
@@ -735,6 +826,20 @@ export default function CanvasPage() {
             >
               <Minus className="w-5 h-5" />
             </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="size-10"
+              onClick={() => {
+                const win = window as WindowWithCanvasCard;
+                if (win._fitToScreen) {
+                  win._fitToScreen();
+                }
+              }}
+              title={tControls('fitToScreen') || 'Fit to Screen'}
+            >
+              <Maximize2 className="w-5 h-5" />
+            </Button>
           </div>
 
           {/* Clear Canvas Button */}
@@ -771,8 +876,8 @@ export default function CanvasPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Patient Selection Dialog */}
-      {profile?.role === 'therapist' && profile?.id && (
+      {/* Patient Selection Dialog - Only show for non-demo sessions */}
+      {!isDemoSession && profile?.role === 'therapist' && profile?.id && (
         <SelectPatientDialog
           open={showPatientDialog}
           onOpenChange={setShowPatientDialog}
