@@ -18,14 +18,28 @@ export default async function middleware(request: NextRequest) {
   const locale = routing.locales.includes(pathnameLocale as typeof routing.locales[number]) ? pathnameLocale : routing.defaultLocale;
   
   // Define public routes that don't require authentication
-  const publicPaths = ['/auth', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
+  const publicPaths = ['/auth', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/demonstration'];
   const isAuthNamespace =
     pathname === `/${locale}/auth` ||
     pathname.startsWith(`/${locale}/auth/`) ||
     pathname === '/auth' ||
     pathname.startsWith('/auth/');
+  const isDemonstrationNamespace =
+    pathname === `/${locale}/demonstration` ||
+    pathname.startsWith(`/${locale}/demonstration/`) ||
+    pathname === '/demonstration' ||
+    pathname.startsWith('/demonstration/');
+  
+  // Check if canvas route is for demo session (sessionId starts with "demo-" or demo=true param)
+  const isCanvasDemoSession = 
+    (pathname === `/${locale}/canvas` || pathname === '/canvas') &&
+    (request.nextUrl.searchParams.get('sessionId')?.startsWith('demo-') || 
+     request.nextUrl.searchParams.get('demo') === 'true');
+  
   const isPublicPath =
     isAuthNamespace ||
+    isDemonstrationNamespace ||
+    isCanvasDemoSession ||
     publicPaths.some((path) => {
       const localizedPath = `/${locale}${path}`;
       return (

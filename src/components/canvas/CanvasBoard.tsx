@@ -51,6 +51,7 @@ interface CanvasBoardProps {
   onCanvasClick?: () => void;
   strokeColor?: string;
   strokeWidth?: number;
+  isEraserMode?: boolean;
 }
 
 interface WindowWithCanvasCard extends Window {
@@ -93,6 +94,7 @@ export function CanvasBoard({
   onCanvasClick,
   strokeColor = '#000000',
   strokeWidth = 2,
+  isEraserMode = false,
 }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const cards = useCanvasStore((state) => state.cards);
@@ -107,6 +109,7 @@ export function CanvasBoard({
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<number[] | null>(null);
+  const [pathsToErase, setPathsToErase] = useState<Set<string>>(new Set());
 
   const storeActionsRef = useRef(canvasStore.getState());
   const {
@@ -1006,14 +1009,48 @@ export function CanvasBoard({
       const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
 
       setIsDrawing(true);
-      setCurrentPath([stageX, stageY]);
+      if (isEraserMode) {
+        setPathsToErase(new Set());
+      } else {
+        setCurrentPath([stageX, stageY]);
+      }
       return;
     }
 
     if (e.target !== e.target.getStage()) return;
     e.evt.preventDefault();
     startCanvasPan(e.evt.clientX, e.evt.clientY);
-  }, [startCanvasPan, toolMode, displayScale]);
+  }, [startCanvasPan, toolMode, displayScale, isEraserMode]);
+
+  // Helper function to calculate distance from point to line segment
+  const pointToLineDistance = useCallback((px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+    if (lenSq !== 0) param = dot / lenSq;
+
+    let xx: number, yy: number;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = px - xx;
+    const dy = py - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  }, []);
 
   const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     if (toolMode === 'draw' && isDrawing) {
@@ -1025,34 +1062,86 @@ export function CanvasBoard({
       const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
       const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
 
-      setCurrentPath((prev) => (prev ? [...prev, stageX, stageY] : [stageX, stageY]));
+      // If eraser mode, detect which paths are being touched
+      if (isEraserMode) {
+        const currentDrawPaths = canvasStore.getState().drawPaths;
+        const eraserRadius = strokeWidth / 2;
+        const touchedPaths = new Set<string>();
+
+        currentDrawPaths.forEach((path) => {
+          if (path.isEraser) return; // Skip eraser paths themselves
+          
+          const pathPoints = path.points;
+          const pathX = path.x || 0;
+          const pathY = path.y || 0;
+
+          // Check each segment of the path
+          for (let i = 0; i < pathPoints.length - 2; i += 2) {
+            const x1 = pathX + pathPoints[i];
+            const y1 = pathY + pathPoints[i + 1];
+            const x2 = pathX + pathPoints[i + 2];
+            const y2 = pathY + pathPoints[i + 3];
+
+            const distance = pointToLineDistance(stageX, stageY, x1, y1, x2, y2);
+            if (distance <= eraserRadius + (path.strokeWidth / 2)) {
+              touchedPaths.add(path.id);
+              break;
+            }
+          }
+        });
+
+        if (touchedPaths.size > 0) {
+          setPathsToErase((prev) => {
+            const newSet = new Set(prev);
+            touchedPaths.forEach((id) => newSet.add(id));
+            return newSet;
+          });
+        }
+      } else {
+        setCurrentPath((prev) => (prev ? [...prev, stageX, stageY] : [stageX, stageY]));
+      }
       return;
     }
 
     if (!isPanningRef.current) return;
     moveCanvasPan(e.evt.clientX, e.evt.clientY);
-  }, [moveCanvasPan, toolMode, isDrawing, displayScale]);
+  }, [moveCanvasPan, toolMode, isDrawing, displayScale, isEraserMode, strokeWidth, pointToLineDistance]);
 
   const handleStageMouseUp = useCallback(() => {
-    if (toolMode === 'draw' && isDrawing && currentPath) {
-      const newPath: DrawPath = {
-        id: Date.now().toString(),
-        points: currentPath,
-        color: strokeColor,
-        strokeWidth: strokeWidth,
-      };
-      addDrawPath(newPath);
-      markDirty('interaction');
+    if (toolMode === 'draw' && isDrawing) {
+      if (isEraserMode) {
+        // Remove all touched paths
+        if (pathsToErase.size > 0) {
+          pathsToErase.forEach((pathId) => {
+            removeDrawPath(pathId);
+            markDirty('interaction');
+            if (sessionId) {
+              void publish('drawPath.remove', { id: pathId });
+            }
+          });
+          setPathsToErase(new Set());
+        }
+      } else if (currentPath) {
+        const newPath: DrawPath = {
+          id: Date.now().toString(),
+          points: currentPath,
+          color: strokeColor,
+          strokeWidth: strokeWidth,
+          isEraser: false,
+        };
+        addDrawPath(newPath);
+        markDirty('interaction');
 
-      if (sessionId) {
-        void publish('drawPath.add', { path: newPath });
+        if (sessionId) {
+          void publish('drawPath.add', { path: newPath });
+        }
       }
     }
 
     setIsDrawing(false);
     setCurrentPath(null);
     stopCanvasPan();
-  }, [stopCanvasPan, toolMode, isDrawing, currentPath, strokeColor, strokeWidth, addDrawPath, markDirty, sessionId, publish]);
+  }, [stopCanvasPan, toolMode, isDrawing, currentPath, strokeColor, strokeWidth, isEraserMode, pathsToErase, removeDrawPath, addDrawPath, markDirty, sessionId, publish]);
 
   const handleStageMouseLeave = useCallback(() => {
     stopCanvasPan();
@@ -1084,7 +1173,11 @@ export function CanvasBoard({
       const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
 
       setIsDrawing(true);
-      setCurrentPath([stageX, stageY]);
+      if (isEraserMode) {
+        setPathsToErase(new Set());
+      } else {
+        setCurrentPath([stageX, stageY]);
+      }
       return;
     }
     if (e.target !== e.target.getStage()) return;
@@ -1108,7 +1201,7 @@ export function CanvasBoard({
       const touch = touches[0];
       startCanvasPan(touch.clientX, touch.clientY);
     }
-  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale, toolMode]);
+  }, [startCanvasPan, getTouchDistance, getTouchCenter, displayScale, toolMode, isEraserMode]);
 
   const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (toolMode === 'draw' && isDrawing) {
@@ -1120,9 +1213,47 @@ export function CanvasBoard({
       const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
       const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
 
-      setCurrentPath((prev) => (prev ? [...prev, stageX, stageY] : [stageX, stageY]));
+      // If eraser mode, detect which paths are being touched
+      if (isEraserMode) {
+        const currentDrawPaths = canvasStore.getState().drawPaths;
+        const eraserRadius = strokeWidth / 2;
+        const touchedPaths = new Set<string>();
+
+        currentDrawPaths.forEach((path) => {
+          if (path.isEraser) return; // Skip eraser paths themselves
+          
+          const pathPoints = path.points;
+          const pathX = path.x || 0;
+          const pathY = path.y || 0;
+
+          // Check each segment of the path
+          for (let i = 0; i < pathPoints.length - 2; i += 2) {
+            const x1 = pathX + pathPoints[i];
+            const y1 = pathY + pathPoints[i + 1];
+            const x2 = pathX + pathPoints[i + 2];
+            const y2 = pathY + pathPoints[i + 3];
+
+            const distance = pointToLineDistance(stageX, stageY, x1, y1, x2, y2);
+            if (distance <= eraserRadius + (path.strokeWidth / 2)) {
+              touchedPaths.add(path.id);
+              break;
+            }
+          }
+        });
+
+        if (touchedPaths.size > 0) {
+          setPathsToErase((prev) => {
+            const newSet = new Set(prev);
+            touchedPaths.forEach((id) => newSet.add(id));
+            return newSet;
+          });
+        }
+      } else {
+        setCurrentPath((prev) => (prev ? [...prev, stageX, stageY] : [stageX, stageY]));
+      }
       return;
     }
+    
     const touches = e.evt.touches;
 
     // Handle pinch zoom
@@ -1175,21 +1306,36 @@ export function CanvasBoard({
     if (!touch) return;
     e.evt.preventDefault();
     moveCanvasPan(touch.clientX, touch.clientY);
-  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole, isDrawing, toolMode]);
+  }, [moveCanvasPan, getTouchDistance, getTouchCenter, displayScale, onZoomChange, setDisplayScale, setStagePosition, setZoomLevel, userRole, isDrawing, toolMode, isEraserMode, strokeWidth, pointToLineDistance]);
 
   const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
-    if (toolMode === 'draw' && isDrawing && currentPath) {
-      const newPath: DrawPath = {
-        id: Date.now().toString(),
-        points: currentPath,
-        color: strokeColor,
-        strokeWidth: strokeWidth,
-      };
-      addDrawPath(newPath);
-      markDirty('interaction');
+    if (toolMode === 'draw' && isDrawing) {
+      if (isEraserMode) {
+        // Remove all touched paths
+        if (pathsToErase.size > 0) {
+          pathsToErase.forEach((pathId) => {
+            removeDrawPath(pathId);
+            markDirty('interaction');
+            if (sessionId) {
+              void publish('drawPath.remove', { id: pathId });
+            }
+          });
+          setPathsToErase(new Set());
+        }
+      } else if (currentPath) {
+        const newPath: DrawPath = {
+          id: Date.now().toString(),
+          points: currentPath,
+          color: strokeColor,
+          strokeWidth: strokeWidth,
+          isEraser: false,
+        };
+        addDrawPath(newPath);
+        markDirty('interaction');
 
-      if (sessionId) {
-        void publish('drawPath.add', { path: newPath });
+        if (sessionId) {
+          void publish('drawPath.add', { path: newPath });
+        }
       }
     }
 
@@ -1207,7 +1353,7 @@ export function CanvasBoard({
     setIsDrawing(false);
     setCurrentPath(null);
     stopCanvasPan();
-  }, [stopCanvasPan, startCanvasPan, toolMode, isDrawing, currentPath, strokeColor, strokeWidth, addDrawPath, markDirty, sessionId, publish]);
+  }, [stopCanvasPan, startCanvasPan, toolMode, isDrawing, currentPath, strokeColor, strokeWidth, isEraserMode, pathsToErase, removeDrawPath, addDrawPath, markDirty, sessionId, publish]);
 
   const handleStageTouchCancel = useCallback(() => {
     isPinchingRef.current = false;
@@ -1493,7 +1639,7 @@ export function CanvasBoard({
                 tension={0.5}
                 lineCap="round"
                 lineJoin="round"
-                globalCompositeOperation="source-over"
+                globalCompositeOperation={path.isEraser ? "destination-out" : "source-over"}
                 draggable={toolMode === 'select'}
                 onClick={() => handleDrawPathSelect(path.id)}
                 onTap={() => handleDrawPathSelect(path.id)}
@@ -1515,7 +1661,7 @@ export function CanvasBoard({
                 }}
               />
             ))}
-            {currentPath && (
+            {currentPath && !isEraserMode && (
               <Line
                 points={currentPath}
                 stroke={strokeColor}

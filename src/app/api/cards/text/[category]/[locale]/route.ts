@@ -21,14 +21,8 @@ export async function GET(
   context: RouteContext
 ): Promise<NextResponse<ParsedCardData[] | { error: string }>> {
   try {
-    const { authorized } = await hasRole(['therapist', 'patient', 'admin']);
-    
-    if (!authorized) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid or missing session token' },
-        { status: 401 }
-      );
-    }
+    // Cards text API is public - no authentication required
+    // This allows demo sessions and regular sessions to access card text
 
     const { category, locale } = await context.params;
 
