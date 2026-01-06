@@ -397,6 +397,7 @@
       "redo": "Refazer",
       "zoomIn": "Ampliar",
       "zoomOut": "Reduzir",
+      "fitToScreen": "Ajustar à Tela",
       "clearCanvas": "Limpar Tela",
       "clearCanvasTitle": "Limpar Tela",
       "clearCanvasMessage": "Tem certeza de que deseja limpar toda a tela?",
