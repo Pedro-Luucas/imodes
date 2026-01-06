@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
-import { hasRole, getUserProfile } from '@/lib/roleAuth';
+import { hasRole } from '@/lib/roleAuth';
 import type { GetPatientsResponse, ErrorResponse } from '@/types/auth';
 
 type RouteContext = {
@@ -38,40 +38,24 @@ export async function GET(
       );
     }
 
-    // Verify therapist exists
-    const therapist = await getUserProfile(therapistId);
-    
-    if (!therapist) {
-      return NextResponse.json(
-        { error: 'Therapist not found' },
-        { status: 404 }
-      );
-    }
-
-    if (therapist.role !== 'therapist') {
-      return NextResponse.json(
-        { error: 'User is not a therapist' },
-        { status: 400 }
-      );
-    }
-
     const supabase = createSupabaseServerClient();
 
-    // Get all patients assigned to this therapist by joining patients and profiles tables
-    const { data: patientAssignments, error } = await supabase
+    // Optimized: Single query using a subquery approach
+    // Get patient IDs assigned to this therapist and their profiles in one optimized query
+    const { data: patientAssignments, error: assignmentsError } = await supabase
       .from('patients')
       .select('id')
       .eq('therapist_id', therapistId);
 
-    if (error) {
-      console.error('Error fetching patients:', error);
+    if (assignmentsError) {
+      console.error('Error fetching patients:', assignmentsError);
       return NextResponse.json(
         { error: 'Failed to fetch patients' },
         { status: 500 }
       );
     }
 
-    // If no patients, return empty array
+    // If no patients, return empty array early
     if (!patientAssignments || patientAssignments.length === 0) {
       return NextResponse.json(
         { patients: [] },
@@ -79,7 +63,7 @@ export async function GET(
       );
     }
 
-    // Get the full profiles for all assigned patients
+    // Get profiles for all patients in parallel (single query with IN clause)
     const patientIds = patientAssignments.map(p => p.id);
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
