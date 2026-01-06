@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthProfile } from '@/stores/authStore';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import {
   Menu,
   UserRound,
@@ -21,6 +21,7 @@ import {
   X,
   Pencil,
   Check,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -87,6 +88,7 @@ export function CanvasHeader({
 }: CanvasHeaderProps) {
   const t = useTranslations('canvas.header');
   const locale = useLocale();
+  const pathname = usePathname();
   const profile = useAuthProfile();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -140,6 +142,11 @@ export function CanvasHeader({
       return profile.email.charAt(0).toUpperCase();
     }
     return 'U';
+  };
+
+  const handleLanguageChange = (newLocale: string) => {
+    // Navigate to the same path but with the new locale
+    router.replace(pathname, { locale: newLocale });
   };
 
   const handleGoToDashboard = () => {
@@ -482,6 +489,29 @@ export function CanvasHeader({
 
         {/* Right Section - Actions & Avatar */}
         <div className="flex items-center gap-2 md:gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="default" className="h-8 md:h-10">
+                <Globe className="w-4 h-4 md:w-6 md:h-6" />
+                {locale === 'en' ? 'English' : 'Português'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="border-stroke" align="end">
+              <DropdownMenuItem
+                onClick={() => handleLanguageChange('en')}
+                className={locale === 'en' ? 'bg-gray-100' : ''}
+              >
+                English
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleLanguageChange('pt')}
+                className={locale === 'pt' ? 'bg-gray-100' : ''}
+              >
+                Português
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="default" className="h-8 md:h-10">
