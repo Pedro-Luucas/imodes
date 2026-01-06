@@ -60,7 +60,7 @@ export async function GET(
         .download(fallbackPath));
     }
 
-    if (error) {
+    if (error || !data) {
       console.error('Error downloading text file:', error);
       return NextResponse.json(
         { error: 'Failed to fetch card text file' },
