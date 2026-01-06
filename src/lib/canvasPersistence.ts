@@ -46,6 +46,30 @@ export const persistCanvasChanges = async (
   const updatedAt = new Date().toISOString();
   const snapshot = buildSnapshotFromStore(version, updatedAt);
 
+  // Handle demo sessions (save to localStorage instead of DB)
+  if (sessionId.startsWith('demo-')) {
+    try {
+      const { saveDemoSession, isDemoSession } = await import('@/lib/demoSessionStorage');
+      
+      if (isDemoSession(sessionId)) {
+        saveDemoSession(sessionId, snapshot);
+        canvasStore.getState().setLastPersistedVersion(version, updatedAt);
+
+        return {
+          saved: true,
+          reasons: effectiveReasons,
+          snapshot,
+          version,
+          updatedAt,
+        };
+      }
+    } catch (error) {
+      console.error('Error saving demo session to localStorage:', error);
+      return { saved: false, reasons: effectiveReasons };
+    }
+  }
+
+  // Regular sessions: save to database
   try {
     const response = await fetch(`/api/sessions/${sessionId}`, {
       method: 'PUT',

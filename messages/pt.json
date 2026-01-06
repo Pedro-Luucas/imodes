@@ -397,7 +397,6 @@
       "redo": "Refazer",
       "zoomIn": "Ampliar",
       "zoomOut": "Reduzir",
-      "fitToScreen": "Ajustar à Tela",
       "clearCanvas": "Limpar Tela",
       "clearCanvasTitle": "Limpar Tela",
       "clearCanvasMessage": "Tem certeza de que deseja limpar toda a tela?",
@@ -405,7 +404,8 @@
       "clear": "Limpar",
       "drawTool": "Ferramenta de Desenho",
       "color": "Cor",
-      "thickness": "Espessura"
+      "thickness": "Espessura",
+      "fitToScreen": "Ajustar à Tela"
     },
     "page": {
       "tools": "Ferramentas"
@@ -789,6 +789,58 @@
       "inviteTokenInvalid": "Formato de token de convite inválido",
       "accessTokenRequired": "Token de acesso é obrigatório",
       "refreshTokenRequired": "Token de atualização é obrigatório"
+    }
+  },
+  "demonstration": {
+    "title": "Demonstração iModes",
+    "subtitle": "Experimente o canvas interativo do iModes",
+    "scanInstructions": "Escaneie o QR code ou use o link abaixo",
+    "linkCopied": "Link copiado!",
+    "copyFailed": "Falha ao copiar link",
+    "startButton": "Começar Demonstração",
+    "info": "Esta é uma demonstração interativa. Seus dados serão usados apenas para esta sessão.",
+    "wizard": {
+      "step": "Passo",
+      "of": "de",
+      "back": "Voltar",
+      "next": "Próximo",
+      "creating": "Criando...",
+      "goToCanvas": "Ir para Canvas",
+      "step1": {
+        "title": "Qual é o seu nome?",
+        "description": "Digite seu nome completo",
+        "label": "Nome Completo",
+        "placeholder": "Digite seu nome completo"
+      },
+      "step2": {
+        "title": "Qual é o seu email?",
+        "description": "Usaremos apenas para identificar sua sessão",
+        "label": "Email",
+        "placeholder": "seu@email.com"
+      },
+      "step3": {
+        "title": "Qual é o seu papel?",
+        "description": "Selecione o papel que melhor descreve você",
+        "label": "Eu sou",
+        "placeholder": "Selecione...",
+        "therapist": "Terapeuta",
+        "patient": "Paciente",
+        "student": "Estudante",
+        "professor": "Professor"
+      },
+      "step4": {
+        "title": "Pronto para começar!",
+        "description": "Clique no botão abaixo para começar a usar o canvas",
+        "ready": "Tudo pronto! Clique no botão abaixo para começar."
+      },
+      "errors": {
+        "fullNameRequired": "Nome é obrigatório",
+        "fullNameMinLength": "Nome deve ter pelo menos 2 caracteres",
+        "emailRequired": "Email é obrigatório",
+        "emailInvalid": "Email inválido",
+        "roleRequired": "Selecione um papel",
+        "createFailed": "Falha ao criar demonstração"
+      }
     }
   }
 }

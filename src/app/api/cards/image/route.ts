@@ -19,14 +19,8 @@ export async function GET(
   request: NextRequest
 ): Promise<NextResponse<{ signed_url: string } | { error: string }>> {
   try {
-    const { authorized } = await hasRole(['therapist', 'patient', 'admin']);
-    
-    if (!authorized) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid or missing session token' },
-        { status: 401 }
-      );
-    }
+    // Cards image API is public - no authentication required
+    // This allows demo sessions and regular sessions to access card images
 
     const searchParams = request.nextUrl.searchParams;
     const path = searchParams.get('path');

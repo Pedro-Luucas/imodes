@@ -145,7 +145,17 @@ export default function CanvasPage() {
   useEffect(() => {
     // Check searchParams directly to avoid race condition with state update
     const sessionIdFromUrl = searchParams.get('sessionId');
-    if (sessionIdFromUrl || !profile || creatingSessionRef.current || showPatientDialog) return;
+    
+    // Skip auto-create if:
+    // - Already has sessionId in URL
+    // - Is demo session (starts with "demo-")
+    // - No profile (for demo sessions, profile is optional)
+    // - Already creating or showing dialog
+    if (sessionIdFromUrl || 
+        sessionIdFromUrl?.startsWith('demo-') || 
+        !profile || 
+        creatingSessionRef.current || 
+        showPatientDialog) return;
 
     const createSession = async (patientId: string | null = null, type: string = 'session') => {
       creatingSessionRef.current = true;
@@ -219,7 +229,45 @@ export default function CanvasPage() {
 
   // Load session data when sessionId changes
   useEffect(() => {
-    if (!sessionId || !profile) return;
+    if (!sessionId) return;
+
+    // Handle demo sessions (no DB, use localStorage)
+    if (sessionId.startsWith('demo-')) {
+      const loadDemoSession = async () => {
+        const { loadDemoSession, getInitialDemoState, isDemoSession } = await import('@/lib/demoSessionStorage');
+        
+        if (!isDemoSession(sessionId)) return;
+
+        const demoState = loadDemoSession(sessionId) || getInitialDemoState();
+        setSessionName(`Demo Session`);
+        setSessionType('demonstration');
+        setPatientProfile(null);
+        setTherapistProfile(null);
+
+        // Determine role from URL param or default to therapist
+        // For demo, we map student/professor to therapist role for canvas functionality
+        const roleParam = searchParams.get('role') as 'therapist' | 'patient' | 'student' | 'professor' | null;
+        let demoRole: 'therapist' | 'patient' = 'therapist';
+        if (roleParam === 'patient') {
+          demoRole = 'patient';
+        } else if (roleParam === 'student' || roleParam === 'professor' || roleParam === 'therapist') {
+          demoRole = 'therapist'; // Map student/professor to therapist role for canvas
+        }
+
+        canvasStore.getState().hydrateFromServer({
+          sessionId,
+          role: demoRole,
+          state: demoState,
+          updatedAt: demoState.updatedAt,
+        });
+      };
+
+      loadDemoSession();
+      return;
+    }
+
+    // Regular sessions require profile
+    if (!profile) return;
 
     const loadSessionData = async () => {
       try {
@@ -355,8 +403,11 @@ export default function CanvasPage() {
     }
   }, []);
 
-  // Start timer when canvas opens (for therapists)
+  // Start timer when canvas opens (for therapists, skip for demo sessions)
   useEffect(() => {
+    // Skip timer for demo sessions
+    if (sessionId?.startsWith('demo-')) return;
+    
     const isTherapist = profile?.role === 'therapist';
     if (!isTherapist || !sessionId) return;
 
@@ -452,7 +503,14 @@ export default function CanvasPage() {
     }
   }, [sessionId]);
 
-  const userRole = profile?.role === 'patient' ? 'patient' : profile?.role === 'therapist' ? 'therapist' : undefined;
+  // Determine user role: for demo sessions, get from URL param; otherwise from profile
+  const sessionIdFromUrl = searchParams.get('sessionId');
+  const isDemoSession = sessionIdFromUrl?.startsWith('demo-');
+  const demoRoleParam = searchParams.get('role') as 'therapist' | 'patient' | 'student' | 'professor' | null;
+  
+  const userRole = isDemoSession
+    ? (demoRoleParam === 'patient' ? 'patient' : 'therapist') // Map student/professor to therapist
+    : (profile?.role === 'patient' ? 'patient' : profile?.role === 'therapist' ? 'therapist' : undefined);
 
   useEffect(() => {
     const storeApi = canvasStore.getState();
@@ -494,6 +552,7 @@ export default function CanvasPage() {
         }}*/
         currentDuration={currentDuration}
         onSessionRenamed={setSessionName}
+        isDemoSession={isDemoSession}
         onBackgroundClick={handleCloseToolsPanel}
       />
 
@@ -787,8 +846,8 @@ export default function CanvasPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Patient Selection Dialog */}
-      {profile?.role === 'therapist' && profile?.id && (
+      {/* Patient Selection Dialog - Only show for non-demo sessions */}
+      {!isDemoSession && profile?.role === 'therapist' && profile?.id && (
         <SelectPatientDialog
           open={showPatientDialog}
           onOpenChange={setShowPatientDialog}

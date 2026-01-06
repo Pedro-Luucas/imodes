@@ -30,14 +30,8 @@ export async function GET(
   request: NextRequest
 ): Promise<NextResponse<CardMetadata[] | { error: string }>> {
   try {
-    const { authorized } = await hasRole(['therapist', 'patient', 'admin']);
-    
-    if (!authorized) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid or missing session token' },
-        { status: 401 }
-      );
-    }
+    // Cards API is public - no authentication required
+    // This allows demo sessions and regular sessions to access cards
 
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category') as CardCategory | null;

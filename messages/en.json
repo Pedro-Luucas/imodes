@@ -245,6 +245,58 @@
       "confirmTextMismatch": "Please type DELETE to confirm"
     }
   },
+  "demonstration": {
+    "title": "iModes Demonstration",
+    "subtitle": "Experience the interactive iModes canvas",
+    "scanInstructions": "Scan the QR code or use the link below",
+    "linkCopied": "Link copied!",
+    "copyFailed": "Failed to copy link",
+    "startButton": "Start Demonstration",
+    "info": "This is an interactive demonstration. Your data will only be used for this session.",
+    "wizard": {
+      "step": "Step",
+      "of": "of",
+      "back": "Back",
+      "next": "Next",
+      "creating": "Creating...",
+      "goToCanvas": "Go to Canvas",
+      "step1": {
+        "title": "What's your name?",
+        "description": "Enter your full name",
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "step2": {
+        "title": "What's your email?",
+        "description": "We'll only use it to identify your session",
+        "label": "Email",
+        "placeholder": "your@email.com"
+      },
+      "step3": {
+        "title": "What is your role?",
+        "description": "Select the role that best describes you",
+        "label": "I am a",
+        "placeholder": "Select...",
+        "therapist": "Therapist",
+        "patient": "Patient",
+        "student": "Student",
+        "professor": "Professor"
+      },
+      "step4": {
+        "title": "Ready to start!",
+        "description": "Click the button below to start using the canvas",
+        "ready": "All set! Click the button below to get started."
+      },
+      "errors": {
+        "fullNameRequired": "Name is required",
+        "fullNameMinLength": "Name must be at least 2 characters",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email",
+        "roleRequired": "Please select a role",
+        "createFailed": "Failed to create demonstration"
+      }
+    }
+  },
   "assignments": {
     "createAssignment": "Create Assignment",
     "title": "Create Assignment for {patientName}",
@@ -397,7 +449,6 @@
       "redo": "Redo",
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
-      "fitToScreen": "Fit to Screen",
       "clearCanvas": "Clear Canvas",
       "clearCanvasTitle": "Clear Canvas",
       "clearCanvasMessage": "Are you sure you want to clear the entire canvas?.",
@@ -405,7 +456,8 @@
       "clear": "Clear",
       "drawTool": "Drawing Tool",
       "color": "Color",
-      "thickness": "Thickness"
+      "thickness": "Thickness",
+      "fitToScreen": "Fit to Screen"
     },
     "page": {
       "tools": "Tools"

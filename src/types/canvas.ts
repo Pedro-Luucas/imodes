@@ -84,7 +84,7 @@ export interface CanvasState {
 export interface CanvasSession {
   id: string;
   patient_id?: string | null;
-  therapist_id: string;
+  therapist_id: string | null; // Can be null for playground/demonstration sessions
   name: string | null;
   status: string | null;
   type?: string | null;

@@ -66,6 +66,7 @@ interface CanvasHeaderProps {
   currentDuration?: number; // Current session duration in seconds
   onSessionRenamed?: (newTitle: string) => void;
   onBackgroundClick?: () => void;
+  isDemoSession?: boolean; // Flag to indicate if this is a demo session
 }
 
 export function CanvasHeader({
@@ -84,6 +85,7 @@ export function CanvasHeader({
   currentDuration = 0,
   onSessionRenamed,
   onBackgroundClick,
+  isDemoSession = false,
 }: CanvasHeaderProps) {
   const t = useTranslations('canvas.header');
   const locale = useLocale();
@@ -143,6 +145,12 @@ export function CanvasHeader({
   };
 
   const handleGoToDashboard = () => {
+    // For demo sessions, redirect to demonstration page
+    if (isDemoSession || sessionId?.startsWith('demo-')) {
+      router.push('/demonstration');
+      return;
+    }
+    
     if (profile?.role === 'patient') {
       router.push('/dashboard-patient');
     } else {
@@ -191,6 +199,13 @@ export function CanvasHeader({
 //  };
 
   const handleOpenCheckpointDialog = () => {
+    // Disable checkpoint saving for demo sessions
+    if (isDemoSession || sessionId?.startsWith('demo-')) {
+      toast.info('Checkpoint saving is not available in demo mode');
+      setIsMenuOpen(false);
+      return;
+    }
+    
     if (!sessionId) {
       toast.error(t('checkpointNoSession') || 'Cannot save checkpoint without a session');
       return;
@@ -314,6 +329,16 @@ export function CanvasHeader({
       return;
     }
 
+    // For demo sessions, just update locally (no API call)
+    if (isDemoSession || sessionId.startsWith('demo-')) {
+      if (onSessionRenamed) {
+        onSessionRenamed(trimmedTitle);
+      }
+      setIsEditingTitle(false);
+      toast.success(t('sessionRenamed'));
+      return;
+    }
+
     setIsRenaming(true);
     try {
       const response = await fetch(`/api/sessions/${sessionId}/rename`, {
@@ -394,7 +419,10 @@ export function CanvasHeader({
                   <Save className="w-4 h-4 mr-2" />
                   {t('save')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleOpenCheckpointDialog} disabled={isSavingCheckpoint || !sessionId}>
+                <DropdownMenuItem 
+                  onClick={handleOpenCheckpointDialog} 
+                  disabled={isSavingCheckpoint || !sessionId || isDemoSession || sessionId?.startsWith('demo-')}
+                >
                   <Bookmark className="w-4 h-4 mr-2" />
                   {isSavingCheckpoint ? (t('checkpointLoading') || 'Saving...') : (t('saveCheckpoint') || 'Save Checkpoint')}
                 </DropdownMenuItem>
@@ -461,7 +489,7 @@ export function CanvasHeader({
             ) : (
               <div className="flex items-center gap-1.5">
                 <span className="text-sm md:text-lg font-medium text-foreground">{sessionTitle || displayTitle}</span>
-                {isTherapist && sessionId && (
+                {(isTherapist || isDemoSession || sessionId?.startsWith('demo-')) && sessionId && (
                   <Button
                     variant="ghost"
                     size="icon"
