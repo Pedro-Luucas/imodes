@@ -757,7 +757,7 @@ export default function CanvasPage() {
                     "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
                     isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
                   )}
-                  title={tControls('eraser') || 'Eraser'}
+                  title={tControls('eraser')}
                 >
                   <Eraser className="w-4 h-4" />
                 </button>
