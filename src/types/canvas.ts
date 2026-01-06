@@ -43,6 +43,7 @@ export interface DrawPath {
   opacity?: number;
   x?: number;
   y?: number;
+  isEraser?: boolean;
 }
 
 export interface PostItNote {

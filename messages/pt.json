@@ -405,7 +405,8 @@
       "drawTool": "Ferramenta de Desenho",
       "color": "Cor",
       "thickness": "Espessura",
-      "fitToScreen": "Ajustar à Tela"
+      "fitToScreen": "Ajustar à Tela",
+      "eraser": "Borracha"
     },
     "page": {
       "tools": "Ferramentas"

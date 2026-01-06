@@ -457,7 +457,8 @@
       "drawTool": "Drawing Tool",
       "color": "Color",
       "thickness": "Thickness",
-      "fitToScreen": "Fit to Screen"
+      "fitToScreen": "Fit to Screen",
+      "eraser": "Eraser"
     },
     "page": {
       "tools": "Tools"

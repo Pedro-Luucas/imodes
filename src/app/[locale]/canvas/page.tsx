@@ -31,6 +31,7 @@ import {
   Pencil,
   Palette,
   Maximize2,
+  Eraser,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -70,8 +71,9 @@ export default function CanvasPage() {
   const tPage = useTranslations('canvas.page');
 
   const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'draw'>('select');
-  const [strokeColor, setStrokeColor] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(2);
+  const [strokeColor, setStrokeColor] = useState('#f59e0b');
+  const [strokeWidth, setStrokeWidth] = useState(8);
+  const [isEraserMode, setIsEraserMode] = useState(false);
   // Zoom offset: displayedZoom = actualZoom + 40
   // So 60% actual appears as 100%, 70% actual appears as 110%, etc.
   const ZOOM_DISPLAY_OFFSET = 40;
@@ -567,6 +569,7 @@ export default function CanvasPage() {
           toolMode={toolMode}
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
+          isEraserMode={isEraserMode}
           sessionId={sessionId}
           userRole={userRole}
           onSave={handleManualSave}
@@ -655,7 +658,20 @@ export default function CanvasPage() {
               variant={toolMode === 'draw' ? 'default' : 'secondary'}
               size="icon"
               className="size-10"
-              onClick={() => setToolMode(toolMode === 'draw' ? 'select' : 'draw')}
+              onClick={() => {
+                if (toolMode === 'draw' && isEraserMode) {
+                  // If already in draw mode with eraser, turn off eraser mode
+                  setIsEraserMode(false);
+                } else if (toolMode === 'draw') {
+                  // If already in draw mode (without eraser), exit draw mode
+                  setToolMode('select');
+                  setIsEraserMode(false); // Reset eraser mode when exiting draw mode
+                } else {
+                  // Enter draw mode
+                  setToolMode('draw');
+                  setIsEraserMode(false); // Reset eraser mode when entering draw mode
+                }
+              }}
               title={tControls('drawTool') || 'Draw'}
             >
               <Pencil className="w-5 h-5" />
@@ -675,7 +691,7 @@ export default function CanvasPage() {
                   ].map((color) => (
                     <button
                       key={color}
-                      onClick={() => setStrokeColor(color)}
+                      onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
                       className={cn(
                         "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
                         strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
@@ -713,7 +729,7 @@ export default function CanvasPage() {
                   {[4, 8, 12].map((width) => (
                     <button
                       key={width}
-                      onClick={() => setStrokeWidth(width)}
+                      onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
                       className={cn(
                         "h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
                         strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
@@ -731,6 +747,20 @@ export default function CanvasPage() {
                     </button>
                   ))}
                 </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Eraser Button */}
+                <button
+                  onClick={() => setIsEraserMode(true)}
+                  className={cn(
+                    "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                    isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                  )}
+                  title={tControls('eraser') || 'Eraser'}
+                >
+                  <Eraser className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>
