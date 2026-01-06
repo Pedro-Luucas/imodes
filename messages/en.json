@@ -397,6 +397,7 @@
       "redo": "Redo",
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
+      "fitToScreen": "Fit to Screen",
       "clearCanvas": "Clear Canvas",
       "clearCanvasTitle": "Clear Canvas",
       "clearCanvasMessage": "Are you sure you want to clear the entire canvas?.",

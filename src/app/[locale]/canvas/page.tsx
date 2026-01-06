@@ -30,6 +30,7 @@ import {
   Trash2,
   Pencil,
   Palette,
+  Maximize2,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -55,6 +56,7 @@ interface WindowWithCanvasCard extends Window {
   _redoCanvas?: () => void;
   _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
   _resetCardPosition?: () => void;
+  _fitToScreen?: () => void;
 }
 
 export default function CanvasPage() {
@@ -734,6 +736,20 @@ export default function CanvasPage() {
               title={tControls('zoomOut')}
             >
               <Minus className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="size-10"
+              onClick={() => {
+                const win = window as WindowWithCanvasCard;
+                if (win._fitToScreen) {
+                  win._fitToScreen();
+                }
+              }}
+              title={tControls('fitToScreen') || 'Fit to Screen'}
+            >
+              <Maximize2 className="w-5 h-5" />
             </Button>
           </div>
 

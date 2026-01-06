@@ -68,6 +68,7 @@ interface WindowWithCanvasCard extends Window {
   _takeCanvasScreenshot?: () => Promise<Blob | null>;
   _restoreCanvasState?: (state: import('@/types/canvas').CanvasState) => void;
   _resetCardPosition?: () => void;
+  _fitToScreen?: () => void;
 }
 
 const CARD_COLORS = [
@@ -194,11 +195,31 @@ export function CanvasBoard({
 
   const handleUndo = useCallback(() => {
     undo();
-  }, [undo]);
+    markDirty('interaction');
+
+    if (sessionId) {
+      // Broadcast the new state after undo to sync with other participants
+      const snapshot = buildSerializableCanvasState();
+      void publish('state.snapshot', {
+        state: snapshot,
+        origin: 'manual',
+      });
+    }
+  }, [undo, markDirty, sessionId, publish]);
 
   const handleRedo = useCallback(() => {
     redo();
-  }, [redo]);
+    markDirty('interaction');
+
+    if (sessionId) {
+      // Broadcast the new state after redo to sync with other participants
+      const snapshot = buildSerializableCanvasState();
+      void publish('state.snapshot', {
+        state: snapshot,
+        origin: 'manual',
+      });
+    }
+  }, [redo, markDirty, sessionId, publish]);
 
   // Update gender state when prop changes
   useEffect(() => {
@@ -640,6 +661,108 @@ export function CanvasBoard({
     lastCardPositionRef.current = null;
   }, []);
 
+  // Fit to screen - centers view on all elements
+  const fitToScreen = useCallback(() => {
+    if (!dimensions.width || !dimensions.height) return;
+
+    const currentCards = canvasStore.getState().cards;
+    const currentNotes = canvasStore.getState().notes;
+    const currentDrawPaths = canvasStore.getState().drawPaths;
+
+    // If no elements, just center the origin
+    if (currentCards.length === 0 && currentNotes.length === 0 && currentDrawPaths.length === 0) {
+      const centeredPosition = {
+        x: dimensions.width / 2,
+        y: dimensions.height / 2,
+      };
+      setStagePosition(centeredPosition);
+      stagePositionRef.current = centeredPosition;
+      return;
+    }
+
+    // Calculate bounding box of all elements
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    // Include cards
+    currentCards.forEach((card) => {
+      minX = Math.min(minX, card.x);
+      minY = Math.min(minY, card.y);
+      maxX = Math.max(maxX, card.x + card.width);
+      maxY = Math.max(maxY, card.y + card.height);
+    });
+
+    // Include notes
+    currentNotes.forEach((note) => {
+      minX = Math.min(minX, note.x);
+      minY = Math.min(minY, note.y);
+      maxX = Math.max(maxX, note.x + note.width);
+      maxY = Math.max(maxY, note.y + note.height);
+    });
+
+    // Include draw paths
+    currentDrawPaths.forEach((path) => {
+      if (path.points && path.points.length >= 2) {
+        for (let i = 0; i < path.points.length; i += 2) {
+          const x = (path.x || 0) + path.points[i];
+          const y = (path.y || 0) + path.points[i + 1];
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    });
+
+    // If no valid bounds found, center the origin
+    if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+      const centeredPosition = {
+        x: dimensions.width / 2,
+        y: dimensions.height / 2,
+      };
+      setStagePosition(centeredPosition);
+      stagePositionRef.current = centeredPosition;
+      return;
+    }
+
+    // Add padding (10% of viewport on each side)
+    const paddingX = dimensions.width * 0.1;
+    const paddingY = dimensions.height * 0.1;
+    const availableWidth = dimensions.width - 2 * paddingX;
+    const availableHeight = dimensions.height - 2 * paddingY;
+
+    // Calculate content dimensions
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    // Calculate scale to fit content with padding
+    const scaleX = availableWidth / contentWidth;
+    const scaleY = availableHeight / contentHeight;
+    const newScale = Math.min(scaleX, scaleY, MAX_SCALE); // Don't zoom in too much
+    const clampedScale = Math.max(newScale, MIN_SCALE); // Don't zoom out too much
+
+    // Calculate center of content
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+
+    // Calculate new position to center content
+    const newPosition = {
+      x: dimensions.width / 2 - contentCenterX * clampedScale,
+      y: dimensions.height / 2 - contentCenterY * clampedScale,
+    };
+
+    // Update scale via parent component (which will trigger zoom effect)
+    if (onZoomChange) {
+      onZoomChange(clampedScale * 100);
+    }
+
+    // Update position
+    setStagePosition(newPosition);
+    stagePositionRef.current = newPosition;
+  }, [dimensions.width, dimensions.height, setStagePosition, onZoomChange]);
+
   // Expose reset function via window object
   useEffect(() => {
     const win = window as WindowWithCanvasCard;
@@ -649,6 +772,16 @@ export function CanvasBoard({
       delete win._resetCardPosition;
     };
   }, [resetCardPosition]);
+
+  // Expose fitToScreen function via window object
+  useEffect(() => {
+    const win = window as WindowWithCanvasCard;
+    win._fitToScreen = fitToScreen;
+
+    return () => {
+      delete win._fitToScreen;
+    };
+  }, [fitToScreen]);
 
   const handleCardDragEnd = useCallback(
     (id: string, x: number, y: number) => {
