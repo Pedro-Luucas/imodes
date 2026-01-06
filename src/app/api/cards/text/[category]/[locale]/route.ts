@@ -26,30 +26,39 @@ export async function GET(
 
     const { category, locale } = await context.params;
 
-    // Validate locale
-    if (!['en', 'pt'].includes(locale)) {
-      return NextResponse.json(
-        { error: 'Invalid locale. Must be "en" or "pt"' },
-        { status: 400 }
-      );
-    }
+    // Validate locale - support en, pt, nl, it
+    // If locale not supported, fallback to 'en'
+    const supportedLocales = ['en', 'pt', 'nl', 'it'];
+    const validLocale = supportedLocales.includes(locale) ? locale : 'en';
 
     // Build text file path based on category
     let textPath: string;
     const normalizedCategory = category.toLowerCase();
 
     if (normalizedCategory === 'boat' || normalizedCategory === 'wave') {
-      textPath = `${normalizedCategory}/text/${locale}.txt`;
+      textPath = `${normalizedCategory}/text/${validLocale}.txt`;
     } else {
-      textPath = `${normalizedCategory}/text/${locale}.txt`;
+      textPath = `${normalizedCategory}/text/${validLocale}.txt`;
     }
 
     const supabase = createSupabaseServerClient();
 
-    // Download text file
-    const { data, error } = await supabase.storage
+    // Download text file - try requested locale first, fallback to 'en' if not found
+    let data, error;
+    ({ data, error } = await supabase.storage
       .from(BUCKET_NAME)
-      .download(textPath);
+      .download(textPath));
+
+    // If file not found and locale is not 'en', try fallback to 'en'
+    if (error && validLocale !== 'en') {
+      const fallbackPath = normalizedCategory === 'boat' || normalizedCategory === 'wave'
+        ? `${normalizedCategory}/text/en.txt`
+        : `${normalizedCategory}/text/en.txt`;
+      
+      ({ data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .download(fallbackPath));
+    }
 
     if (error) {
       console.error('Error downloading text file:', error);

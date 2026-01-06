@@ -45,6 +45,7 @@ import { Gender } from '@/types/canvas';
 import { SessionDetailsPanel } from './SessionDetailsPanel';
 import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
 import type { Profile } from '@/types/auth';
+import { LanguageSwitcher } from '@/components/ui/language-switcher';
 
 interface WindowWithCanvasCard extends Window {
   _takeCanvasScreenshot?: () => Promise<Blob | null>;
@@ -510,6 +511,11 @@ export function CanvasHeader({
 
         {/* Right Section - Actions & Avatar */}
         <div className="flex items-center gap-2 md:gap-4">
+          {/* Language Switcher - Only show for demo sessions */}
+          {isDemoSession && (
+            <LanguageSwitcher variant="secondary" size="default" />
+          )}
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="default" className="h-8 md:h-10">

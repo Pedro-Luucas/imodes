@@ -204,6 +204,8 @@
     "languageDesc": "Select your preferred language",
     "languageEn": "English",
     "languagePt": "Português",
+    "languageNl": "Nederlands",
+    "languageIt": "Italiano",
     "security": "Security",
     "securityDesc": "Change your password",
     "currentPassword": "Current Password",
