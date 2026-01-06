@@ -668,7 +668,8 @@
     "activeStatus": "Ativa",
     "archivedStatus": "Arquivada",
     "noTherapistTitle": "Estamos conectando você ao terapeuta",
-    "noTherapistDescription": "Seu terapeuta ainda não aceitou o convite. Avisaremos assim que a conexão estiver pronta."
+    "noTherapistDescription": "Seu terapeuta ainda não aceitou o convite. Avisaremos assim que a conexão estiver pronta.",
+    "devWarning": "Este site está em desenvolvimento e construção. Algumas funcionalidades ainda não estão disponíveis ou podem funcionar de forma diferente do esperado."
   },
   "dashboardPatientSessions": {
     "title": "Sessões Terapêuticas",

@@ -720,7 +720,8 @@
     "activeStatus": "Actief",
     "archivedStatus": "Gearchiveerd",
     "noTherapistTitle": "We stellen je therapeut in",
-    "noTherapistDescription": "Je therapeut heeft je uitnodiging nog niet geaccepteerd. We stellen je op de hoogte zodra je verbonden bent."
+    "noTherapistDescription": "Je therapeut heeft je uitnodiging nog niet geaccepteerd. We stellen je op de hoogte zodra je verbonden bent.",
+    "devWarning": "Deze website is in ontwikkeling en constructie. Sommige functies zijn nog niet beschikbaar of werken mogelijk anders dan verwacht."
   },
   "dashboardPatientSessions": {
     "title": "Therapiesessies",
