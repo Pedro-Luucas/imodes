@@ -35,14 +35,9 @@ export async function GET(
     }
 
     // Build text file path based on category
-    let textPath: string;
+    // All categories use the same simple structure: {category}/text/{locale}.txt
     const normalizedCategory = category.toLowerCase();
-
-    if (normalizedCategory === 'boat' || normalizedCategory === 'wave') {
-      textPath = `${normalizedCategory}/text/${locale}.txt`;
-    } else {
-      textPath = `${normalizedCategory}/text/${locale}.txt`;
-    }
+    const textPath = `${normalizedCategory}/text/${locale}.txt`;
 
     const supabase = createSupabaseServerClient();
 
@@ -53,6 +48,7 @@ export async function GET(
 
     if (error) {
       console.error('Error downloading text file:', error);
+      console.error('Path attempted:', textPath);
       return NextResponse.json(
         { error: 'Failed to fetch card text file' },
         { status: 500 }

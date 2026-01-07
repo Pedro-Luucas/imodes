@@ -17,56 +17,84 @@ export function parseCardText(text: string): ParsedCardData[] {
     i++;
   }
   
-  // Parse cards
-  while (i < lines.length) {
-    const line = lines[i];
-    
-    // Check for single-line format: "1 Card Name" or "1. Card Name"
+  // First pass: collect single-line format cards (as fallback)
+  const singleLineCards: ParsedCardData[] = [];
+  let tempIndex = i;
+  while (tempIndex < lines.length) {
+    const line = lines[tempIndex];
     const singleLineMatch = line.match(/^(\d+)[.\s]+(.+)$/);
+    
     if (singleLineMatch) {
       const cardNumber = parseInt(singleLineMatch[1], 10);
       const name = singleLineMatch[2].trim();
       
-      cards.push({
+      singleLineCards.push({
         number: cardNumber,
         name: name,
-        description: '', // No description in single-line format
+        description: '',
       });
-      i++;
-      continue;
+      tempIndex++;
+    } else if (/^\d+$/.test(line)) {
+      // Found standalone number - multi-line section exists
+      break;
+    } else {
+      tempIndex++;
     }
+  }
+  
+  // Check if we found a multi-line section (standalone number)
+  let foundMultilineSection = false;
+  let multilineStartIndex = i;
+  
+  while (multilineStartIndex < lines.length) {
+    if (/^\d+$/.test(lines[multilineStartIndex])) {
+      foundMultilineSection = true;
+      break;
+    }
+    multilineStartIndex++;
+  }
+  
+  // If multi-line section exists, parse it (has descriptions)
+  if (foundMultilineSection) {
+    i = multilineStartIndex;
     
-    // Check for multi-line format: number alone on a line
-    if (/^\d+$/.test(line)) {
-      const cardNumber = parseInt(line, 10);
-      i++;
+    while (i < lines.length) {
+      const line = lines[i];
       
-      // Get card name (next non-empty line)
-      if (i < lines.length && lines[i].length > 0) {
-        const name = lines[i];
+      if (/^\d+$/.test(line)) {
+        const cardNumber = parseInt(line, 10);
         i++;
         
-        // Get description (next non-empty line or until next number)
-        let description = '';
-        while (i < lines.length && !/^\d+/.test(lines[i])) {
-          if (lines[i].length > 0) {
-            if (description.length > 0) {
-              description += ' ';
-            }
-            description += lines[i];
-          }
+        // Get card name (next non-empty line)
+        if (i < lines.length && lines[i].length > 0) {
+          const name = lines[i];
           i++;
+          
+          // Get description (all lines until next number)
+          let description = '';
+          while (i < lines.length && !/^\d+$/.test(lines[i])) {
+            if (lines[i].length > 0) {
+              if (description.length > 0) {
+                description += ' ';
+              }
+              description += lines[i];
+            }
+            i++;
+          }
+          
+          cards.push({
+            number: cardNumber,
+            name: name,
+            description: description.trim(),
+          });
         }
-        
-        cards.push({
-          number: cardNumber,
-          name: name,
-          description: description.trim(),
-        });
+      } else {
+        i++;
       }
-    } else {
-      i++;
     }
+  } else {
+    // No multi-line section, use single-line cards (boat/wave)
+    cards.push(...singleLineCards);
   }
   
   return cards;
