@@ -533,28 +533,30 @@ export function CanvasHeader({
             <LanguageSwitcher variant="secondary" size="default" />
           )}
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="default" className="h-8 md:h-10">
-                <Globe className="w-4 h-4 md:w-6 md:h-6" />
-                {locale === 'en' ? 'English' : 'Português'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="border-stroke" align="end">
-              <DropdownMenuItem
-                onClick={() => handleLanguageChange('en')}
-                className={locale === 'en' ? 'bg-gray-100' : ''}
-              >
-                English
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleLanguageChange('pt')}
-                className={locale === 'pt' ? 'bg-gray-100' : ''}
-              >
-                Português
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isDemoSession !== true && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="default" className="h-8 md:h-10">
+                  <Globe className="w-4 h-4 md:w-6 md:h-6" />
+                  {locale === 'en' ? 'English' : 'Português'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="border-stroke" align="end">
+                <DropdownMenuItem
+                  onClick={() => handleLanguageChange('en')}
+                  className={locale === 'en' ? 'bg-gray-100' : ''}
+                >
+                  English
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleLanguageChange('pt')}
+                  className={locale === 'pt' ? 'bg-gray-100' : ''}
+                >
+                  Português
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
