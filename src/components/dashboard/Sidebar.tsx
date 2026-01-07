@@ -160,7 +160,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </Avatar>
             <div className="flex flex-col flex-1">
               <span className="text-sm font-semibold text-foreground">{getDisplayName()}</span>
-              {profile?.email && <span className="text-xs text-muted-foreground truncate">{profile.email}</span>}
+              {profile?.email && (
+                <span className="text-xs text-muted-foreground truncate" title={profile.email}>
+                  {profile.email.length > 15 ? `${profile.email.substring(0, 15)}...` : profile.email}
+                </span>
+              )}
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>

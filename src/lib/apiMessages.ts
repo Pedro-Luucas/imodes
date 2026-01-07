@@ -1,8 +1,10 @@
 import { cookies } from 'next/headers';
 import enMessages from '../../messages/en.json';
 import ptMessages from '../../messages/pt.json';
+import nlMessages from '../../messages/nl.json';
+import itMessages from '../../messages/it.json';
 
-const SUPPORTED_LOCALES = ['en', 'pt'] as const;
+const SUPPORTED_LOCALES = ['en', 'pt', 'nl', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
 const fallbackLocale: SupportedLocale = 'en';
@@ -12,6 +14,8 @@ type ApiMessages = (typeof enMessages)['api'];
 const apiMessagesMap: Record<SupportedLocale, ApiMessages> = {
   en: enMessages.api,
   pt: ptMessages.api,
+  nl: nlMessages.api,
+  it: itMessages.api,
 };
 
 const getLocaleFromCookies = async (): Promise<string | undefined> => {
@@ -41,6 +45,12 @@ const normalizeLocale = (locale?: string): SupportedLocale => {
 
   if (normalized.startsWith('pt')) {
     return 'pt';
+  }
+  if (normalized.startsWith('nl')) {
+    return 'nl';
+  }
+  if (normalized.startsWith('it')) {
+    return 'it';
   }
 
   return 'en';

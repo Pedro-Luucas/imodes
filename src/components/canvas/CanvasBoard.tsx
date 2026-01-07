@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Stage, Layer, Line, Group } from 'react-konva';
+import { Stage, Layer, Line, Group, Circle } from 'react-konva';
 import Konva from 'konva';
 import { toast } from 'sonner';
 import {
@@ -110,6 +110,8 @@ export function CanvasBoard({
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<number[] | null>(null);
   const [pathsToErase, setPathsToErase] = useState<Set<string>>(new Set());
+  const [pathsBeingErased, setPathsBeingErased] = useState<Set<string>>(new Set()); // Paths currently being touched by eraser (for opacity effect)
+  const [eraserPosition, setEraserPosition] = useState<{ x: number; y: number } | null>(null); // Current eraser cursor position
 
   const storeActionsRef = useRef(canvasStore.getState());
   const {
@@ -1014,6 +1016,7 @@ export function CanvasBoard({
       setIsDrawing(true);
       if (isEraserMode) {
         setPathsToErase(new Set());
+        setPathsBeingErased(new Set()); // Clear previous erased paths state
       } else {
         setCurrentPath([stageX, stageY]);
       }
@@ -1056,15 +1059,22 @@ export function CanvasBoard({
   }, []);
 
   const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    const stage = e.target.getStage();
+    if (!stage) return;
+    const pos = stage.getPointerPosition();
+    if (!pos) return;
+
+    const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
+    const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
+
+    // Update eraser position for visual feedback (even when not drawing)
+    if (toolMode === 'draw' && isEraserMode) {
+      setEraserPosition({ x: stageX, y: stageY });
+    } else {
+      setEraserPosition(null);
+    }
+
     if (toolMode === 'draw' && isDrawing) {
-      const stage = e.target.getStage();
-      if (!stage) return;
-      const pos = stage.getPointerPosition();
-      if (!pos) return;
-
-      const stageX = (pos.x - stagePositionRef.current.x) / displayScale;
-      const stageY = (pos.y - stagePositionRef.current.y) / displayScale;
-
       // If eraser mode, detect which paths are being touched
       if (isEraserMode) {
         const currentDrawPaths = canvasStore.getState().drawPaths;
@@ -1093,6 +1103,10 @@ export function CanvasBoard({
           }
         });
 
+        // Update paths being erased (for opacity effect)
+        setPathsBeingErased(touchedPaths);
+
+        // Mark paths to be deleted when mouse is released
         if (touchedPaths.size > 0) {
           setPathsToErase((prev) => {
             const newSet = new Set(prev);
@@ -1124,6 +1138,8 @@ export function CanvasBoard({
           });
           setPathsToErase(new Set());
         }
+        // Clear paths being erased state (restore opacity to normal)
+        setPathsBeingErased(new Set());
       } else if (currentPath) {
         const newPath: DrawPath = {
           id: Date.now().toString(),
@@ -1148,7 +1164,25 @@ export function CanvasBoard({
 
   const handleStageMouseLeave = useCallback(() => {
     stopCanvasPan();
-  }, [stopCanvasPan]);
+    // Clear eraser position when mouse leaves stage
+    if (toolMode === 'draw' && isEraserMode) {
+      setEraserPosition(null);
+      setPathsBeingErased(new Set());
+    }
+  }, [stopCanvasPan, toolMode, isEraserMode]);
+
+  const handleStageMouseEnter = useCallback(() => {
+    // Update cursor when mouse enters the stage
+    if (toolMode === 'draw') {
+      const cursor = isEraserMode ? 'not-allowed' : 'crosshair';
+      if (stageRef.current) {
+        const stageContainer = stageRef.current.container();
+        if (stageContainer) {
+          stageContainer.style.cursor = cursor;
+        }
+      }
+    }
+  }, [toolMode, isEraserMode]);
 
   // Helper to calculate distance between two touch points
   const getTouchDistance = useCallback((touch1: Touch, touch2: Touch) => {
@@ -1477,6 +1511,49 @@ export function CanvasBoard({
     };
   }, [stopCanvasPan]);
 
+  // Update cursor based on tool mode
+  useEffect(() => {
+    const updateCursor = () => {
+      if (toolMode === 'draw') {
+        const cursor = isEraserMode ? 'not-allowed' : 'crosshair';
+        
+        // Update container cursor
+        if (containerRef.current) {
+          containerRef.current.style.cursor = cursor;
+        }
+        
+        // Update Konva Stage container cursor
+        if (stageRef.current) {
+          const stageContainer = stageRef.current.container();
+          if (stageContainer) {
+            stageContainer.style.cursor = cursor;
+          }
+        }
+      } else {
+        // Default cursor for other modes (select, hand, text)
+        if (containerRef.current) {
+          containerRef.current.style.cursor = '';
+        }
+        if (stageRef.current) {
+          const stageContainer = stageRef.current.container();
+          if (stageContainer) {
+            stageContainer.style.cursor = '';
+          }
+        }
+      }
+    };
+
+    updateCursor();
+  }, [toolMode, isEraserMode]);
+
+  // Clear eraser state when exiting eraser mode
+  useEffect(() => {
+    if (!isEraserMode || toolMode !== 'draw') {
+      setEraserPosition(null);
+      setPathsBeingErased(new Set());
+    }
+  }, [isEraserMode, toolMode]);
+
   // const handleNoteSelect = useCallback(
   //   (id: string) => {
   //     selectNote(id);
@@ -1605,6 +1682,7 @@ export function CanvasBoard({
           onMouseDown={handleStageMouseDown}
           onMouseMove={handleStageMouseMove}
           onMouseUp={handleStageMouseUp}
+          onMouseEnter={handleStageMouseEnter}
           onMouseLeave={handleStageMouseLeave}
           onTouchStart={handleStageTouchStart}
           onTouchMove={handleStageTouchMove}
@@ -1647,7 +1725,13 @@ export function CanvasBoard({
                 onClick={() => handleDrawPathSelect(path.id)}
                 onTap={() => handleDrawPathSelect(path.id)}
                 onDragEnd={(e) => handleDrawPathDragEnd(path.id, e.target.x(), e.target.y())}
-                opacity={selectedDrawPathId === path.id ? 0.8 : 1}
+                opacity={
+                  pathsToErase.has(path.id) || pathsBeingErased.has(path.id)
+                    ? 0.5 
+                    : selectedDrawPathId === path.id 
+                      ? 0.8 
+                      : 1
+                }
                 shadowBlur={selectedDrawPathId === path.id ? 5 : 0}
                 shadowColor={path.color}
                 onMouseEnter={(e) => {
@@ -1673,6 +1757,18 @@ export function CanvasBoard({
                 lineCap="round"
                 lineJoin="round"
                 globalCompositeOperation="source-over"
+              />
+            )}
+            {/* Eraser visual feedback circle */}
+            {eraserPosition && toolMode === 'draw' && isEraserMode && (
+              <Circle
+                x={eraserPosition.x}
+                y={eraserPosition.y}
+                radius={strokeWidth / 2}
+                fill="rgba(255, 255, 255, 0.3)"
+                stroke="rgba(0, 0, 0, 0.5)"
+                strokeWidth={1}
+                listening={false}
               />
             )}
             {/*

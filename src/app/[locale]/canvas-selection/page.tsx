@@ -355,10 +355,10 @@ export default function CanvasSelectionPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-6 py-8 max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">{t('title')}</h1>
-        <p className="text-gray-600">{t('subtitle')}</p>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <div className="mb-6">
