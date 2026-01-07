@@ -34,8 +34,11 @@ export async function GET(
     // Build text file path based on category
     // All categories use the same simple structure: {category}/text/{locale}.txt
     const normalizedCategory = category.toLowerCase();
-
-    if (normalizedCategory === 'boat' || normalizedCategory === 'wave') {
+    
+    // Supported categories
+    const supportedCategories = ['boat', 'wave', 'needs', 'strengths', 'modes'];
+    
+    if (supportedCategories.includes(normalizedCategory)) {
       const textPath = `${normalizedCategory}/text/${locale}.txt`;
 
       const supabase = createSupabaseServerClient();
@@ -48,9 +51,7 @@ export async function GET(
 
     // If file not found and locale is not 'en', try fallback to 'en'
     if (error && validLocale !== 'en') {
-      const fallbackPath = normalizedCategory === 'boat' || normalizedCategory === 'wave'
-        ? `${normalizedCategory}/text/en.txt`
-        : `${normalizedCategory}/text/en.txt`;
+      const fallbackPath = `${normalizedCategory}/text/en.txt`;
       
       ({ data, error } = await supabase.storage
         .from(BUCKET_NAME)
