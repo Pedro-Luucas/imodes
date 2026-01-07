@@ -449,10 +449,13 @@ export function CanvasBoard({
       let cardX: number;
       let cardY: number;
 
+      // Cascading offset for subsequent cards
+      const CASCADE_OFFSET = 30;
+
       if (lastCardPositionRef.current) {
-        // Subsequent card: center it at the top-left corner of the previous card
-        cardX = lastCardPositionRef.current.x - cardWidth / 2;
-        cardY = lastCardPositionRef.current.y - cardHeight / 2;
+        // Subsequent card: offset slightly from the previous card position for cascading effect
+        cardX = lastCardPositionRef.current.x + CASCADE_OFFSET;
+        cardY = lastCardPositionRef.current.y + CASCADE_OFFSET;
       } else {
         // First card: position at 75% width and 50% height of viewport
         if (viewportWidth > 0 && viewportHeight > 0) {
