@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { DevWarning } from '@/components/dashboard/DevWarning';
+import { toast } from 'sonner';
 
 // Extended data for demonstration
 interface ExtendedPatient extends Profile {
@@ -96,7 +97,31 @@ export default function PatientsPage() {
       const response = await fetch(`/api/therapists/${profile.id}/patients`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch patients');
+        // Try to get error message from response
+        let errorMessage = 'Failed to fetch patients';
+        let errorData: any = null;
+        
+        try {
+          const responseText = await response.text();
+          if (responseText) {
+            errorData = JSON.parse(responseText);
+            errorMessage = errorData?.error || errorMessage;
+          }
+        } catch (parseError) {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        
+        const errorInfo = {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          errorData,
+          url: `/api/therapists/${profile.id}/patients`,
+        };
+        
+        console.error('Error fetching patients:', errorInfo);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -132,7 +157,27 @@ export default function PatientsPage() {
       setDisplayedPatients(patientsWithAvatars);
       setHasMore(enhancedPatients.length > PATIENTS_PER_PAGE);
     } catch (error) {
-      console.error('Error fetching patients:', error);
+      // Better error logging
+      const errorDetails = {
+        message: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        } : error,
+      };
+      
+      console.error('Error fetching patients:', errorDetails);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to fetch patients';
+      
+      toast.error('Error loading patients', {
+        description: errorMessage,
+      });
     } finally {
       setLoading(false);
     }
