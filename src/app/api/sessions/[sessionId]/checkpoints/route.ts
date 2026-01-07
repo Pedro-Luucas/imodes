@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { hasRole } from '@/lib/roleAuth';
 import { uploadFile } from '@/lib/s3Client';
+import { sendCheckpointMessage } from '@/lib/pgmq';
 import type { SessionCheckpoint, CanvasState } from '@/types/canvas';
 
 type RouteContext = {
@@ -225,65 +226,108 @@ export async function POST(
       );
     }
 
-    // Create checkpoint record first to get the ID
-    const { data: checkpoint, error: insertError } = await supabase
-      .from('session_checkpoints')
-      .insert({
-        session_id: sessionId,
-        name: name.trim(),
-        state: state,
-        created_by: profile.id,
-      })
-      .select()
-      .single();
-
-    if (insertError || !checkpoint) {
-      console.error('Error creating checkpoint:', insertError);
-      return NextResponse.json(
-        { error: 'Failed to create checkpoint' },
-        { status: 500 }
-      );
-    }
-
-    // Upload screenshot if provided
-    let screenshotUrl: string | null = null;
+    // Convert screenshot to base64 if provided (for queue message)
+    let screenshotData: { data: string; type: string; size: number } | null = null;
     if (screenshot) {
       try {
         const arrayBuffer = await screenshot.arrayBuffer();
-        const fileBuffer = Buffer.from(arrayBuffer);
-        const extension = screenshot.type === 'image/png' ? 'png' : 
-                         screenshot.type === 'image/jpeg' ? 'jpg' : 'png';
-        const fullKey = `${sessionId}/${checkpoint.id}.${extension}`;
-
-        await uploadFile(BUCKET_NAME, fullKey, fileBuffer, screenshot.type);
-
-        const supabaseUrl = process.env.SUPABASE_URL;
-        screenshotUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${fullKey}`;
-
-        // Update checkpoint with screenshot URL
-        const { error: updateError } = await supabase
-          .from('session_checkpoints')
-          .update({ screenshot_url: screenshotUrl })
-          .eq('id', checkpoint.id);
-
-        if (updateError) {
-          console.error('Error updating checkpoint with screenshot URL:', updateError);
-        }
-      } catch (uploadError) {
-        console.error('Error uploading screenshot:', uploadError);
-        // Continue without screenshot - checkpoint is still valid
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        screenshotData = {
+          data: base64,
+          type: screenshot.type,
+          size: screenshot.size,
+        };
+      } catch (screenshotError) {
+        console.error('Error converting screenshot to base64:', screenshotError);
+        // Continue without screenshot data in queue
       }
     }
 
-    return NextResponse.json(
-      { 
-        checkpoint: {
-          ...checkpoint,
-          screenshot_url: screenshotUrl,
-        } as SessionCheckpoint 
-      },
-      { status: 201 }
-    );
+    // Enqueue message for async processing
+    try {
+      await sendCheckpointMessage({
+        sessionId,
+        checkpointData: {
+          name: name.trim(),
+          state,
+        },
+        screenshot: screenshotData,
+        userId: profile.id,
+      });
+
+      // Return 202 Accepted - message is queued and will be processed asynchronously
+      return NextResponse.json(
+        {
+          message: 'Checkpoint queued for processing',
+          sessionId,
+        },
+        { status: 202 }
+      );
+    } catch (queueError) {
+      console.error('Error enqueueing checkpoint message:', queueError);
+      
+      // Fallback: try direct creation if queue fails
+      const { data: checkpoint, error: insertError } = await supabase
+        .from('session_checkpoints')
+        .insert({
+          session_id: sessionId,
+          name: name.trim(),
+          state: state,
+          created_by: profile.id,
+        })
+        .select()
+        .single();
+
+      if (insertError || !checkpoint) {
+        console.error('Error creating checkpoint (fallback):', insertError);
+        return NextResponse.json(
+          { error: 'Failed to create checkpoint' },
+          { status: 500 }
+        );
+      }
+
+      // Upload screenshot if provided (fallback mode)
+      let screenshotUrl: string | null = null;
+      if (screenshot) {
+        try {
+          const arrayBuffer = await screenshot.arrayBuffer();
+          const fileBuffer = Buffer.from(arrayBuffer);
+          const extension = screenshot.type === 'image/png' ? 'png' : 
+                           screenshot.type === 'image/jpeg' ? 'jpg' : 'png';
+          const fullKey = `${sessionId}/${checkpoint.id}.${extension}`;
+
+          await uploadFile(BUCKET_NAME, fullKey, fileBuffer, screenshot.type);
+
+          const supabaseUrl = process.env.SUPABASE_URL;
+          screenshotUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${fullKey}`;
+
+          // Update checkpoint with screenshot URL
+          const { error: updateError } = await supabase
+            .from('session_checkpoints')
+            .update({ screenshot_url: screenshotUrl })
+            .eq('id', checkpoint.id);
+
+          if (updateError) {
+            console.error('Error updating checkpoint with screenshot URL:', updateError);
+          }
+        } catch (uploadError) {
+          console.error('Error uploading screenshot:', uploadError);
+          // Continue without screenshot - checkpoint is still valid
+        }
+      }
+
+      // Return success but log that queue failed
+      console.warn('Queue failed, created checkpoint directly as fallback');
+      return NextResponse.json(
+        { 
+          checkpoint: {
+            ...checkpoint,
+            screenshot_url: screenshotUrl,
+          } as SessionCheckpoint 
+        },
+        { status: 201 }
+      );
+    }
   } catch (error) {
     console.error('Error in POST /api/sessions/[sessionId]/checkpoints:', error);
     return NextResponse.json(
