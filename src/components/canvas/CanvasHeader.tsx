@@ -68,6 +68,7 @@ interface CanvasHeaderProps {
   currentDuration?: number; // Current session duration in seconds
   onSessionRenamed?: (newTitle: string) => void;
   onBackgroundClick?: () => void;
+  mouseCursor?: string;
   isDemoSession?: boolean; // Flag to indicate if this is a demo session
 }
 
@@ -104,7 +105,8 @@ export function CanvasHeader({
   const [isSavingCheckpoint, setIsSavingCheckpoint] = useState(false);
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const [checkpointName, setCheckpointName] = useState('');
-  
+  const [mouseCursor, setMouseCursor] = useState('default');
+
   const now = new Date();
   const displayTitle = sessionTitle || t('defaultTitle');
   const displaySubtitle = sessionSubtitle || t('defaultSubtitle', { 
@@ -168,7 +170,7 @@ export function CanvasHeader({
 
   const handleSave = async () => {
     if (!onSave) return;
-    
+    changeMouseCursorTo('wait');
     try {
       await onSave();
       toast.success(t('saveSuccess'));
@@ -177,6 +179,14 @@ export function CanvasHeader({
       console.error('Error saving canvas:', error);
       const errorMessage = error instanceof Error ? error.message : t('saveError');
       toast.error(errorMessage);
+    } finally {
+      changeMouseCursorTo('default');
+    }
+  };
+
+  const changeMouseCursorTo = (cursor: string) => {
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.style.cursor = cursor;
     }
   };
 
