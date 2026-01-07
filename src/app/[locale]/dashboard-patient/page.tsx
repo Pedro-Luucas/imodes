@@ -20,6 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import type { CanvasSession } from '@/types/canvas';
+  import { DevWarning } from '@/components/dashboard/DevWarning';
 
 // interface Assignment {
 //   id: string;
@@ -229,6 +230,9 @@ export default function DashboardPatientPage() {
         </div>
       </Card>
 
+      <DevWarning text={t('devWarning')} />
+
+
       {!hasTherapist && (
         <Alert className="border-dashed border-primary/40 bg-primary/5">
           <AlertCircle className="h-4 w-4 text-primary" />
@@ -301,6 +305,7 @@ export default function DashboardPatientPage() {
           <div className="flex flex-col gap-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between">
+              
               <h2 className="text-xl font-semibold text-foreground">{t('recentSessions')}</h2>
               <button
                 className="text-sm text-sky-600 hover:underline"
@@ -308,8 +313,7 @@ export default function DashboardPatientPage() {
               >
                 {t('viewAll')}
               </button>
-            </div>
-
+              </div>
             {/* Sessions List */}
             <div className="flex flex-col gap-2 flex-1">
               {sessionsLoading ? (

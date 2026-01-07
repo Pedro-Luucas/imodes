@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, UserPlus, Calendar, Users, ClipboardList, Info } from 'lucide-react';
+import { Plus, UserPlus, Calendar, Users, ClipboardList, Info, AlertTriangle, AppWindow } from 'lucide-react';
 import { useAuthProfile } from '@/stores/authStore';
 import type { Profile } from '@/types/auth';
 import { PatientDetailsDialog } from '@/components/dashboard/PatientDetailsDialog';
@@ -14,6 +14,7 @@ import { InvitePatientDialog } from '@/components/dashboard/InvitePatientDialog'
 import { CreateAssignmentDialog } from '@/components/dashboard/CreateAssignmentDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from '@/i18n/navigation';
+import { useParams } from 'next/navigation';
 import { PatientsPageSkeleton } from '@/components/skeleton-loaders/patients';
 import {
   AlertDialog,
@@ -23,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DevWarning } from '@/components/dashboard/DevWarning';
 
 // Extended data for demonstration
 interface ExtendedPatient extends Profile {
@@ -40,6 +42,9 @@ const PATIENTS_PER_PAGE = 10;
 export default function PatientsPage() {
   usePageMetadata('Patients', 'Manage and view all your patients.');
   const t = useTranslations('dashboard.patients');
+  const page = useTranslations('dashboard.page');
+  const params = useParams();
+  const locale = (params.locale as string) || 'en';
   const router = useRouter();
   const profile = useAuthProfile();
   const [patients, setPatients] = useState<ExtendedPatient[]>([]);
@@ -266,6 +271,14 @@ export default function PatientsPage() {
           </h1>
           <div className="hidden md:flex items-center gap-2">
             <Button
+              variant="secondary"
+              size="default"
+              onClick={() => router.push(`/canvas-selection`)}
+            >
+              <AppWindow className="w-5 h-5" />
+              {page('canvasSelection')}
+            </Button>
+            <Button
               variant="default"
               size="default"
               onClick={() => setInviteDialogOpen(true)}
@@ -285,9 +298,7 @@ export default function PatientsPage() {
             <p className="text-5xl font-bold text-primary leading-tight">
               {stats.totalPatients}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {t('devWarning')}
-            </p>
+              <DevWarning text={t('devWarning')} />
           </div>
         </div>
 

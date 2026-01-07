@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,12 @@ export default function DemonstrationPage() {
   const t = useTranslations('demonstration');
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [demoUrl, setDemoUrl] = useState('');
 
-  // Get current URL for QR code and sharing
-  const demoUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/demonstration/wizard`
-    : '';
+  // Get current URL for QR code and sharing (only on client)
+  useEffect(() => {
+    setDemoUrl(`${window.location.origin}/demonstration/wizard`);
+  }, []);
 
   const handleCopyLink = async () => {
     if (!demoUrl) return;

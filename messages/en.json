@@ -204,6 +204,8 @@
     "languageDesc": "Select your preferred language",
     "languageEn": "English",
     "languagePt": "Português",
+    "languageNl": "Nederlands",
+    "languageIt": "Italiano",
     "security": "Security",
     "securityDesc": "Change your password",
     "currentPassword": "Current Password",
@@ -718,7 +720,8 @@
     "activeStatus": "Active",
     "archivedStatus": "Archived",
     "noTherapistTitle": "We're setting up your therapist",
-    "noTherapistDescription": "Your therapist hasn't accepted your invitation yet. We'll notify you as soon as you're connected."
+    "noTherapistDescription": "Your therapist hasn't accepted your invitation yet. We'll notify you as soon as you're connected.",
+    "devWarning": "This website is under development and construction. Some features are not yet available or may work differently than expected."
   },
   "dashboardPatientSessions": {
     "title": "Therapy Sessions",

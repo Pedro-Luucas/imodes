@@ -533,6 +533,8 @@ export default function PatientSettingsPage() {
               <SelectContent className="border-stroke">
                 <SelectItem value="en">{t('languageEn')}</SelectItem>
                 <SelectItem value="pt">{t('languagePt')}</SelectItem>
+                <SelectItem value="nl">{t('languageNl')}</SelectItem>
+                <SelectItem value="it">{t('languageIt')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-2">{t('languageDesc')}</p>

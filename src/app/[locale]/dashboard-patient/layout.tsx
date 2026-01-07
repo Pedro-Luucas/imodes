@@ -1,7 +1,7 @@
 'use client';
 
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { Header } from '@/components/dashboard/Header';
+import { PatientHeader } from '@/components/dashboard/PatientHeader';
 
 export default function DashboardPatientLayout({
   children,
@@ -11,17 +11,12 @@ export default function DashboardPatientLayout({
   // Protect all dashboard-patient routes
   useRequireAuth();
 
-  // Empty function for menu click since there's no sidebar in patient dashboard
-  const handleMenuClick = () => {
-    // No sidebar in patient dashboard, so do nothing
-  };
-
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Main content area - no sidebar */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <Header onMenuClick={handleMenuClick} />
+        {/* Header with logo */}
+        <PatientHeader showHomeButton={true} />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-background">
