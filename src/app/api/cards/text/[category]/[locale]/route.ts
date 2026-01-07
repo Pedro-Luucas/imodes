@@ -36,12 +36,9 @@ export async function GET(
     const normalizedCategory = category.toLowerCase();
 
     if (normalizedCategory === 'boat' || normalizedCategory === 'wave') {
-      textPath = `${normalizedCategory}/text/${locale}.txt`;
-    } else {
-      textPath = `${normalizedCategory}/text/${locale}.txt`;
-    }
+      const textPath = `${normalizedCategory}/text/${locale}.txt`;
 
-    const supabase = createSupabaseServerClient();
+      const supabase = createSupabaseServerClient();
 
     // Download text file - try requested locale first, fallback to 'en' if not found
     let data, error;
@@ -76,6 +73,12 @@ export async function GET(
     const cards = parseCardText(text);
 
     return NextResponse.json(cards, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: 'Unsupported category' },
+        { status: 400 }
+      );
+    }
   } catch (error) {
     console.error('Error in cards/text route:', error);
     return NextResponse.json(
