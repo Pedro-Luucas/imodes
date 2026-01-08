@@ -537,8 +537,63 @@ export default function CanvasPage() {
     );
   }
 
+  // Prevent body scroll and pull-to-refresh on mobile
+  useEffect(() => {
+    if (isMobile) {
+      // Prevent scroll on body
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalWidth = document.body.style.width;
+      const originalHeight = document.body.style.height;
+      const originalTop = document.body.style.top;
+      
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.top = `-${scrollY}px`;
+      
+      // Prevent pull-to-refresh
+      const preventDefault = (e: TouchEvent) => {
+        // Allow touch events inside scrollable elements
+        const target = e.target as HTMLElement;
+        const isScrollable = target.closest('[data-scrollable]') || 
+                            target.closest('.overflow-y-auto') ||
+                            target.closest('.overflow-auto');
+        
+        if (!isScrollable) {
+          e.preventDefault();
+        }
+      };
+      
+      document.addEventListener('touchmove', preventDefault, { passive: false });
+      document.addEventListener('touchstart', preventDefault, { passive: false });
+      
+      return () => {
+        // Restore original styles
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = originalWidth;
+        document.body.style.height = originalHeight;
+        document.body.style.top = originalTop;
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+        
+        document.removeEventListener('touchmove', preventDefault);
+        document.removeEventListener('touchstart', preventDefault);
+      };
+    }
+  }, [isMobile]);
+
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-gray-50">
+    <div className={cn(
+      "flex flex-col bg-gray-50",
+      isMobile ? "fixed inset-0 w-screen h-screen overflow-hidden touch-none" : "h-screen w-full overflow-hidden"
+    )}>
       {/* Header */}
       <CanvasHeader
         gender={gender}
@@ -562,7 +617,10 @@ export default function CanvasPage() {
       />
 
       {/* Canvas with Floating Controls */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className={cn(
+        "flex-1 relative",
+        isMobile ? "overflow-hidden touch-pan-y touch-pan-x" : "overflow-hidden"
+      )}>
         {/* Canvas Background - Full Screen */}
         <CanvasBoard
           onAddCard={handleAddCard}

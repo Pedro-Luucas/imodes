@@ -134,7 +134,7 @@ function CardsGrid({
       _isMobile 
         ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
         : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
-    )}>
+    )} data-scrollable>
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className={cn(
@@ -221,7 +221,7 @@ function BoatAndWaveCardsGrid({
       _isMobile 
         ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
         : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
-    )}>
+    )} data-scrollable>
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className={cn(
@@ -355,7 +355,7 @@ function FrequentlyUsedCards({
       _isMobile 
         ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
         : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
-    )}>
+    )} data-scrollable>
       <div className={cn(
         "grid grid-cols-2",
         _isMobile ? "gap-1.5" : "gap-2"
@@ -465,7 +465,7 @@ function SavedCards({
       _isMobile 
         ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
         : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
-    )}>
+    )} data-scrollable>
       <div className={cn(
         "grid grid-cols-2",
         _isMobile ? "gap-1.5" : "gap-2"
@@ -852,8 +852,8 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
 
         <div className={cn(
           "flex flex-col overflow-y-auto pr-1",
-          isMobile ? "gap-2 max-h-[calc(100vh-120px)]" : "gap-3 max-h-[60vh] md:gap-4 md:max-h-[70vh]"
-        )}>
+          isMobile ? "gap-2 max-h-[calc(100vh-120px)] [data-scrollable]" : "gap-3 max-h-[60vh] md:gap-4 md:max-h-[70vh]"
+        )} data-scrollable>
           {/* Modes Section */}
           <div>
             <button
