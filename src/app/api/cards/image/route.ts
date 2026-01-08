@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSignedUrl } from '@/lib/s3Client';
-import { hasRole } from '@/lib/roleAuth';
 
 const BUCKET_NAME = 'modes_cards';
 

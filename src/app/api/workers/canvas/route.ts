@@ -83,11 +83,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<WorkerRes
         
         if (typeof msg.message === 'string') {
           try {
-            messageData = JSON.parse(msg.message);
+            messageData = JSON.parse(msg.message) as CanvasAutosaveMessage;
             console.log('[PGMQ Worker] 📝 Mensagem parseada (era string JSON)');
-          } catch (parseError) {
-            console.error('[PGMQ Worker] ❌ Erro ao fazer parse da mensagem:', parseError);
-            throw new Error(`Failed to parse message JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+          } catch (parseError: unknown) {
+            const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+            console.error('[PGMQ Worker] ❌ Erro ao fazer parse da mensagem:', errorMessage);
+            throw new Error(`Failed to parse message JSON: ${errorMessage}`);
           }
         } else {
           messageData = msg.message as CanvasAutosaveMessage;

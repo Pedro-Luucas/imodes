@@ -68,7 +68,6 @@ interface CanvasHeaderProps {
   currentDuration?: number; // Current session duration in seconds
   onSessionRenamed?: (newTitle: string) => void;
   onBackgroundClick?: () => void;
-  mouseCursor?: string;
   isDemoSession?: boolean; // Flag to indicate if this is a demo session
 }
 
@@ -105,7 +104,6 @@ export function CanvasHeader({
   const [isSavingCheckpoint, setIsSavingCheckpoint] = useState(false);
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const [checkpointName, setCheckpointName] = useState('');
-  const [mouseCursor, setMouseCursor] = useState('default');
 
   const now = new Date();
   const displayTitle = sessionTitle || t('defaultTitle');

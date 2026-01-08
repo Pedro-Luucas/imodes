@@ -4,6 +4,8 @@ import ptMessages from '../../messages/pt.json';
 import nlMessages from '../../messages/nl.json';
 import itMessages from '../../messages/it.json';
 
+// SUPPORTED_LOCALES is used as a type only
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SUPPORTED_LOCALES = ['en', 'pt', 'nl', 'it'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 

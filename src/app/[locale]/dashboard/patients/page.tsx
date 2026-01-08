@@ -99,15 +99,15 @@ export default function PatientsPage() {
       if (!response.ok) {
         // Try to get error message from response
         let errorMessage = 'Failed to fetch patients';
-        let errorData: any = null;
+        let errorData: { error?: string } | null = null;
         
         try {
           const responseText = await response.text();
           if (responseText) {
-            errorData = JSON.parse(responseText);
+            errorData = JSON.parse(responseText) as { error?: string };
             errorMessage = errorData?.error || errorMessage;
           }
-        } catch (parseError) {
+        } catch {
           // If response is not JSON, use status text
           errorMessage = response.statusText || errorMessage;
         }

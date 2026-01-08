@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { parseCardText } from '@/lib/cardParser';
 import { ParsedCardData } from '@/types/canvas';
-import { hasRole } from '@/lib/roleAuth';
 
 const BUCKET_NAME = 'modes_cards';
 

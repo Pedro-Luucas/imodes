@@ -60,7 +60,7 @@ export default function PatientSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoadingAvatar, setIsLoadingAvatar] = useState(true);
   // const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [_deleteConfirmText, setDeleteConfirmText] = useState('');
   // const [isDeleting, setIsDeleting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
@@ -241,7 +241,7 @@ export default function PatientSettingsPage() {
   };
 
   // Handle account deletion
-  const handleDeleteAccount = async () => {
+  const _handleDeleteAccount = async () => {
     const expectedText = locale === 'pt' ? 'EXCLUIR' : 'DELETE';
     
     if (deleteConfirmText !== expectedText) {
@@ -375,7 +375,7 @@ export default function PatientSettingsPage() {
   }
 
   const displayAvatarUrl = avatarUrl;
-  const expectedDeleteText = locale === 'pt' ? 'EXCLUIR' : 'DELETE';
+  const _expectedDeleteText = locale === 'pt' ? 'EXCLUIR' : 'DELETE';
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

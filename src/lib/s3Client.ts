@@ -75,7 +75,7 @@ export async function uploadFile(
             body: bodyStr,
             region: process.env.AWS_REGION || 'us-east-1 (default)'
           });
-        } catch (e) {
+        } catch {
           console.error('Could not read error response body');
         }
       }
