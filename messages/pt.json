@@ -831,7 +831,8 @@
         "title": "Qual é o seu nome?",
         "description": "Digite seu nome completo",
         "label": "Nome Completo",
-        "placeholder": "Digite seu nome completo"
+        "placeholder": "Digite seu nome completo",
+        "acceptCookies": "Aceito os termos e condições"
       },
       "step2": {
         "title": "Qual é o seu email?",
@@ -860,6 +861,7 @@
         "emailRequired": "Email é obrigatório",
         "emailInvalid": "Email inválido",
         "roleRequired": "Selecione um papel",
+        "acceptCookiesRequired": "Você deve aceitar os termos e condições",
         "createFailed": "Falha ao criar demonstração"
       }
     }

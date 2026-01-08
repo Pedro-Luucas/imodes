@@ -266,7 +266,8 @@
         "title": "Wat is je naam?",
         "description": "Voer je volledige naam in",
         "label": "Volledige naam",
-        "placeholder": "Voer je volledige naam in"
+        "placeholder": "Voer je volledige naam in",
+        "acceptCookies": "Ik accepteer de voorwaarden"
       },
       "step2": {
         "title": "Wat is je e-mail?",
@@ -295,6 +296,7 @@
         "emailRequired": "E-mail is vereist",
         "emailInvalid": "Ongeldig e-mailadres",
         "roleRequired": "Selecteer een rol",
+        "acceptCookiesRequired": "U moet de voorwaarden accepteren",
         "createFailed": "Demonstratie aanmaken mislukt"
       }
     }
