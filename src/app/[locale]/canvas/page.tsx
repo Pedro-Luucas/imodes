@@ -734,7 +734,7 @@ export default function CanvasPage() {
                 onClick={() => setIsControlsMenuOpen(false)}
               />
             )}
-            <div className="absolute right-2 bottom-2 z-20">
+            <div className="absolute right-2 bottom-2 z-20" style={{ marginBottom: '1rem' }}>
               {/* Botão principal do menu */}
               <Button
                 variant="secondary"

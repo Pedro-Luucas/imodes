@@ -826,7 +826,7 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
         {/* Main Panel */}
         <div className={cn(
           "bg-white border border-stroke rounded-2xl",
-          isMobile ? "w-[280px] max-w-[calc(100vw-8px)] p-2.5" : "w-full max-w-sm p-4 md:max-w-none md:w-64 md:p-6"
+          isMobile ? "w-[240px] max-w-[calc(100vw-8px)] p-2.5" : "w-full max-w-sm p-4 md:max-w-none md:w-64 md:p-6"
         )}>
         {/* Header */}
         <div className={cn(
