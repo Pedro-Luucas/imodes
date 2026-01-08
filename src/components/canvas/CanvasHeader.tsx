@@ -47,6 +47,8 @@ import { SessionDetailsPanel } from './SessionDetailsPanel';
 import { buildSerializableCanvasState } from '@/lib/canvasPersistence';
 import type { Profile } from '@/types/auth';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { cn } from '@/lib/utils';
 
 interface WindowWithCanvasCard extends Window {
   _takeCanvasScreenshot?: () => Promise<Blob | null>;
@@ -94,6 +96,12 @@ export function CanvasHeader({
   const pathname = usePathname();
   const profile = useAuthProfile();
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSessionPanelOpen, setIsSessionPanelOpen] = useState(false);
@@ -411,20 +419,33 @@ export function CanvasHeader({
     onBackgroundClick?.();
   };
 
+  // Use mounted state to avoid hydration mismatch
+  const shouldUseMobileStyles = mounted && isMobile;
+
   return (
     <>
       <div className="bg-white border-b border-gray-200 w-full" onClick={handleHeaderClick}>
-        <div className="flex items-center justify-between px-2 py-1 md:px-6 md:py-4">
+        <div className={cn(
+          "flex items-center justify-between",
+          shouldUseMobileStyles ? "px-2 py-1.5" : "px-2 py-1 md:px-6 md:py-4"
+        )}>
           {/* Left Section - Menu & Title */}
-          <div className="flex items-center gap-4">
+          <div className={cn(
+            "flex items-center",
+            shouldUseMobileStyles ? "gap-2" : "gap-4"
+          )}>
             <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="size-8 md:size-10"
+                  className={cn(
+                    shouldUseMobileStyles ? "size-7" : "size-8 md:size-10"
+                  )}
                 >
-                  <Menu className="w-4 h-4 md:w-6 md:h-6" />
+                  <Menu className={cn(
+                    shouldUseMobileStyles ? "w-3.5 h-3.5" : "w-4 h-4 md:w-6 md:h-6"
+                  )} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
@@ -471,14 +492,17 @@ export function CanvasHeader({
 
 
           
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0 flex-1">
             {isEditingTitle ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Input
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
                   onKeyDown={handleTitleKeyDown}
-                  className="h-7 md:h-8 text-sm md:text-lg font-medium w-40 md:w-60"
+                  className={cn(
+                    "font-medium",
+                    shouldUseMobileStyles ? "h-6 text-xs w-32" : "h-7 md:h-8 text-sm md:text-lg w-40 md:w-60"
+                  )}
                   maxLength={60}
                   autoFocus
                   disabled={isRenaming}
@@ -486,52 +510,70 @@ export function CanvasHeader({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-6 md:size-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  className={cn(
+                    "text-green-600 hover:text-green-700 hover:bg-green-50",
+                    shouldUseMobileStyles ? "size-5" : "size-6 md:size-7"
+                  )}
                   onClick={handleRenameSession}
                   disabled={isRenaming}
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className={cn(shouldUseMobileStyles ? "w-3 h-3" : "w-4 h-4")} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-6 md:size-7 text-gray-500 hover:text-gray-700"
+                  className={cn(
+                    "text-gray-500 hover:text-gray-700",
+                    shouldUseMobileStyles ? "size-5" : "size-6 md:size-7"
+                  )}
                   onClick={handleCancelEditing}
                   disabled={isRenaming}
                 >
-                  <X className="w-4 h-4" />
+                  <X className={cn(shouldUseMobileStyles ? "w-3 h-3" : "w-4 h-4")} />
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm md:text-lg font-medium text-foreground">{sessionTitle || displayTitle}</span>
+              <div className="flex items-center gap-1">
+                <span className={cn(
+                  "font-medium text-foreground truncate",
+                  shouldUseMobileStyles ? "text-xs" : "text-sm md:text-lg"
+                )}>{sessionTitle || displayTitle}</span>
                 {(isTherapist || isDemoSession || sessionId?.startsWith('demo-')) && sessionId && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-5 md:size-6 text-gray-400 hover:text-gray-600"
+                    className={cn(
+                      "text-gray-400 hover:text-gray-600 shrink-0",
+                      shouldUseMobileStyles ? "size-4" : "size-5 md:size-6"
+                    )}
                     onClick={handleStartEditing}
                     title={t('renameSession')}
                   >
-                    <Pencil className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                    <Pencil className={cn(shouldUseMobileStyles ? "w-2.5 h-2.5" : "w-3 h-3 md:w-3.5 md:h-3.5")} />
                   </Button>
                 )}
               </div>
             )}
-            <span className="text-xs md:text-sm text-zinc-500">
+            <span className={cn(
+              "text-zinc-500 truncate",
+              shouldUseMobileStyles ? "text-[10px]" : "text-xs md:text-sm"
+            )}>
               {sessionSubtitle || displaySubtitle}
             </span>
           </div>
         </div>
 
         {/* Right Section - Actions & Avatar */}
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className={cn(
+          "flex items-center shrink-0",
+          shouldUseMobileStyles ? "gap-1" : "gap-2 md:gap-4"
+        )}>
           {/* Language Switcher - Only show for demo sessions */}
           {isDemoSession && (
-            <LanguageSwitcher variant="secondary" size="default" />
+            <LanguageSwitcher variant="secondary" size={shouldUseMobileStyles ? "sm" : "default"} />
           )}
           
-          {isDemoSession !== true && (
+          {isDemoSession !== true && !shouldUseMobileStyles && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="default" className="h-8 md:h-10">
@@ -556,53 +598,65 @@ export function CanvasHeader({
             </DropdownMenu>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="default" className="h-8 md:h-10">
-                <UserRound className="w-4 h-4 md:w-6 md:h-6" />
-                {t('gender')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="border-stroke" align="end">
-              <DropdownMenuItem
-                onClick={() => onGenderChange?.('male')}
-                className={gender === 'male' ? 'bg-gray-100' : ''}
-              >
-                {t('male')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onGenderChange?.('female')}
-                className={gender === 'female' ? 'bg-gray-100' : ''}
-              >
-                {t('female')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isMobile && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="default" className="h-8 md:h-10">
+                  <UserRound className="w-4 h-4 md:w-6 md:h-6" />
+                  {t('gender')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="border-stroke" align="end">
+                <DropdownMenuItem
+                  onClick={() => onGenderChange?.('male')}
+                  className={gender === 'male' ? 'bg-gray-100' : ''}
+                >
+                  {t('male')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onGenderChange?.('female')}
+                  className={gender === 'female' ? 'bg-gray-100' : ''}
+                >
+                  {t('female')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          {!isMobile && (
+            <Button 
+              variant="secondary" 
+              size="default" 
+              className="h-8 md:h-10"
+              onClick={handleSave}
+              disabled={!onSave}
+            >
+              <Save className="w-4 h-4 md:w-6 md:h-6" />
+              {t('save')}
+            </Button>
+          )}
           
           <Button 
             variant="secondary" 
-            size="default" 
-            className="h-8 md:h-10"
-            onClick={handleSave}
-            disabled={!onSave}
-          >
-            <Save className="w-4 h-4 md:w-6 md:h-6" />
-            {t('save')}
-          </Button>
-          
-          <Button 
-            variant="secondary" 
-            size="default" 
-            className="h-8 md:h-10"
+            size={shouldUseMobileStyles ? "icon" : "default"}
+            className={cn(
+              shouldUseMobileStyles ? "size-7" : "h-8 md:h-10"
+            )}
             onClick={toggleSessionPanel}
           >
-              <Calendar className="w-4 h-4 md:w-6 md:h-6" />
-            {t('session')}
+            <Calendar className={cn(shouldUseMobileStyles ? "w-3.5 h-3.5" : "w-4 h-4 md:w-6 md:h-6")} />
+            {!shouldUseMobileStyles && t('session')}
           </Button>
 
-          <Avatar className="size-10 rounded-lg shrink-0">
+          <Avatar className={cn(
+            "rounded-lg shrink-0",
+            shouldUseMobileStyles ? "size-7" : "size-10"
+          )}>
             <AvatarImage src={avatarUrl || undefined} alt={t('userAvatar')} className="rounded-lg" />
-            <AvatarFallback className="rounded-lg bg-orange-400 text-white font-semibold text-sm">
+            <AvatarFallback className={cn(
+              "rounded-lg bg-orange-400 text-white font-semibold",
+              shouldUseMobileStyles ? "text-[10px]" : "text-sm"
+            )}>
               {getInitials()}
             </AvatarFallback>
           </Avatar>

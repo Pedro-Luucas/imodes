@@ -31,6 +31,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { CardCategory, Gender, CanvasState, SessionCheckpoint } from '@/types/canvas';
 import { trackCardUsage, getFrequentlyUsedCards, type CardUsage } from '@/lib/cardUsageTracker';
 import { getSavedCards, removeSavedCard, type SavedCard } from '@/lib/savedCardsTracker';
+import { cn } from '@/lib/utils';
 
 // Reusable card image component with error fallback
 function CardImage({ 
@@ -128,17 +129,31 @@ function CardsGrid({
 
     
   return (
-    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+    <div className={cn(
+      "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg z-30",
+      _isMobile 
+        ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+        : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+    )}>
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400 md:h-6 md:w-6" />
+          <Loader2 className={cn(
+            "animate-spin text-gray-400",
+            _isMobile ? "h-4 w-4" : "h-5 w-5 md:h-6 md:w-6"
+          )} />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center py-8 text-xs text-red-500 md:text-sm">
+        <div className={cn(
+          "flex items-center justify-center py-8 text-red-500",
+          _isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2">
+        <div className={cn(
+          "grid grid-cols-2",
+          _isMobile ? "gap-1.5" : "gap-2"
+        )}>
           {cards.map((card) => (
             <div
               key={card.path}
@@ -199,19 +214,33 @@ function BoatAndWaveCardsGrid({
     // Call the original onCardSelect callback
     onCardSelect?.(card);
   }, [onCardSelect]);
-
+  
   return (
-    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+    <div className={cn(
+      "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg z-30",
+      _isMobile 
+        ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+        : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+    )}>
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400 md:h-6 md:w-6" />
+          <Loader2 className={cn(
+            "animate-spin text-gray-400",
+            _isMobile ? "h-4 w-4" : "h-5 w-5 md:h-6 md:w-6"
+          )} />
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center py-8 text-xs text-red-500 md:text-sm">
+        <div className={cn(
+          "flex items-center justify-center py-8 text-red-500",
+          _isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2">
+        <div className={cn(
+          "grid grid-cols-2",
+          _isMobile ? "gap-1.5" : "gap-2"
+        )}>
           {allCards.map((card) => (
             <div
               key={card.path}
@@ -306,15 +335,31 @@ function FrequentlyUsedCards({
 
   if (frequentCards.length === 0) {
     return (
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">{t('noFrequentlyUsed')}</div>
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        _isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
+        <div className={cn(
+          "py-8 text-center text-gray-500",
+          _isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>{t('noFrequentlyUsed')}</div>
       </div>
     );
   }
 
   return (
-    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-      <div className="grid grid-cols-2 gap-2">
+    <div className={cn(
+      "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg z-30",
+      _isMobile 
+        ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+        : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+    )}>
+      <div className={cn(
+        "grid grid-cols-2",
+        _isMobile ? "gap-1.5" : "gap-2"
+      )}>
         {frequentCards.map((cardUsage) => (
           <div
             key={`${cardUsage.category}-${cardUsage.cardNumber}`}
@@ -400,15 +445,31 @@ function SavedCards({
 
   if (savedCards.length === 0) {
     return (
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">{t('noSavedCards')}</div>
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        _isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
+        <div className={cn(
+          "py-8 text-center text-gray-500",
+          _isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>{t('noSavedCards')}</div>
       </div>
     );
   }
 
   return (
-    <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-      <div className="grid grid-cols-2 gap-2">
+    <div className={cn(
+      "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg z-30",
+      _isMobile 
+        ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+        : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+    )}>
+      <div className={cn(
+        "grid grid-cols-2",
+        _isMobile ? "gap-1.5" : "gap-2"
+      )}>
         {savedCards.map((savedCard) => (
           <div
             key={`${savedCard.category}-${savedCard.cardNumber}`}
@@ -553,8 +614,16 @@ function CheckpointsGrid({
 
   if (!sessionId) {
     return (
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
+        <div className={cn(
+          "py-8 text-center text-gray-500",
+          isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>
           {t('noSessionForCheckpoints') || 'No session available'}
         </div>
       </div>
@@ -563,9 +632,17 @@ function CheckpointsGrid({
 
   if (loading) {
     return (
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400 md:h-6 md:w-6" />
+          <Loader2 className={cn(
+            "animate-spin text-gray-400",
+            isMobile ? "h-4 w-4" : "h-5 w-5 md:h-6 md:w-6"
+          )} />
         </div>
       </div>
     );
@@ -573,16 +650,32 @@ function CheckpointsGrid({
 
   if (error) {
     return (
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-        <div className="py-8 text-center text-xs text-red-500 md:text-sm">{error}</div>
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
+        <div className={cn(
+          "py-8 text-center text-red-500",
+          isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>{error}</div>
       </div>
     );
   }
 
   if (checkpoints.length === 0) {
     return (
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-        <div className="py-8 text-center text-xs text-gray-500 md:text-sm">
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
+        <div className={cn(
+          "py-8 text-center text-gray-500",
+          isMobile ? "text-[10px]" : "text-xs md:text-sm"
+        )}>
           {t('noCheckpoints') || 'No checkpoints saved yet'}
         </div>
       </div>
@@ -591,8 +684,16 @@ function CheckpointsGrid({
 
   return (
     <>
-      <div className="absolute left-full top-0 ml-3 w-64 max-h-[60vh] overflow-y-auto rounded-2xl border border-stroke bg-white p-3 shadow-lg sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]">
-        <div className="grid grid-cols-2 gap-2">
+      <div className={cn(
+        "absolute left-full top-0 overflow-y-auto rounded-2xl border border-stroke bg-white shadow-lg",
+        isMobile 
+          ? "ml-2 w-[240px] max-h-[calc(100vh-140px)] p-2" 
+          : "ml-3 w-64 max-h-[60vh] p-3 sm:w-72 md:ml-4 md:w-96 md:max-h-[600px] md:p-4 lg:w-[480px]"
+      )}>
+        <div className={cn(
+          "grid grid-cols-2",
+          isMobile ? "gap-1.5" : "gap-2"
+        )}>
           {checkpoints.map((checkpoint) => (
             <div
               key={checkpoint.id}
@@ -720,38 +821,62 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
   );
 
   return (
-    <div className={`absolute left-2 top-2 z-10 md:left-8 md:top-8 ${!isOpen ? 'hidden' : ''}`}>
+    <div className={`absolute ${isMobile ? 'left-1 top-1' : 'left-2 top-2'} z-20 ${isMobile ? '' : 'md:left-8 md:top-8'} ${!isOpen ? 'hidden' : ''}`}>
       <div className="relative">
         {/* Main Panel */}
-        <div className="bg-white border border-stroke rounded-2xl w-full max-w-sm p-4 md:max-w-none md:w-64 md:p-6">
+        <div className={cn(
+          "bg-white border border-stroke rounded-2xl",
+          isMobile ? "w-[280px] max-w-[calc(100vw-8px)] p-2.5" : "w-full max-w-sm p-4 md:max-w-none md:w-64 md:p-6"
+        )}>
         {/* Header */}
-        <div className="mb-3 flex items-center justify-between md:mb-4">
-          <span className="text-sm font-medium text-foreground md:text-base">{t('title')}</span>
+        <div className={cn(
+          "flex items-center justify-between",
+          isMobile ? "mb-2" : "mb-3 md:mb-4"
+        )}>
+          <span className={cn(
+            "font-medium text-foreground",
+            isMobile ? "text-xs" : "text-sm md:text-base"
+          )}>{t('title')}</span>
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 hover:bg-transparent md:size-8"
+            className={cn(
+              "hover:bg-transparent",
+              isMobile ? "size-5" : "size-6 md:size-8"
+            )}
             onClick={onClose}
           >
-            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
+            <ChevronLeft className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
           </Button>
         </div>
 
-        <div className="flex flex-col gap-3 overflow-y-auto pr-1 max-h-[60vh] md:gap-4 md:max-h-[70vh]">
+        <div className={cn(
+          "flex flex-col overflow-y-auto pr-1",
+          isMobile ? "gap-2 max-h-[calc(100vh-120px)]" : "gap-3 max-h-[60vh] md:gap-4 md:max-h-[70vh]"
+        )}>
           {/* Modes Section */}
           <div>
             <button
               onClick={() => toggleSection('modes')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <Smile className="h-4 w-4 text-amber-500 md:h-5 md:w-5" />
-                <span className="text-xs font-medium md:text-sm">{t('modes')}</span>
+              <div className="flex items-center gap-1.5">
+                <Smile className={cn(
+                  "text-amber-500",
+                  isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('modes')}</span>
               </div>
               {expandedSection === 'modes' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
           </div>
@@ -760,16 +885,25 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
           <div>
             <button
               onClick={() => toggleSection('needs')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <div className="text-xs text-red-500 md:text-sm">❤️</div>
-                <span className="text-xs font-medium md:text-sm">{t('needs')}</span>
+              <div className="flex items-center gap-1.5">
+                <div className={cn(
+                  "text-red-500",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>❤️</div>
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('needs')}</span>
               </div>
               {expandedSection === 'needs' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
           </div>
@@ -778,16 +912,25 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
           <div>
             <button
               onClick={() => toggleSection('strengths')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
-                <span className="text-xs font-medium md:text-sm">{t('strengths')}</span>
+              <div className="flex items-center gap-1.5">
+                <Zap className={cn(
+                  "text-orange-500",
+                  isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('strengths')}</span>
               </div>
               {expandedSection === 'strengths' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
           </div>
@@ -796,16 +939,25 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
           <div>
             <button
               onClick={() => toggleSection('boat')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <Waves className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
-                <span className="text-xs font-medium md:text-sm">{t('boatAndWave')}</span>
+              <div className="flex items-center gap-1.5">
+                <Waves className={cn(
+                  "text-orange-500",
+                  isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('boatAndWave')}</span>
               </div>
               {expandedSection === 'boat' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
           </div>
@@ -814,16 +966,25 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
           <div>
             <button
               onClick={() => toggleSection('frequent')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
-                <span className="text-xs font-medium md:text-sm">{t('frequentlyUsed')}</span>
+              <div className="flex items-center gap-1.5">
+                <Clock className={cn(
+                  "text-orange-500",
+                  isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('frequentlyUsed')}</span>
               </div>
               {expandedSection === 'frequent' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
             {expandedSection === 'frequent' && (
@@ -835,16 +996,25 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
           <div>
             <button
               onClick={() => toggleSection('saved')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4 text-orange-500 md:h-5 md:w-5" />
-                <span className="text-xs font-medium md:text-sm">{t('savedCards')}</span>
+              <div className="flex items-center gap-1.5">
+                <FolderOpen className={cn(
+                  "text-orange-500",
+                  isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('savedCards')}</span>
               </div>
               {expandedSection === 'saved' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
             {expandedSection === 'saved' && (
@@ -856,16 +1026,25 @@ export function ToolsPanel({ isOpen, onClose, gender, locale, sessionId, onCardS
           <div>
             <button
               onClick={() => toggleSection('checkpoints')}
-              className="flex w-full items-center justify-between rounded-lg border border-stroke px-2 py-1.5 transition-colors hover:bg-gray-100 md:px-3 md:py-2"
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg border border-stroke transition-colors active:bg-gray-100",
+                isMobile ? "px-1.5 py-1" : "px-2 py-1.5 hover:bg-gray-100 md:px-3 md:py-2"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <Bookmark className="h-4 w-4 text-blue-500 md:h-5 md:w-5" />
-                <span className="text-xs font-medium md:text-sm">{t('checkpoints') || 'Checkpoints'}</span>
+              <div className="flex items-center gap-1.5">
+                <Bookmark className={cn(
+                  "text-blue-500",
+                  isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-[11px]" : "text-xs md:text-sm"
+                )}>{t('checkpoints') || 'Checkpoints'}</span>
               </div>
               {expandedSection === 'checkpoints' ? (
-                <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronDown className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               ) : (
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                <ChevronRight className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4 md:h-5 md:w-5")} />
               )}
             </button>
             {expandedSection === 'checkpoints' && (
