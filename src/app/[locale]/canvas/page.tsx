@@ -342,7 +342,7 @@ export default function CanvasPage() {
     };
 
     loadSessionData();
-  }, [sessionId, profile]);
+  }, [sessionId, profile, searchParams]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -528,14 +528,6 @@ export default function CanvasPage() {
       role: userRole ?? null,
     });
   }, [sessionId, userRole]);
-
-  if (isCreatingSession) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Creating session...</div>
-      </div>
-    );
-  }
 
   // Prevent body scroll and pull-to-refresh on mobile
   useEffect(() => {
