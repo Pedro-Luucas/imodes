@@ -109,10 +109,14 @@ export async function POST(request: NextRequest) {
       });
 
       // Return 202 Accepted - message is queued and will be processed asynchronously
-      return NextResponse.json({
-        message: 'Notification queued for processing',
-        user_id,
-      } as CreateNotificationResponse, { status: 202 });
+      // Note: We return a different response type when message is queued (no notification yet)
+      return NextResponse.json(
+        {
+          message: 'Notification queued for processing',
+          user_id,
+        },
+        { status: 202 }
+      );
     } catch (queueError) {
       console.error('Error enqueueing notification message:', queueError);
       
