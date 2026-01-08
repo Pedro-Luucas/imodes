@@ -342,7 +342,7 @@ export default function CanvasPage() {
     };
 
     loadSessionData();
-  }, [sessionId, profile, searchParams]);
+  }, [sessionId, profile]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -529,6 +529,14 @@ export default function CanvasPage() {
     });
   }, [sessionId, userRole]);
 
+  if (isCreatingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>Creating session...</div>
+      </div>
+    );
+  }
+
   // Prevent body scroll and pull-to-refresh on mobile
   useEffect(() => {
     if (isMobile) {
@@ -581,14 +589,6 @@ export default function CanvasPage() {
     }
   }, [isMobile]);
 
-  if (isCreatingSession) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Creating session...</div>
-      </div>
-    );
-  }
-
   return (
     <div className={cn(
       "flex flex-col bg-gray-50",
@@ -617,10 +617,7 @@ export default function CanvasPage() {
       />
 
       {/* Canvas with Floating Controls */}
-      <div className={cn(
-        "flex-1 relative",
-        isMobile ? "overflow-hidden touch-pan-y touch-pan-x" : "overflow-hidden"
-      )}>
+      <div className="flex-1 relative overflow-hidden">
         {/* Canvas Background - Full Screen */}
         <CanvasBoard
           onAddCard={handleAddCard}
@@ -734,7 +731,7 @@ export default function CanvasPage() {
                 onClick={() => setIsControlsMenuOpen(false)}
               />
             )}
-            <div className="absolute right-2 bottom-2 z-20" style={{ marginBottom: '1rem' }}>
+            <div className="absolute right-2 bottom-2 z-20">
               {/* Botão principal do menu */}
               <Button
                 variant="secondary"
