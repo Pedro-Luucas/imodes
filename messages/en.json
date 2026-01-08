@@ -846,5 +846,22 @@
       "accessTokenRequired": "Access token is required",
       "refreshTokenRequired": "Refresh token is required"
     }
+  },
+  "cookies": {
+    "title": "We use cookies",
+    "description": "We use cookies to enhance your browsing experience, analyze site traffic, and personalize content. By clicking \"Accept All\", you consent to our use of cookies.",
+    "customize": "Customize preferences",
+    "acceptAll": "Accept All",
+    "rejectAll": "Reject All",
+    "settingsTitle": "Cookie Preferences",
+    "settingsDescription": "Manage your cookie preferences. You can enable or disable different types of cookies below.",
+    "essentialTitle": "Essential Cookies",
+    "required": "Required",
+    "essentialDescription": "These cookies are necessary for the website to function and cannot be switched off. They are usually only set in response to actions made by you.",
+    "analyticsTitle": "Analytics Cookies",
+    "analyticsDescription": "These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously.",
+    "marketingTitle": "Marketing Cookies",
+    "marketingDescription": "These cookies are used to deliver personalized advertisements and track the effectiveness of our marketing campaigns.",
+    "savePreferences": "Save Preferences"
   }
 }

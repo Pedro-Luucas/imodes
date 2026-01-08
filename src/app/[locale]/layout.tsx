@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { AuthInitializer } from "@/components/AuthInitializer";
 import { NotificationInitializer } from "@/components/NotificationInitializer";
+import { AcceptCookies } from "@/components/AcceptCookies";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -54,6 +55,7 @@ export default async function RootLayout({
         <Toaster />
         <NextIntlClientProvider messages={messages}>
           {children}
+          <AcceptCookies />
         </NextIntlClientProvider>
         <Analytics />
         <SpeedInsights />

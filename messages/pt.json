@@ -790,9 +790,25 @@
       "firstNameRequired": "O primeiro nome é obrigatório",
       "firstNameMaxLength": "O primeiro nome não pode exceder 100 caracteres",
       "roleInvalid": "O papel deve ser terapeuta ou paciente",
-      "inviteTokenInvalid": "Formato de token de convite inválido",
       "accessTokenRequired": "Token de acesso é obrigatório",
       "refreshTokenRequired": "Token de atualização é obrigatório"
+    },
+    "cookies": {
+      "title": "Usamos cookies",
+      "description": "Usamos cookies para melhorar sua experiência de navegação, analisar o tráfego do site e personalizar o conteúdo. Ao clicar em \"Aceitar Tudo\", você consente com o uso de cookies.",
+      "customize": "Personalizar preferências",
+      "acceptAll": "Aceitar Tudo",
+      "rejectAll": "Rejeitar Tudo",
+      "settingsTitle": "Preferências de Cookies",
+      "settingsDescription": "Gerencie suas preferências de cookies. Você pode habilitar ou desabilitar diferentes tipos de cookies abaixo.",
+      "essentialTitle": "Cookies Essenciais",
+      "required": "Obrigatório",
+      "essentialDescription": "Estes cookies são necessários para o funcionamento do site e não podem ser desativados. Eles geralmente são definidos apenas em resposta a ações realizadas por você.",
+      "analyticsTitle": "Cookies de Análise",
+      "analyticsDescription": "Estes cookies nos ajudam a entender como os visitantes interagem com nosso site coletando e relatando informações anonimamente.",
+      "marketingTitle": "Cookies de Marketing",
+      "marketingDescription": "Estes cookies são usados para entregar anúncios personalizados e rastrear a eficácia de nossas campanhas de marketing.",
+      "savePreferences": "Salvar Preferências"
     }
   },
   "demonstration": {
