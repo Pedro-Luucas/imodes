@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
-import { hasRole, getUserProfile } from '@/lib/roleAuth';
-import type { GetPatientsResponse, ErrorResponse } from '@/types/auth';
+import { hasRole } from '@/lib/roleAuth';
+import type { GetPatientsResponse, ErrorResponse, Profile } from '@/types/auth';
 
 type RouteContext = {
   params: Promise<{ therapistId: string }>;
@@ -46,72 +46,78 @@ export async function GET(
       );
     }
 
-    // Verify therapist exists
-    const therapist = await getUserProfile(therapistId);
-    
-    if (!therapist) {
-      console.error('Therapist not found:', therapistId);
-      return NextResponse.json(
-        { error: 'Therapist not found' },
-        { status: 404 }
-      );
-    }
-
-    if (therapist.role !== 'therapist') {
-      console.error('User is not a therapist:', { therapistId, role: therapist.role });
-      return NextResponse.json(
-        { error: 'User is not a therapist' },
-        { status: 400 }
-      );
-    }
-    
-    console.log('Therapist verified:', { therapistId, role: therapist.role });
-
     const supabase = createSupabaseServerClient();
 
-    // Get all patients assigned to this therapist by joining patients and profiles tables
-    const { data: patientAssignments, error } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('therapist_id', therapistId);
+    // Optimized: Use a single SQL query with JOIN via RPC for best performance
+    // Falls back to optimized two-query approach if RPC doesn't exist
+    let profiles: Profile[] | null = null;
 
-    if (error) {
-      console.error('Error fetching patients:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch patients' },
-        { status: 500 }
-      );
-    }
+    // Try using RPC function first (fastest - single query with JOIN)
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_therapist_patients', {
+      p_therapist_id: therapistId
+    });
 
-    // If no patients, return empty array
-    if (!patientAssignments || patientAssignments.length === 0) {
-      console.log('No patients found for therapist:', therapistId);
-      return NextResponse.json(
-        { patients: [] },
-        { status: 200 }
-      );
-    }
-
-    // Get the full profiles for all assigned patients
-    const patientIds = patientAssignments.map(p => p.id);
-    console.log('Found patient assignments:', patientIds.length, 'patients');
+    // Check if RPC function exists and worked
+    // If rpcError exists (even if it's an empty object), use fallback
+    // If rpcData is an array (even if empty), RPC worked
+    const rpcWorked = !rpcError && Array.isArray(rpcData);
     
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .in('id', patientIds)
-      .eq('role', 'patient')
-      .order('created_at', { ascending: false });
+    if (rpcWorked) {
+      // RPC function exists and returned data successfully
+      profiles = rpcData;
+    } else {
+      // RPC function doesn't exist or failed - use fallback approach
+      // This is expected if the migration hasn't been run yet
+      if (rpcError) {
+        const errorMsg = (rpcError as { message?: string })?.message || 
+                        (rpcError as { code?: string })?.code || 
+                        'Function may not exist';
+        console.log('RPC function not available, using fallback:', errorMsg);
+      }
 
-    if (profilesError) {
-      console.error('Error fetching patient profiles:', {
-        error: profilesError,
-        patientIds,
-      });
-      return NextResponse.json(
-        { error: 'Failed to fetch patient profiles' },
-        { status: 500 }
-      );
+      // Fallback: Optimized two-query approach
+      // Query 1: Get patient IDs (lightweight, only ID column - should be fast with index on therapist_id)
+      const { data: patientIds, error: idsError } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('therapist_id', therapistId);
+
+      if (idsError) {
+        console.error('Error fetching patient IDs:', idsError);
+        return NextResponse.json(
+          { error: 'Failed to fetch patients' },
+          { status: 500 }
+        );
+      }
+
+      if (!patientIds || patientIds.length === 0) {
+        // Early return for empty result
+        console.log('No patients found for therapist:', therapistId);
+        return NextResponse.json(
+          { patients: [] },
+          { status: 200 }
+        );
+      }
+
+      // Query 2: Get full profiles (efficient with .in() - should use index on id)
+      // Note: phone is not in profiles table, it's in therapists table
+      const patientIdList = patientIds.map(p => p.id);
+      const { data: profileData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id,role,full_name,first_name,email,avatar_url,is_active,subscription_active,settings,created_at,updated_at')
+        .in('id', patientIdList)
+        .eq('role', 'patient')
+        .order('created_at', { ascending: false });
+
+      if (profilesError) {
+        console.error('Error fetching patient profiles:', profilesError);
+        return NextResponse.json(
+          { error: 'Failed to fetch patient profiles' },
+          { status: 500 }
+        );
+      }
+
+      profiles = profileData;
     }
 
     console.log('Successfully fetched patients:', profiles?.length || 0);
