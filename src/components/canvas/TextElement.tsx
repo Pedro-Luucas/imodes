@@ -24,7 +24,6 @@ function parseFormattedText(text: string): { text: string; isBold: boolean; isUn
   const underlineRegex = /_([^_]+)_/g;
   
   let lastIndex = 0;
-  let processedText = text;
   
   // This is a simplified approach - just mark segments
   // For a full implementation, you'd want to properly parse nested formatting
