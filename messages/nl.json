@@ -406,7 +406,10 @@
       "checkpointLimitReached": "Maximum aantal opgeslagen werk bereikt",
       "cancel": "Annuleren"
     },
-    "postItNote": {
+    "textElement": {
+      "clickToEdit": "Klik om te bewerken"
+    },
+    "postItElement": {
       "clickToEdit": "Klik om te bewerken"
     },
     "card": {
@@ -447,6 +450,7 @@
     "controls": {
       "cursorTool": "Cursorgereedschap",
       "textTool": "Tekstgereedschap",
+      "postitTool": "Post-it gereedschap",
       "undo": "Ongedaan maken",
       "redo": "Opnieuw doen",
       "zoomIn": "Inzoomen",
@@ -458,7 +462,9 @@
       "clear": "Wissen",
       "drawTool": "Tekengereedschap",
       "color": "Kleur",
+      "customColor": "Aangepaste kleur",
       "thickness": "Dikte",
+      "fontSize": "Lettergrootte",
       "fitToScreen": "Aan scherm aanpassen",
       "eraser": "Gum"
     },

@@ -177,7 +177,8 @@ export async function POST(
     // Default zoom is 60% actual which displays as 100% (with +40 offset)
     const emptyState: CanvasState = {
       cards: [],
-      notes: [],
+      textElements: [],
+      postItElements: [],
       gender: 'male',
       patientSettings: {
         zoomLevel: 60,

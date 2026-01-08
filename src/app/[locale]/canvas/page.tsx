@@ -32,6 +32,8 @@ import {
   Palette,
   Maximize2,
   Eraser,
+  Type,
+  StickyNote,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -70,10 +72,15 @@ export default function CanvasPage() {
   const tControls = useTranslations('canvas.controls');
   const tPage = useTranslations('canvas.page');
 
-  const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'draw'>('select');
+  const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'postit' | 'draw'>('select');
   const [strokeColor, setStrokeColor] = useState('#f59e0b');
   const [strokeWidth, setStrokeWidth] = useState(8);
   const [isEraserMode, setIsEraserMode] = useState(false);
+  // Text tool settings
+  const [textColor, setTextColor] = useState('#18181b');
+  const [textFontSize, setTextFontSize] = useState(24);
+  // Post-it tool settings
+  const [postItColor, setPostItColor] = useState('#fff085');
   // Zoom offset: displayedZoom = actualZoom + 40
   // So 60% actual appears as 100%, 70% actual appears as 110%, etc.
   const ZOOM_DISPLAY_OFFSET = 40;
@@ -570,6 +577,9 @@ export default function CanvasPage() {
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
           isEraserMode={isEraserMode}
+          textColor={textColor}
+          textFontSize={textFontSize}
+          postItColor={postItColor}
           sessionId={sessionId}
           userRole={userRole}
           onSave={handleManualSave}
@@ -654,6 +664,151 @@ export default function CanvasPage() {
             >
               <MousePointer2 className="w-5 h-5" />
             </Button>
+
+            {/* Text Tool */}
+            <Button
+              variant={toolMode === 'text' ? 'default' : 'secondary'}
+              size="icon"
+              className="size-10"
+              onClick={() => {
+                if (toolMode === 'text') {
+                  setToolMode('select');
+                } else {
+                  setToolMode('text');
+                }
+              }}
+              title={tControls('textTool') || 'Text'}
+            >
+              <Type className="w-5 h-5" />
+            </Button>
+
+            {toolMode === 'text' && (
+              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
+                {/* Color Swatches */}
+                <div className="flex items-center gap-1.5">
+                  {[
+                    '#18181b', // charcoal
+                    '#ef4444', // red
+                    '#22c55e', // green
+                    '#3b82f6', // blue
+                    '#f59e0b', // amber
+                    '#a855f7', // purple
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setTextColor(color)}
+                      className={cn(
+                        "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                        textColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                      )}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+
+                  {/* Custom Color Picker */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                        <Palette className="size-3.5 text-gray-500" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-3" side="top" align="center">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                        <input
+                          type="color"
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                {/* Font Size Slider */}
+                <div className="flex items-center gap-2 min-w-[120px]">
+                  <span className="text-xs text-gray-500 w-6">{textFontSize}</span>
+                  <input
+                    type="range"
+                    min="12"
+                    max="72"
+                    value={textFontSize}
+                    onChange={(e) => setTextFontSize(parseInt(e.target.value))}
+                    className="w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Post-it Tool */}
+            <Button
+              variant={toolMode === 'postit' ? 'default' : 'secondary'}
+              size="icon"
+              className="size-10"
+              onClick={() => {
+                if (toolMode === 'postit') {
+                  setToolMode('select');
+                } else {
+                  setToolMode('postit');
+                }
+              }}
+              title={tControls('postitTool') || 'Post-it'}
+            >
+              <StickyNote className="w-5 h-5" />
+            </Button>
+
+            {toolMode === 'postit' && (
+              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
+                {/* Post-it Color Swatches */}
+                <div className="flex items-center gap-1.5">
+                  {[
+                    '#fff085', // yellow
+                    '#fca5a5', // red/pink
+                    '#86efac', // green
+                    '#93c5fd', // blue
+                    '#fdba74', // orange
+                    '#d8b4fe', // purple
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setPostItColor(color)}
+                      className={cn(
+                        "size-6 rounded-md border-2 transition-all hover:scale-110 active:scale-95",
+                        postItColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                      )}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+
+                  {/* Custom Color Picker */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="size-6 rounded-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                        <Palette className="size-3.5 text-gray-500" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-3" side="top" align="center">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                        <input
+                          type="color"
+                          value={postItColor}
+                          onChange={(e) => setPostItColor(e.target.value)}
+                          className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            )}
+
+            {/* Draw Tool */}
             <Button
               variant={toolMode === 'draw' ? 'default' : 'secondary'}
               size="icon"
@@ -710,7 +865,7 @@ export default function CanvasPage() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-3" side="top" align="center">
                       <div className="flex flex-col gap-2">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
                         <input
                           type="color"
                           value={strokeColor}

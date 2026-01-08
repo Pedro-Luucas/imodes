@@ -406,7 +406,10 @@
       "checkpointLimitReached": "Maximum number of saved work reached",
       "cancel": "Cancel"
     },
-    "postItNote": {
+    "textElement": {
+      "clickToEdit": "Click to edit"
+    },
+    "postItElement": {
       "clickToEdit": "Click to edit"
     },
     "card": {
@@ -447,6 +450,7 @@
     "controls": {
       "cursorTool": "Cursor Tool",
       "textTool": "Text Tool",
+      "postitTool": "Post-it Tool",
       "undo": "Undo",
       "redo": "Redo",
       "zoomIn": "Zoom In",
@@ -458,7 +462,9 @@
       "clear": "Clear",
       "drawTool": "Drawing Tool",
       "color": "Color",
+      "customColor": "Custom Color",
       "thickness": "Thickness",
+      "fontSize": "Font Size",
       "fitToScreen": "Fit to Screen",
       "eraser": "Eraser"
     },
