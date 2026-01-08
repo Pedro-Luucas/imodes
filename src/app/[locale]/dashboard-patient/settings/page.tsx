@@ -244,7 +244,7 @@ export default function PatientSettingsPage() {
   const _handleDeleteAccount = async () => {
     const expectedText = locale === 'pt' ? 'EXCLUIR' : 'DELETE';
     
-    if (deleteConfirmText !== expectedText) {
+    if (_deleteConfirmText !== expectedText) {
       toast.error(t('errors.confirmTextMismatch'));
       return;
     }
