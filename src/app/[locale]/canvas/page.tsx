@@ -342,7 +342,7 @@ export default function CanvasPage() {
     };
 
     loadSessionData();
-  }, [sessionId, profile]);
+  }, [sessionId, profile, searchParams]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -529,14 +529,6 @@ export default function CanvasPage() {
     });
   }, [sessionId, userRole]);
 
-  if (isCreatingSession) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Creating session...</div>
-      </div>
-    );
-  }
-
   // Prevent body scroll and pull-to-refresh on mobile
   useEffect(() => {
     if (isMobile) {
@@ -588,6 +580,14 @@ export default function CanvasPage() {
       };
     }
   }, [isMobile]);
+
+  if (isCreatingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>Creating session...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(
