@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 // QR Code will be generated via API or we can use a simple solution
 import { ArrowRight, Copy, Check } from 'lucide-react';
@@ -42,10 +43,10 @@ export default function DemonstrationPage() {
       <div className="max-w-2xl w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              {t('title') || 'Demonstração iModes'}
-            </h1>
+          <div className="mb-8 flex flex-col items-center">
+            <div className="relative h-11 w-[186px] sm:h-[62px] sm:w-[266px] mb-4">
+              <Image src="/imodes.png" alt="iModes" fill className="object-contain mix-blend-darken" priority />
+            </div>
             <p className="text-lg text-gray-600">
               {t('subtitle') || 'Experimente o canvas interativo do iModes'}
             </p>
