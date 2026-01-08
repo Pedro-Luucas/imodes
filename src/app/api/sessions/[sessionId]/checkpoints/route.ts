@@ -17,6 +17,11 @@ type CheckpointResponse = {
   checkpoint: SessionCheckpoint;
 };
 
+type CheckpointQueuedResponse = {
+  message: string;
+  sessionId: string;
+};
+
 type CheckpointsListResponse = {
   checkpoints: SessionCheckpoint[];
 };
@@ -118,7 +123,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   context: RouteContext
-): Promise<NextResponse<CheckpointResponse | ErrorResponse>> {
+): Promise<NextResponse<CheckpointResponse | CheckpointQueuedResponse | ErrorResponse>> {
   try {
     const { sessionId } = await context.params;
 
@@ -245,11 +250,28 @@ export async function POST(
 
     // Enqueue message for async processing
     try {
+      // Ensure version is a number (default to 0 if undefined)
+      const stateWithVersion = {
+        ...state,
+        version: state.version ?? 0,
+        updatedAt: state.updatedAt ?? new Date().toISOString(),
+      };
+
       await sendCheckpointMessage({
         sessionId,
         checkpointData: {
           name: name.trim(),
-          state,
+          state: {
+            cards: state.cards,
+            notes: state.notes,
+            gender: state.gender,
+            patientZoomLevel: state.patientSettings?.zoomLevel ?? 1,
+            therapistZoomLevel: state.therapistSettings?.zoomLevel ?? 1,
+            therapistNotes: state.therapistSettings?.notes,
+            version: stateWithVersion.version,
+            updatedAt: stateWithVersion.updatedAt,
+            drawPaths: state.drawPaths,
+          },
         },
         screenshot: screenshotData,
         userId: profile.id,

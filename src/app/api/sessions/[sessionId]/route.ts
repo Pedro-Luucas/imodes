@@ -20,6 +20,11 @@ type UpdateSessionResponse = {
   session: CanvasSession;
 };
 
+type UpdateSessionQueuedResponse = {
+  message: string;
+  sessionId: string;
+};
+
 /**
  * GET /api/sessions/[sessionId]
  * 
@@ -155,7 +160,7 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   context: RouteContext
-): Promise<NextResponse<UpdateSessionResponse | ErrorResponse>> {
+): Promise<NextResponse<UpdateSessionResponse | UpdateSessionQueuedResponse | ErrorResponse>> {
   try {
     const { sessionId } = await context.params;
     
