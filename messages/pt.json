@@ -790,6 +790,7 @@
       "firstNameRequired": "O primeiro nome é obrigatório",
       "firstNameMaxLength": "O primeiro nome não pode exceder 100 caracteres",
       "roleInvalid": "O papel deve ser terapeuta ou paciente",
+      "inviteTokenInvalid": "Formato de token de convite inválido",
       "accessTokenRequired": "Token de acesso é obrigatório",
       "refreshTokenRequired": "Token de atualização é obrigatório"
     },
