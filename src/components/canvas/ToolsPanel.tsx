@@ -96,7 +96,7 @@ function CardsGrid({
   genderFilter, 
   locale, 
   onCardSelect,
-  isMobile 
+  isMobile: _isMobile 
 }: { 
   category: CardCategory; 
   genderFilter?: Gender; 
@@ -168,7 +168,7 @@ function CardsGrid({
 function BoatAndWaveCardsGrid({ 
   locale, 
   onCardSelect,
-  isMobile 
+  isMobile: _isMobile 
 }: { 
   locale: string;
   onCardSelect?: (card: {
@@ -241,7 +241,7 @@ function BoatAndWaveCardsGrid({
 function FrequentlyUsedCards({ 
   onCardSelect,
   isExpanded,
-  isMobile
+  isMobile: _isMobile
 }: { 
   onCardSelect?: (card: {
     imageUrl?: string;
@@ -337,7 +337,7 @@ function FrequentlyUsedCards({
 function SavedCards({ 
   onCardSelect,
   isExpanded,
-  isMobile
+  isMobile: _isMobile
 }: { 
   onCardSelect?: (card: {
     imageUrl?: string;

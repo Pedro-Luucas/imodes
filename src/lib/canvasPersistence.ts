@@ -69,8 +69,15 @@ export const persistCanvasChanges = async (
     }
   }
 
-  // Regular sessions: save to database
+  // Regular sessions: save to database (now via queue)
   try {
+    console.log('[Canvas Persistence] 💾 Salvando alterações do canvas:', {
+      sessionId,
+      reasons: effectiveReasons,
+      version,
+      hasSnapshot: !!snapshot,
+    });
+
     const response = await fetch(`/api/sessions/${sessionId}`, {
       method: 'PUT',
       headers: {
@@ -82,24 +89,53 @@ export const persistCanvasChanges = async (
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to persist canvas changes');
+    console.log('[Canvas Persistence] 📡 Resposta do servidor:', {
+      status: response.status,
+      statusText: response.statusText,
+      sessionId,
+    });
+
+    // Handle 202 Accepted (message queued) as success
+    if (response.status === 202) {
+      console.log('[Canvas Persistence] ✅ Mensagem enfileirada (202 Accepted):', {
+        sessionId,
+        version,
+        timestamp: updatedAt,
+      });
+      
+      // Message was successfully queued
+      // Use current timestamp as persistedAt since actual persistence happens async
+      canvasStore.getState().setLastPersistedVersion(version, updatedAt);
+
+      return {
+        saved: true,
+        reasons: effectiveReasons,
+        snapshot,
+        version,
+        updatedAt,
+      };
     }
 
-    const payload = await response.json();
-    const persistedAt: string =
-      typeof payload?.session?.updated_at === 'string' ? payload.session.updated_at : updatedAt;
+    // Handle 200 OK (fallback direct update)
+    if (response.ok) {
+      const payload = await response.json();
+      const persistedAt: string =
+        typeof payload?.session?.updated_at === 'string' ? payload.session.updated_at : updatedAt;
 
-    canvasStore.getState().setLastPersistedVersion(version, persistedAt);
+      canvasStore.getState().setLastPersistedVersion(version, persistedAt);
 
-    return {
-      saved: true,
-      reasons: effectiveReasons,
-      snapshot,
-      version,
-      updatedAt: persistedAt,
-    };
+      return {
+        saved: true,
+        reasons: effectiveReasons,
+        snapshot,
+        version,
+        updatedAt: persistedAt,
+      };
+    }
+
+    // Handle errors
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to persist canvas changes');
   } catch (error) {
     // Requeue reasons so they can be retried later
     effectiveReasons.forEach((reason) => canvasStore.getState().markDirty(reason));

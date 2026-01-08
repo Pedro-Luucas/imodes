@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { LayoutDashboard, Users, Activity, Settings, X, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, X, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthProfile } from '@/stores/authStore';

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useEffect, useState } from 'react';
-import { AlertTriangle, AppWindow, Settings, Users, UserPlus, Play } from 'lucide-react';
+import { AppWindow, Settings, Users, UserPlus, Play } from 'lucide-react';
+import { DevWarning } from '@/components/dashboard/DevWarning';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -145,7 +146,7 @@ export default function DashboardPage() {
                 {profile?.full_name || profile?.first_name || page('loadingUser')}
               </p>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs uppercase tracking-wide">
+                <Badge variant="secondary" className="rounded-md px-3 py-1 text-xs uppercase tracking-wide bg-gray-200 text-gray-800">
                   {roleLabel}
                 </Badge>
                 {memberSince && (
@@ -204,17 +205,10 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <Card className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-6 py-5">
-        <div className="flex items-start gap-4">
-          <AlertTriangle className="h-6 w-6 text-primary" />
-          <div className="space-y-1">
-            <p className="text-lg font-semibold text-primary">{page('developmentTitle')}</p>
-            <p className="text-sm text-muted-foreground">
-              {page('developmentDescription')}
-            </p>
-          </div>
-        </div>
-      </Card>
+      <DevWarning
+        text={page('developmentDescription')}
+      />
+       
 
       {profile?.id && (
         <InvitePatientDialog

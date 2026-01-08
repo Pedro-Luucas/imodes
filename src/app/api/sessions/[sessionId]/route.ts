@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { hasRole } from '@/lib/roleAuth';
+import { sendCanvasAutosaveMessage } from '@/lib/pgmq';
 import type { CanvasSession } from '@/types/canvas';
 
 type RouteContext = {
@@ -17,6 +18,11 @@ type GetSessionResponse = {
 
 type UpdateSessionResponse = {
   session: CanvasSession;
+};
+
+type UpdateSessionQueuedResponse = {
+  message: string;
+  sessionId: string;
 };
 
 /**
@@ -154,9 +160,19 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   context: RouteContext
-): Promise<NextResponse<UpdateSessionResponse | ErrorResponse>> {
+): Promise<NextResponse<UpdateSessionResponse | UpdateSessionQueuedResponse | ErrorResponse>> {
   try {
     const { sessionId } = await context.params;
+    
+    // Validate sessionId
+    if (!sessionId || sessionId === 'undefined') {
+      console.error('Invalid sessionId:', sessionId);
+      return NextResponse.json(
+        { error: 'Invalid session ID' },
+        { status: 400 }
+      );
+    }
+    
     const body = await request.json();
     const { data: canvasState } = body;
 
@@ -177,6 +193,7 @@ export async function PUT(
     }
 
     // Demonstration sessions can be updated without authentication
+    // For demo sessions, update directly (no queue needed)
     if (existingSession.type === 'demonstration') {
       // Update session data
       const { data: updatedSession, error: updateError } = await supabase
@@ -285,29 +302,86 @@ export async function PUT(
       // If patient_id is null, allow access (playground session)
     }
 
-    // Update session data
-    const { data: updatedSession, error: updateError } = await supabase
-      .from('imodes_session')
-      .update({
-        data: canvasState,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
+    // Extract reasons from body if provided (for tracking save reasons)
+    const { reasons } = body as { data: unknown; reasons?: string[] };
 
-    if (updateError) {
-      console.error('Error updating session:', updateError);
+    // Validate that we have all required data
+    if (!canvasState) {
       return NextResponse.json(
-        { error: 'Failed to update session' },
-        { status: 500 }
+        { error: 'Canvas state is required' },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json(
-      { session: updatedSession as CanvasSession },
-      { status: 200 }
-    );
+    if (!profile?.id) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Enqueue message for async processing
+    try {
+      const messagePayload = {
+        sessionId: String(sessionId), // Ensure it's a string
+        canvasState,
+        reasons: reasons || ['autosave'],
+        userId: String(profile.id), // Ensure it's a string
+      };
+
+      console.log('[PGMQ] 🚀 Enfileirando mensagem de autosave do canvas:', {
+        sessionId: messagePayload.sessionId,
+        userId: messagePayload.userId,
+        reasons: messagePayload.reasons,
+        canvasStateSize: JSON.stringify(canvasState).length,
+        timestamp: new Date().toISOString(),
+      });
+
+      const msgId = await sendCanvasAutosaveMessage(messagePayload);
+      
+      console.log('[PGMQ] ✅ Mensagem enfileirada com sucesso:', {
+        msgId,
+        sessionId: messagePayload.sessionId,
+        queue: 'canvas-autosave',
+      });
+
+      // Return 202 Accepted - message is queued and will be processed asynchronously
+      console.log('[PGMQ] 📤 Retornando 202 Accepted para cliente - mensagem enfileirada');
+      return NextResponse.json(
+        { 
+          message: 'Canvas update queued for processing',
+          sessionId,
+        },
+        { status: 202 }
+      );
+    } catch (queueError) {
+      console.error('Error enqueueing canvas autosave message:', queueError);
+      // Fallback: try direct update if queue fails
+      const { data: updatedSession, error: updateError } = await supabase
+        .from('imodes_session')
+        .update({
+          data: canvasState,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating session (fallback):', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update session' },
+          { status: 500 }
+        );
+      }
+
+      // Return success but log that queue failed
+      console.warn('Queue failed, updated session directly as fallback');
+      return NextResponse.json(
+        { session: updatedSession as CanvasSession },
+        { status: 200 }
+      );
+    }
   } catch (error) {
     console.error('Error in PUT /api/sessions/[sessionId]:', error);
     return NextResponse.json(

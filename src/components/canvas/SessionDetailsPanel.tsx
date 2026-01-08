@@ -30,7 +30,7 @@ export function SessionDetailsPanel({
   sessionType = 'Individual',
   language = 'English',
   initialNotes = '',
-  onNotesChange,
+  onNotesChange: _onNotesChange,
   currentDuration = 0,
 }: SessionDetailsPanelProps) {
   const [notes, setNotes] = useState(initialNotes);

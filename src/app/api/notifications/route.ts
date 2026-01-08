@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
 import { getUserFromCookie } from '@/lib/auth';
-import { broadcastNotification } from '@/lib/notificationBroadcast';
+import { sendNotificationMessage } from '@/lib/pgmq';
 import type {
   GetNotificationsResponse,
   CreateNotificationRequest,
@@ -97,47 +97,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
-
-    const { data: notification, error } = await supabase
-      .from('notifications')
-      .insert({
+    // Enqueue message for async processing
+    try {
+      await sendNotificationMessage({
         user_id,
         type,
         title,
         message,
         data: data || {},
         link: link || null,
-      })
-      .select()
-      .single();
+      });
 
-    if (error) {
-      console.error('Error creating notification:', error);
+      // Return 202 Accepted - message is queued and will be processed asynchronously
+      // Note: We return a different response type when message is queued (no notification yet)
       return NextResponse.json(
-        { error: 'Failed to create notification' },
-        { status: 500 }
+        {
+          message: 'Notification queued for processing',
+          user_id,
+        },
+        { status: 202 }
       );
-    }
+    } catch (queueError) {
+      console.error('Error enqueueing notification message:', queueError);
+      
+      // Fallback: try direct creation if queue fails
+      const supabase = createSupabaseServerClient();
+      const { data: notification, error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id,
+          type,
+          title,
+          message,
+          data: data || {},
+          link: link || null,
+        })
+        .select()
+        .single();
 
-    // Broadcast the notification to the user's channel
-    // This replaces postgres_changes polling and is much more efficient
-    try {
-      await broadcastNotification(
-        supabase,
-        user_id,
-        'notification.created',
-        notification
-      );
-    } catch (broadcastError) {
-      // Log but don't fail the request - the notification was still created
-      console.error('Error broadcasting notification:', broadcastError);
-    }
+      if (error) {
+        console.error('Error creating notification (fallback):', error);
+        return NextResponse.json(
+          { error: 'Failed to create notification' },
+          { status: 500 }
+        );
+      }
 
-    return NextResponse.json({
-      message: 'Notification created successfully',
-      notification,
-    } as CreateNotificationResponse);
+      // Return success but log that queue failed
+      console.warn('Queue failed, created notification directly as fallback');
+      return NextResponse.json({
+        message: 'Notification created successfully',
+        notification,
+      } as CreateNotificationResponse);
+    }
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(
