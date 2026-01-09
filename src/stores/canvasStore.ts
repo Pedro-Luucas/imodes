@@ -886,9 +886,19 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (state.pendingSaveReasons.includes(reason)) {
         return state;
       }
+      const newReasons = [...state.pendingSaveReasons, reason];
+      console.log('[Canvas Store] 🏷️ Marcando como dirty:', {
+        reason,
+        allReasons: newReasons,
+        sessionId: state.sessionId,
+        cardsCount: state.cards.length,
+        textElementsCount: state.textElements.length,
+        postItElementsCount: state.postItElements.length,
+        drawPathsCount: state.drawPaths.length,
+      });
       return {
         ...state,
-        pendingSaveReasons: [...state.pendingSaveReasons, reason],
+        pendingSaveReasons: newReasons,
       };
     });
   },

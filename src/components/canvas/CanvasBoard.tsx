@@ -690,12 +690,23 @@ export function CanvasBoard({
 
   // Fit to screen - centers view on all elements
   const fitToScreen = useCallback(() => {
-    if (!dimensions.width || !dimensions.height) return;
+    if (!dimensions.width || !dimensions.height) {
+      console.warn('[Fit to Screen] Dimensions not available');
+      return;
+    }
 
     const currentCards = canvasStore.getState().cards;
     const currentTextElements = canvasStore.getState().textElements;
     const currentPostItElements = canvasStore.getState().postItElements;
     const currentDrawPaths = canvasStore.getState().drawPaths;
+
+    console.log('[Fit to Screen] Calculando fit para:', {
+      cards: currentCards.length,
+      textElements: currentTextElements.length,
+      postItElements: currentPostItElements.length,
+      drawPaths: currentDrawPaths.length,
+      viewport: { width: dimensions.width, height: dimensions.height },
+    });
 
     // If no elements, just center the origin
     if (currentCards.length === 0 && currentTextElements.length === 0 && currentPostItElements.length === 0 && currentDrawPaths.length === 0) {
@@ -703,6 +714,7 @@ export function CanvasBoard({
         x: dimensions.width / 2,
         y: dimensions.height / 2,
       };
+      console.log('[Fit to Screen] Sem elementos, centralizando:', centeredPosition);
       setStagePosition(centeredPosition);
       stagePositionRef.current = centeredPosition;
       return;
@@ -718,8 +730,8 @@ export function CanvasBoard({
     currentCards.forEach((card) => {
       minX = Math.min(minX, card.x);
       minY = Math.min(minY, card.y);
-      maxX = Math.max(maxX, card.x + card.width);
-      maxY = Math.max(maxY, card.y + card.height);
+      maxX = Math.max(maxX, card.x + (card.width || 280));
+      maxY = Math.max(maxY, card.y + (card.height || 320));
     });
 
     // Include text elements (estimate size based on font size)
@@ -727,7 +739,7 @@ export function CanvasBoard({
       minX = Math.min(minX, el.x);
       minY = Math.min(minY, el.y);
       maxX = Math.max(maxX, el.x + 200); // Estimate width
-      maxY = Math.max(maxY, el.y + el.fontSize * 1.5);
+      maxY = Math.max(maxY, el.y + (el.fontSize || 24) * 1.5);
     });
 
     // Include post-it elements (fixed size 200x200)
@@ -741,9 +753,11 @@ export function CanvasBoard({
     // Include draw paths
     currentDrawPaths.forEach((path) => {
       if (path.points && path.points.length >= 2) {
+        const pathX = path.x || 0;
+        const pathY = path.y || 0;
         for (let i = 0; i < path.points.length; i += 2) {
-          const x = (path.x || 0) + path.points[i];
-          const y = (path.y || 0) + path.points[i + 1];
+          const x = pathX + path.points[i];
+          const y = pathY + path.points[i + 1];
           minX = Math.min(minX, x);
           minY = Math.min(minY, y);
           maxX = Math.max(maxX, x);
@@ -754,6 +768,7 @@ export function CanvasBoard({
 
     // If no valid bounds found, center the origin
     if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+      console.warn('[Fit to Screen] Bounds inválidos, centralizando');
       const centeredPosition = {
         x: dimensions.width / 2,
         y: dimensions.height / 2,
@@ -773,6 +788,17 @@ export function CanvasBoard({
     const contentWidth = maxX - minX;
     const contentHeight = maxY - minY;
 
+    console.log('[Fit to Screen] Bounds calculados:', {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      contentWidth,
+      contentHeight,
+      availableWidth,
+      availableHeight,
+    });
+
     // Calculate scale to fit content with padding
     const scaleX = availableWidth / contentWidth;
     const scaleY = availableHeight / contentHeight;
@@ -789,15 +815,26 @@ export function CanvasBoard({
       y: dimensions.height / 2 - contentCenterY * clampedScale,
     };
 
-    // Update scale via parent component (which will trigger zoom effect)
-    if (onZoomChange) {
-      onZoomChange(clampedScale * 100);
-    }
+    console.log('[Fit to Screen] Aplicando:', {
+      scale: clampedScale,
+      scalePercent: clampedScale * 100,
+      position: newPosition,
+      contentCenter: { x: contentCenterX, y: contentCenterY },
+    });
+
+    // Update scale directly in store first (for immediate visual feedback)
+    setDisplayScale(clampedScale);
+    prevScaleRef.current = clampedScale;
 
     // Update position
     setStagePosition(newPosition);
     stagePositionRef.current = newPosition;
-  }, [dimensions.width, dimensions.height, setStagePosition, onZoomChange]);
+
+    // Update scale via parent component (which will trigger zoom effect and sync with zoom level)
+    if (onZoomChange) {
+      onZoomChange(clampedScale * 100);
+    }
+  }, [dimensions.width, dimensions.height, setStagePosition, setDisplayScale, onZoomChange]);
 
   // Expose reset function via window object
   useEffect(() => {

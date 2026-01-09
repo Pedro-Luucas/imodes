@@ -320,43 +320,19 @@ export async function PUT(
       );
     }
 
-    // Enqueue message for async processing
+    // Save directly to database first (guaranteed save)
+    // Then enqueue for async processing if needed
     try {
-      const messagePayload = {
-        sessionId: String(sessionId), // Ensure it's a string
-        canvasState,
-        reasons: reasons || ['autosave'],
-        userId: String(profile.id), // Ensure it's a string
-      };
-
-      console.log('[PGMQ] 🚀 Enfileirando mensagem de autosave do canvas:', {
-        sessionId: messagePayload.sessionId,
-        userId: messagePayload.userId,
-        reasons: messagePayload.reasons,
-        canvasStateSize: JSON.stringify(canvasState).length,
-        timestamp: new Date().toISOString(),
+      console.log('[Session Update] 💾 Salvando canvas state diretamente no banco:', {
+        sessionId,
+        canvasStateKeys: Object.keys(canvasState),
+        hasCards: Array.isArray(canvasState.cards) && canvasState.cards.length > 0,
+        hasTextElements: Array.isArray(canvasState.textElements) && canvasState.textElements.length > 0,
+        hasPostItElements: Array.isArray(canvasState.postItElements) && canvasState.postItElements.length > 0,
+        hasDrawPaths: Array.isArray(canvasState.drawPaths) && canvasState.drawPaths.length > 0,
       });
 
-      const msgId = await sendCanvasAutosaveMessage(messagePayload);
-      
-      console.log('[PGMQ] ✅ Mensagem enfileirada com sucesso:', {
-        msgId,
-        sessionId: messagePayload.sessionId,
-        queue: 'canvas-autosave',
-      });
-
-      // Return 202 Accepted - message is queued and will be processed asynchronously
-      console.log('[PGMQ] 📤 Retornando 202 Accepted para cliente - mensagem enfileirada');
-      return NextResponse.json(
-        { 
-          message: 'Canvas update queued for processing',
-          sessionId,
-        },
-        { status: 202 }
-      );
-    } catch (queueError) {
-      console.error('Error enqueueing canvas autosave message:', queueError);
-      // Fallback: try direct update if queue fails
+      // Save directly to database
       const { data: updatedSession, error: updateError } = await supabase
         .from('imodes_session')
         .update({
@@ -368,18 +344,45 @@ export async function PUT(
         .single();
 
       if (updateError) {
-        console.error('Error updating session (fallback):', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update session' },
-          { status: 500 }
-        );
+        console.error('[Session Update] ❌ Erro ao salvar diretamente:', {
+          sessionId,
+          error: updateError.message,
+          code: updateError.code,
+        });
+        throw new Error(`Failed to update session: ${updateError.message}`);
       }
 
-      // Return success but log that queue failed
-      console.warn('Queue failed, updated session directly as fallback');
+      console.log('[Session Update] ✅ Canvas state salvo com sucesso:', {
+        sessionId,
+        updatedAt: updatedSession.updated_at,
+        dataKeys: updatedSession.data ? Object.keys(updatedSession.data) : [],
+      });
+
+      // Also enqueue message for async processing (for backup/audit)
+      try {
+        const messagePayload = {
+          sessionId: String(sessionId),
+          canvasState,
+          reasons: reasons || ['autosave'],
+          userId: String(profile.id),
+        };
+
+        await sendCanvasAutosaveMessage(messagePayload);
+        console.log('[Session Update] 📨 Mensagem também enfileirada para processamento assíncrono');
+      } catch (queueError) {
+        // Non-critical - data is already saved
+        console.warn('[Session Update] ⚠️  Não foi possível enfileirar mensagem (dados já salvos):', queueError);
+      }
+
       return NextResponse.json(
         { session: updatedSession as CanvasSession },
         { status: 200 }
+      );
+    } catch (error) {
+      console.error('[Session Update] ❌ Erro ao salvar sessão:', error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to update session' },
+        { status: 500 }
       );
     }
   } catch (error) {
