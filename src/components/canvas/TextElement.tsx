@@ -15,79 +15,6 @@ interface TextElementProps {
   onEditStateChange: (id: string, isEditing: boolean) => void;
 }
 
-// Parse text for bold (*text*) and underline (_text_) formatting
-function parseFormattedText(text: string): { text: string; isBold: boolean; isUnderline: boolean }[] {
-  const segments: { text: string; isBold: boolean; isUnderline: boolean }[] = [];
-  
-  // Simple regex-based parsing for *bold* and _underline_ markers
-  const boldRegex = /\*([^*]+)\*/g;
-  const underlineRegex = /_([^_]+)_/g;
-  
-  let lastIndex = 0;
-  
-  // This is a simplified approach - just mark segments
-  // For a full implementation, you'd want to properly parse nested formatting
-  const matches: { start: number; end: number; text: string; isBold: boolean; isUnderline: boolean }[] = [];
-  
-  let match;
-  while ((match = boldRegex.exec(text)) !== null) {
-    matches.push({
-      start: match.index,
-      end: match.index + match[0].length,
-      text: match[1],
-      isBold: true,
-      isUnderline: false,
-    });
-  }
-  
-  boldRegex.lastIndex = 0;
-  
-  while ((match = underlineRegex.exec(text)) !== null) {
-    matches.push({
-      start: match.index,
-      end: match.index + match[0].length,
-      text: match[1],
-      isBold: false,
-      isUnderline: true,
-    });
-  }
-  
-  // Sort matches by start position
-  matches.sort((a, b) => a.start - b.start);
-  
-  // Build segments
-  lastIndex = 0;
-  for (const m of matches) {
-    if (m.start > lastIndex) {
-      segments.push({
-        text: text.slice(lastIndex, m.start),
-        isBold: false,
-        isUnderline: false,
-      });
-    }
-    segments.push({
-      text: m.text,
-      isBold: m.isBold,
-      isUnderline: m.isUnderline,
-    });
-    lastIndex = m.end;
-  }
-  
-  if (lastIndex < text.length) {
-    segments.push({
-      text: text.slice(lastIndex),
-      isBold: false,
-      isUnderline: false,
-    });
-  }
-  
-  if (segments.length === 0) {
-    segments.push({ text, isBold: false, isUnderline: false });
-  }
-  
-  return segments;
-}
-
 export function TextElementComponent({
   element,
   isSelected,
@@ -172,7 +99,6 @@ export function TextElementComponent({
         const stageBox = stage.container().getBoundingClientRect();
         
         const scaleX = stage.scaleX();
-        const scaleY = stage.scaleY();
         
         // Get position in screen coordinates
         const groupBox = group.getClientRect({ skipTransform: false });

@@ -700,13 +700,15 @@ function CheckpointsGrid({
               className="rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-200 bg-gray-100 relative group"
               onClick={() => handleCheckpointClick(checkpoint)}
             >
-              <div className="aspect-video">
+              <div className="aspect-video relative">
                 {checkpoint.screenshot_url ? (
-                  <img
+                  <Image
                     src={checkpoint.screenshot_url}
                     alt={checkpoint.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    unoptimized={checkpoint.screenshot_url.startsWith('http')}
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
