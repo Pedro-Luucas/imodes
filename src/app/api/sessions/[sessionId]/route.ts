@@ -323,15 +323,6 @@ export async function PUT(
     // Save directly to database first (guaranteed save)
     // Then enqueue for async processing if needed
     try {
-      console.log('[Session Update] 💾 Salvando canvas state diretamente no banco:', {
-        sessionId,
-        canvasStateKeys: Object.keys(canvasState),
-        hasCards: Array.isArray(canvasState.cards) && canvasState.cards.length > 0,
-        hasTextElements: Array.isArray(canvasState.textElements) && canvasState.textElements.length > 0,
-        hasPostItElements: Array.isArray(canvasState.postItElements) && canvasState.postItElements.length > 0,
-        hasDrawPaths: Array.isArray(canvasState.drawPaths) && canvasState.drawPaths.length > 0,
-      });
-
       // Save directly to database
       const { data: updatedSession, error: updateError } = await supabase
         .from('imodes_session')
@@ -344,19 +335,9 @@ export async function PUT(
         .single();
 
       if (updateError) {
-        console.error('[Session Update] ❌ Erro ao salvar diretamente:', {
-          sessionId,
-          error: updateError.message,
-          code: updateError.code,
-        });
+        console.error('Error updating session:', updateError);
         throw new Error(`Failed to update session: ${updateError.message}`);
       }
-
-      console.log('[Session Update] ✅ Canvas state salvo com sucesso:', {
-        sessionId,
-        updatedAt: updatedSession.updated_at,
-        dataKeys: updatedSession.data ? Object.keys(updatedSession.data) : [],
-      });
 
       // Also enqueue message for async processing (for backup/audit)
       try {
@@ -368,10 +349,9 @@ export async function PUT(
         };
 
         await sendCanvasAutosaveMessage(messagePayload);
-        console.log('[Session Update] 📨 Mensagem também enfileirada para processamento assíncrono');
       } catch (queueError) {
         // Non-critical - data is already saved
-        console.warn('[Session Update] ⚠️  Não foi possível enfileirar mensagem (dados já salvos):', queueError);
+        console.warn('Failed to enqueue message (data already saved):', queueError);
       }
 
       return NextResponse.json(
@@ -379,7 +359,7 @@ export async function PUT(
         { status: 200 }
       );
     } catch (error) {
-      console.error('[Session Update] ❌ Erro ao salvar sessão:', error);
+      console.error('Error saving session:', error);
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Failed to update session' },
         { status: 500 }

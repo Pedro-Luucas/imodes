@@ -180,6 +180,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const cards = Array.isArray(state?.cards) ? state.cards.map((card) => ({ ...card })) : [];
       const textElements = Array.isArray(state?.textElements) ? state.textElements.map((el) => ({ ...el })) : [];
       const postItElements = Array.isArray(state?.postItElements) ? state.postItElements.map((el) => ({ ...el })) : [];
+      const drawPaths = Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [];
       const gender = state?.gender ?? 'male';
       // Default zoom is 60% actual which displays as 100% (with +40 offset)
       const patientZoomLevel = state?.patientSettings?.zoomLevel ?? 60;
@@ -191,7 +192,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         cards,
         textElements,
         postItElements,
-        drawPaths: Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [],
+        drawPaths,
         gender,
       });
 
@@ -205,7 +206,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         cards,
         textElements,
         postItElements,
-        drawPaths: Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [],
+        drawPaths,
         gender,
         patientZoomLevel,
         therapistZoomLevel,
@@ -886,19 +887,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (state.pendingSaveReasons.includes(reason)) {
         return state;
       }
-      const newReasons = [...state.pendingSaveReasons, reason];
-      console.log('[Canvas Store] 🏷️ Marcando como dirty:', {
-        reason,
-        allReasons: newReasons,
-        sessionId: state.sessionId,
-        cardsCount: state.cards.length,
-        textElementsCount: state.textElements.length,
-        postItElementsCount: state.postItElements.length,
-        drawPathsCount: state.drawPaths.length,
-      });
       return {
         ...state,
-        pendingSaveReasons: newReasons,
+        pendingSaveReasons: [...state.pendingSaveReasons, reason],
       };
     });
   },

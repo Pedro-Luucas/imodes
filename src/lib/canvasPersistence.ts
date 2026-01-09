@@ -14,7 +14,7 @@ export interface PersistCanvasChangesResult {
 
 const buildSnapshotFromStore = (version: number, updatedAt: string): CanvasState => {
   const state = canvasStore.getState();
-  const snapshot = serializeCanvasState({
+  return serializeCanvasState({
     cards: state.cards,
     textElements: state.textElements,
     postItElements: state.postItElements,
@@ -26,22 +26,6 @@ const buildSnapshotFromStore = (version: number, updatedAt: string): CanvasState
     updatedAt,
     drawPaths: state.drawPaths,
   });
-  
-  // Debug: Log snapshot contents
-  console.log('[Canvas Persistence] 📸 Snapshot criado:', {
-    version,
-    updatedAt,
-    cardsCount: snapshot.cards?.length || 0,
-    textElementsCount: snapshot.textElements?.length || 0,
-    postItElementsCount: snapshot.postItElements?.length || 0,
-    drawPathsCount: snapshot.drawPaths?.length || 0,
-    hasCards: Array.isArray(snapshot.cards) && snapshot.cards.length > 0,
-    hasTextElements: Array.isArray(snapshot.textElements) && snapshot.textElements.length > 0,
-    hasPostItElements: Array.isArray(snapshot.postItElements) && snapshot.postItElements.length > 0,
-    hasDrawPaths: Array.isArray(snapshot.drawPaths) && snapshot.drawPaths.length > 0,
-  });
-  
-  return snapshot;
 };
 
 export const persistCanvasChanges = async (
@@ -93,12 +77,6 @@ export const persistCanvasChanges = async (
       reasons: effectiveReasons,
       version,
       hasSnapshot: !!snapshot,
-      snapshotContents: snapshot ? {
-        cardsCount: snapshot.cards?.length || 0,
-        textElementsCount: snapshot.textElements?.length || 0,
-        postItElementsCount: snapshot.postItElements?.length || 0,
-        drawPathsCount: snapshot.drawPaths?.length || 0,
-      } : null,
     });
 
     const response = await fetch(`/api/sessions/${sessionId}`, {
@@ -207,27 +185,10 @@ export const startCanvasAutosave = ({
       return;
     }
 
-    console.log('[Canvas Autosave] ⏰ Tick do autosave:', {
-      sessionId,
-      reasons,
-      timestamp: new Date().toISOString(),
-    });
-
     try {
       const result = await persistCanvasChanges(sessionId, reasons);
-      console.log('[Canvas Autosave] ✅ Autosave concluído:', {
-        sessionId,
-        saved: result.saved,
-        version: result.version,
-        reasons: result.reasons,
-      });
       onSave?.(result);
     } catch (error) {
-      console.error('[Canvas Autosave] ❌ Erro no autosave:', {
-        sessionId,
-        reasons,
-        error,
-      });
       onError?.(error, { reasons });
     }
   };
@@ -246,7 +207,7 @@ export const startCanvasAutosave = ({
 
 export const buildSerializableCanvasState = () => {
   const state = canvasStore.getState();
-  const snapshot = serializeCanvasState({
+  return serializeCanvasState({
     cards: state.cards,
     textElements: state.textElements,
     postItElements: state.postItElements,
@@ -258,16 +219,6 @@ export const buildSerializableCanvasState = () => {
     updatedAt: state.lastUpdatedAt,
     drawPaths: state.drawPaths,
   });
-  
-  // Debug: Log snapshot contents
-  console.log('[Canvas Persistence] 📸 buildSerializableCanvasState:', {
-    cardsCount: snapshot.cards?.length || 0,
-    textElementsCount: snapshot.textElements?.length || 0,
-    postItElementsCount: snapshot.postItElements?.length || 0,
-    drawPathsCount: snapshot.drawPaths?.length || 0,
-  });
-  
-  return snapshot;
 };
 
 
