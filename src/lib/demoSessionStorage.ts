@@ -59,7 +59,8 @@ export function loadDemoSession(sessionId: string): CanvasState | null {
 export function getInitialDemoState(): CanvasState {
   return {
     cards: [],
-    notes: [],
+    textElements: [],
+    postItElements: [],
     drawPaths: [],
     gender: 'male',
     patientSettings: {

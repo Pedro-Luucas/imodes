@@ -21,6 +21,7 @@ interface UseCardsDataResult {
  * Returns matched cards with images and text data
  */
 const CARDS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
+const CACHE_VERSION = 'v3'; // Increment to bust cache after parser changes
 
 const cardsCache = new Map<
   string,
@@ -31,7 +32,7 @@ const cardsCache = new Map<
 >();
 
 function getCacheKey(category: CardCategory, gender: Gender | undefined, locale: string) {
-  return `${category}:${gender ?? 'all'}:${locale}`;
+  return `${CACHE_VERSION}:${category}:${gender ?? 'all'}:${locale}`;
 }
 
 export function useCardsData(

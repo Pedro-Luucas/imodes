@@ -2,7 +2,8 @@ import type {
   CanvasState,
   CanvasCard,
   Gender,
-  PostItNote,
+  TextElement,
+  PostItElement,
   TherapistSettings,
   DrawPath,
 } from '@/types/canvas';
@@ -13,7 +14,8 @@ import type {
  */
 export interface SerializeCanvasStateOptions {
   cards: CanvasCard[];
-  notes: PostItNote[];
+  textElements: TextElement[];
+  postItElements: PostItElement[];
   gender: Gender;
   patientZoomLevel: number;
   therapistZoomLevel: number;
@@ -25,7 +27,8 @@ export interface SerializeCanvasStateOptions {
 
 export function serializeCanvasState({
   cards,
-  notes,
+  textElements,
+  postItElements,
   gender,
   patientZoomLevel,
   therapistZoomLevel,
@@ -51,10 +54,12 @@ export function serializeCanvasState({
 
   return {
     cards: serializedCards,
-    notes: notes.map((note) => ({
-      ...note,
-      width: typeof note.width === 'number' && note.width > 0 ? note.width : 142,
-      height: typeof note.height === 'number' && note.height > 0 ? note.height : 100,
+    textElements: textElements.map((el) => ({
+      ...el,
+      fontSize: typeof el.fontSize === 'number' && el.fontSize > 0 ? el.fontSize : 24,
+    })),
+    postItElements: postItElements.map((el) => ({
+      ...el,
     })),
     gender,
     patientSettings: {
@@ -74,7 +79,8 @@ export function serializeCanvasState({
  */
 export interface DeserializedCanvasState {
   cards: CanvasCard[];
-  notes: PostItNote[];
+  textElements: TextElement[];
+  postItElements: PostItElement[];
   gender: Gender;
   patientZoomLevel: number;
   therapistZoomLevel: number;
@@ -89,7 +95,8 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
   if (!data) {
     return {
       cards: [],
-      notes: [],
+      textElements: [],
+      postItElements: [],
       gender: 'male',
       patientZoomLevel: 60,
       therapistZoomLevel: 60,
@@ -117,20 +124,33 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
     }))
     : [];
 
-  const rawNotes = Array.isArray(data.notes) ? data.notes : [];
-  const notes: PostItNote[] = rawNotes.map((note) => ({
-    id: String(note?.id || ''),
-    x: typeof note?.x === 'number' ? note.x : 0,
-    y: typeof note?.y === 'number' ? note.y : 0,
-    text: typeof note?.text === 'string' ? note.text : '',
-    width: typeof note?.width === 'number' && note.width > 0 ? note.width : 142,
-    height: typeof note?.height === 'number' && note.height > 0 ? note.height : 100,
-    isEditing: Boolean(note?.isEditing || false),
+  const rawTextElements = Array.isArray(data.textElements) ? data.textElements : [];
+  const textElements: TextElement[] = rawTextElements.map((el) => ({
+    id: String(el?.id || ''),
+    x: typeof el?.x === 'number' ? el.x : 0,
+    y: typeof el?.y === 'number' ? el.y : 0,
+    text: typeof el?.text === 'string' ? el.text : '',
+    fontSize: typeof el?.fontSize === 'number' && el.fontSize > 0 ? el.fontSize : 24,
+    color: typeof el?.color === 'string' ? el.color : '#18181b',
+    isBold: Boolean(el?.isBold || false),
+    isUnderline: Boolean(el?.isUnderline || false),
+    isEditing: Boolean(el?.isEditing || false),
+  }));
+
+  const rawPostItElements = Array.isArray(data.postItElements) ? data.postItElements : [];
+  const postItElements: PostItElement[] = rawPostItElements.map((el) => ({
+    id: String(el?.id || ''),
+    x: typeof el?.x === 'number' ? el.x : 0,
+    y: typeof el?.y === 'number' ? el.y : 0,
+    text: typeof el?.text === 'string' ? el.text : '',
+    color: typeof el?.color === 'string' ? el.color : '#fff085',
+    isEditing: Boolean(el?.isEditing || false),
   }));
 
   return {
     cards,
-    notes,
+    textElements,
+    postItElements,
     gender: data.gender === 'female' ? 'female' : 'male',
     // Default zoom is 60% actual which displays as 100% (with +40 offset)
     patientZoomLevel: data.patientSettings?.zoomLevel ?? 60,
@@ -141,4 +161,3 @@ export function deserializeCanvasState(data: CanvasState | null): DeserializedCa
     drawPaths: Array.isArray(data.drawPaths) ? data.drawPaths.map((path: DrawPath) => ({ ...path })) : [],
   };
 }
-

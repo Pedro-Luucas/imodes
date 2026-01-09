@@ -10,6 +10,7 @@ import {
   type CanvasRealtimePayloadMap,
   type CanvasChannelContext,
   type CanvasRealtimeHandlers,
+  type CanvasRealtimeEvent,
 } from '@/lib/canvasRealtime';
 import { canvasStore, useCanvasStore } from '@/stores/canvasStore';
 import type { CanvasState } from '@/types/canvas';
@@ -116,7 +117,7 @@ export function useCanvasRealtime({
     contextRef.current = context;
 
     const handlers: CanvasRealtimeHandlers = {
-      'card.add': (event) => {
+      'card.add': (event: CanvasRealtimeEvent<'card.add'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         if (typeof event.version === 'number' && event.version < storeApi.lastSavedVersion) {
@@ -129,7 +130,7 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
-      'card.patch': (event) => {
+      'card.patch': (event: CanvasRealtimeEvent<'card.patch'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         if (typeof event.version === 'number' && event.version < storeApi.lastSavedVersion) {
@@ -142,7 +143,7 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
-      'card.remove': (event) => {
+      'card.remove': (event: CanvasRealtimeEvent<'card.remove'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
@@ -152,37 +153,67 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
-      'note.add': (event) => {
+      'textElement.add': (event: CanvasRealtimeEvent<'textElement.add'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
         try {
-          storeApi.addNote(event.payload.note, { skipHistory: true });
+          storeApi.addTextElement(event.payload.element, { skipHistory: true });
         } finally {
           storeApi.markApplyingRemote(false);
         }
       },
-      'note.patch': (event) => {
+      'textElement.patch': (event: CanvasRealtimeEvent<'textElement.patch'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
         try {
-          storeApi.updateNote(event.payload.id, event.payload.patch, { skipHistory: true });
+          storeApi.updateTextElement(event.payload.id, event.payload.patch, { skipHistory: true });
         } finally {
           storeApi.markApplyingRemote(false);
         }
       },
-      'note.remove': (event) => {
+      'textElement.remove': (event: CanvasRealtimeEvent<'textElement.remove'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
         try {
-          storeApi.removeNote(event.payload.id, { skipHistory: true });
+          storeApi.removeTextElement(event.payload.id, { skipHistory: true });
         } finally {
           storeApi.markApplyingRemote(false);
         }
       },
-      'drawPath.add': (event) => {
+      'postItElement.add': (event: CanvasRealtimeEvent<'postItElement.add'>) => {
+        if (event.clientId === clientId || event.sessionId !== sessionId) return;
+        const storeApi = canvasStore.getState();
+        storeApi.markApplyingRemote(true);
+        try {
+          storeApi.addPostItElement(event.payload.element, { skipHistory: true });
+        } finally {
+          storeApi.markApplyingRemote(false);
+        }
+      },
+      'postItElement.patch': (event: CanvasRealtimeEvent<'postItElement.patch'>) => {
+        if (event.clientId === clientId || event.sessionId !== sessionId) return;
+        const storeApi = canvasStore.getState();
+        storeApi.markApplyingRemote(true);
+        try {
+          storeApi.updatePostItElement(event.payload.id, event.payload.patch, { skipHistory: true });
+        } finally {
+          storeApi.markApplyingRemote(false);
+        }
+      },
+      'postItElement.remove': (event: CanvasRealtimeEvent<'postItElement.remove'>) => {
+        if (event.clientId === clientId || event.sessionId !== sessionId) return;
+        const storeApi = canvasStore.getState();
+        storeApi.markApplyingRemote(true);
+        try {
+          storeApi.removePostItElement(event.payload.id, { skipHistory: true });
+        } finally {
+          storeApi.markApplyingRemote(false);
+        }
+      },
+      'drawPath.add': (event: CanvasRealtimeEvent<'drawPath.add'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
@@ -192,7 +223,7 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
-      'drawPath.patch': (event) => {
+      'drawPath.patch': (event: CanvasRealtimeEvent<'drawPath.patch'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
@@ -202,7 +233,7 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
-      'drawPath.remove': (event) => {
+      'drawPath.remove': (event: CanvasRealtimeEvent<'drawPath.remove'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         const storeApi = canvasStore.getState();
         storeApi.markApplyingRemote(true);
@@ -212,13 +243,13 @@ export function useCanvasRealtime({
           storeApi.markApplyingRemote(false);
         }
       },
-      'state.snapshot': (event) => {
+      'state.snapshot': (event: CanvasRealtimeEvent<'state.snapshot'>) => {
         if (event.clientId === clientId || event.sessionId !== sessionId) return;
         // For manual snapshots (undo/redo), preserve local history
         const replaceHistory = event.payload.origin !== 'manual';
         handleSnapshotBroadcast(event.payload.state, event.version, event.payload.state.updatedAt, replaceHistory);
       },
-      'state.request': async (event) => {
+      'state.request': async (event: CanvasRealtimeEvent<'state.request'>) => {
         if (event.sessionId !== sessionId) return;
         // Avoid responding to our own request
         if (event.clientId === clientId) return;

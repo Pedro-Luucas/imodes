@@ -266,20 +266,24 @@ export function CanvasCard({ card, isSelected, onSelect, onDragEnd, onDelete, on
             fill="#ffffff"
             wrap="word"
             ellipsis={true}
+            listening={false}
           />
 
           {/* Card Description */}
-          <Text
-            x={16}
-            y={cardHeight - 95}
-            width={cardWidth - 32}
-            height={66}
-            text={card.description}
-            fontSize={14}
-            fill="#ffffff"
-            wrap="word"
-            ellipsis={true}
-          />
+          {card.description && card.description.length > 0 && (
+            <Text
+              x={16}
+              y={cardHeight - 85}
+              width={cardWidth - 32}
+              text={card.description}
+              fontSize={13}
+              fill="#ffffff"
+              opacity={0.9}
+              wrap="word"
+              ellipsis={true}
+              listening={false}
+            />
+          )}
         </>
       )}
 

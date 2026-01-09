@@ -31,16 +31,16 @@ export async function GET(
     const validLocale = supportedLocales.includes(locale) ? locale : 'en';
 
     // Build text file path based on category
-    let textPath: string;
+    // All categories use the same simple structure: {category}/text/{locale}.txt
     const normalizedCategory = category.toLowerCase();
+    
+    // Supported categories
+    const supportedCategories = ['boat', 'wave', 'needs', 'strengths', 'modes'];
+    
+    if (supportedCategories.includes(normalizedCategory)) {
+      const textPath = `${normalizedCategory}/text/${locale}.txt`;
 
-    if (normalizedCategory === 'boat' || normalizedCategory === 'wave') {
-      textPath = `${normalizedCategory}/text/${validLocale}.txt`;
-    } else {
-      textPath = `${normalizedCategory}/text/${validLocale}.txt`;
-    }
-
-    const supabase = createSupabaseServerClient();
+      const supabase = createSupabaseServerClient();
 
     // Download text file - try requested locale first, fallback to 'en' if not found
     let data, error;
@@ -50,9 +50,7 @@ export async function GET(
 
     // If file not found and locale is not 'en', try fallback to 'en'
     if (error && validLocale !== 'en') {
-      const fallbackPath = normalizedCategory === 'boat' || normalizedCategory === 'wave'
-        ? `${normalizedCategory}/text/en.txt`
-        : `${normalizedCategory}/text/en.txt`;
+      const fallbackPath = `${normalizedCategory}/text/en.txt`;
       
       ({ data, error } = await supabase.storage
         .from(BUCKET_NAME)
@@ -61,6 +59,7 @@ export async function GET(
 
     if (error || !data) {
       console.error('Error downloading text file:', error);
+      console.error('Path attempted:', textPath);
       return NextResponse.json(
         { error: 'Failed to fetch card text file' },
         { status: 500 }
@@ -74,6 +73,12 @@ export async function GET(
     const cards = parseCardText(text);
 
     return NextResponse.json(cards, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: 'Unsupported category' },
+        { status: 400 }
+      );
+    }
   } catch (error) {
     console.error('Error in cards/text route:', error);
     return NextResponse.json(

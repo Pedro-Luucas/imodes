@@ -16,7 +16,8 @@ const buildSnapshotFromStore = (version: number, updatedAt: string): CanvasState
   const state = canvasStore.getState();
   return serializeCanvasState({
     cards: state.cards,
-    notes: state.notes,
+    textElements: state.textElements,
+    postItElements: state.postItElements,
     gender: state.gender,
     patientZoomLevel: state.patientZoomLevel,
     therapistZoomLevel: state.therapistZoomLevel,
@@ -208,7 +209,8 @@ export const buildSerializableCanvasState = () => {
   const state = canvasStore.getState();
   return serializeCanvasState({
     cards: state.cards,
-    notes: state.notes,
+    textElements: state.textElements,
+    postItElements: state.postItElements,
     gender: state.gender,
     patientZoomLevel: state.patientZoomLevel,
     therapistZoomLevel: state.therapistZoomLevel,

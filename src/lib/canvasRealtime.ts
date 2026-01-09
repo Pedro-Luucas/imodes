@@ -2,7 +2,7 @@
 
 import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import { createSupabaseClient } from '@/lib/supabaseClient';
-import type { CanvasCard, CanvasState, PostItNote, DrawPath } from '@/types/canvas';
+import type { CanvasCard, CanvasState, TextElement, PostItElement, DrawPath } from '@/types/canvas';
 
 export const canvasChannelName = (sessionId: string) => `session:${sessionId}:canvas`;
 
@@ -10,9 +10,12 @@ export type CanvasRealtimeEventType =
   | 'card.add'
   | 'card.patch'
   | 'card.remove'
-  | 'note.add'
-  | 'note.patch'
-  | 'note.remove'
+  | 'textElement.add'
+  | 'textElement.patch'
+  | 'textElement.remove'
+  | 'postItElement.add'
+  | 'postItElement.patch'
+  | 'postItElement.remove'
   | 'drawPath.add'
   | 'drawPath.patch'
   | 'drawPath.remove'
@@ -23,9 +26,12 @@ export interface CanvasRealtimePayloadMap {
   'card.add': { card: CanvasCard };
   'card.patch': { id: string; patch: Partial<CanvasCard> };
   'card.remove': { id: string };
-  'note.add': { note: PostItNote };
-  'note.patch': { id: string; patch: Partial<PostItNote> };
-  'note.remove': { id: string };
+  'textElement.add': { element: TextElement };
+  'textElement.patch': { id: string; patch: Partial<TextElement> };
+  'textElement.remove': { id: string };
+  'postItElement.add': { element: PostItElement };
+  'postItElement.patch': { id: string; patch: Partial<PostItElement> };
+  'postItElement.remove': { id: string };
   'drawPath.add': { path: DrawPath };
   'drawPath.patch': { id: string; patch: Partial<DrawPath> };
   'drawPath.remove': { id: string };
@@ -156,5 +162,3 @@ export const broadcastCanvasEvent = async <E extends CanvasRealtimeEventType>({
     payload: message,
   });
 };
-
-

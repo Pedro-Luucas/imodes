@@ -408,7 +408,10 @@
       "checkpointLimitReached": "Numero massimo di lavori salvati raggiunto",
       "cancel": "Annulla"
     },
-    "postItNote": {
+    "textElement": {
+      "clickToEdit": "Clicca per modificare"
+    },
+    "postItElement": {
       "clickToEdit": "Clicca per modificare"
     },
     "card": {
@@ -449,6 +452,7 @@
     "controls": {
       "cursorTool": "Strumento Cursore",
       "textTool": "Strumento Testo",
+      "postitTool": "Strumento Post-it",
       "undo": "Annulla",
       "redo": "Ripeti",
       "zoomIn": "Ingrandisci",
@@ -460,7 +464,9 @@
       "clear": "Pulisci",
       "drawTool": "Strumento Disegno",
       "color": "Colore",
+      "customColor": "Colore personalizzato",
       "thickness": "Spessore",
+      "fontSize": "Dimensione carattere",
       "fitToScreen": "Adatta allo Schermo",
       "eraser": "Gomma"
     },
