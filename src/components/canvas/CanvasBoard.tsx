@@ -321,7 +321,16 @@ export function CanvasBoard({
         })
         .join(' ');
 
-      checkAndShowWarning(errorMessage);
+      // Filter out SSE errors that are expected and handled automatically
+      // These are transient errors that don't require user attention
+      const isSSEError = 
+        errorMessage.includes('SSE error from server') ||
+        errorMessage.includes('Channel subscription failed') ||
+        errorMessage.includes('Error parsing SSE message');
+      
+      if (!isSSEError) {
+        checkAndShowWarning(errorMessage);
+      }
     };
 
     // Also listen to window error events as a backup
