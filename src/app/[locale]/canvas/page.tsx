@@ -5,6 +5,7 @@ import { usePageMetadata } from '@/hooks/usePageMetadata';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuthProfile } from '@/stores/authStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Button } from '@/components/ui/button';
 import { CanvasBoard } from '@/components/canvas/CanvasBoard';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
@@ -32,6 +33,8 @@ import {
   Palette,
   Maximize2,
   Eraser,
+  Type,
+  StickyNote,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -69,11 +72,17 @@ export default function CanvasPage() {
   const locale = (params.locale as string) || 'en';
   const tControls = useTranslations('canvas.controls');
   const tPage = useTranslations('canvas.page');
+  const isMobile = useIsMobile();
 
-  const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'draw'>('select');
+  const [toolMode, setToolMode] = useState<'select' | 'hand' | 'text' | 'postit' | 'draw'>('select');
   const [strokeColor, setStrokeColor] = useState('#f59e0b');
   const [strokeWidth, setStrokeWidth] = useState(8);
   const [isEraserMode, setIsEraserMode] = useState(false);
+  // Text tool settings
+  const [textColor, setTextColor] = useState('#18181b');
+  const [textFontSize, setTextFontSize] = useState(24);
+  // Post-it tool settings
+  const [postItColor, setPostItColor] = useState('#fff085');
   // Zoom offset: displayedZoom = actualZoom + 40
   // So 60% actual appears as 100%, 70% actual appears as 110%, etc.
   const ZOOM_DISPLAY_OFFSET = 40;
@@ -83,6 +92,7 @@ export default function CanvasPage() {
     return 100;
   });
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
+  const [isControlsMenuOpen, setIsControlsMenuOpen] = useState(false);
   const [gender, setGender] = useState<Gender>('male');
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -339,7 +349,7 @@ export default function CanvasPage() {
     };
 
     loadSessionData();
-  }, [sessionId, profile]);
+  }, [sessionId, profile, searchParams]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -526,16 +536,63 @@ export default function CanvasPage() {
     });
   }, [sessionId, userRole]);
 
-  if (isCreatingSession) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Creating session...</div>
-      </div>
-    );
-  }
+  // Prevent body scroll and pull-to-refresh on mobile
+  useEffect(() => {
+    if (isMobile) {
+      // Prevent scroll on body
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalWidth = document.body.style.width;
+      const originalHeight = document.body.style.height;
+      const originalTop = document.body.style.top;
+      
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.top = `-${scrollY}px`;
+      
+      // Prevent pull-to-refresh
+      const preventDefault = (e: TouchEvent) => {
+        // Allow touch events inside scrollable elements
+        const target = e.target as HTMLElement;
+        const isScrollable = target.closest('[data-scrollable]') || 
+                            target.closest('.overflow-y-auto') ||
+                            target.closest('.overflow-auto');
+        
+        if (!isScrollable) {
+          e.preventDefault();
+        }
+      };
+      
+      document.addEventListener('touchmove', preventDefault, { passive: false });
+      document.addEventListener('touchstart', preventDefault, { passive: false });
+      
+      return () => {
+        // Restore original styles
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = originalWidth;
+        document.body.style.height = originalHeight;
+        document.body.style.top = originalTop;
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+        
+        document.removeEventListener('touchmove', preventDefault);
+        document.removeEventListener('touchstart', preventDefault);
+      };
+    }
+  }, [isMobile]);
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-gray-50">
+    <div className={cn(
+      "flex flex-col bg-gray-50",
+      isMobile ? "fixed inset-0 w-screen h-screen overflow-hidden touch-none" : "h-screen w-full overflow-hidden"
+    )}>
       {/* Header */}
       <CanvasHeader
         gender={gender}
@@ -570,6 +627,9 @@ export default function CanvasPage() {
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
           isEraserMode={isEraserMode}
+          textColor={textColor}
+          textFontSize={textFontSize}
+          postItColor={postItColor}
           sessionId={sessionId}
           userRole={userRole}
           onSave={handleManualSave}
@@ -580,7 +640,13 @@ export default function CanvasPage() {
         {/* Left Panel - Tools */}
         <ToolsPanel
           isOpen={isToolsPanelOpen}
-          onClose={() => setIsToolsPanelOpen(false)}
+          onClose={() => {
+            setIsToolsPanelOpen(false);
+            // Fechar menu de controles quando fechar o painel de ferramentas
+            if (isMobile) {
+              setIsControlsMenuOpen(false);
+            }
+          }}
           gender={gender}
           locale={locale}
           sessionId={sessionId}
@@ -589,16 +655,31 @@ export default function CanvasPage() {
         />
 
         {!isToolsPanelOpen && (
-          <div className="absolute left-6 top-6 z-10">
+          <div className={cn(
+            "absolute z-20",
+            isMobile ? "left-2 top-2" : "left-6 top-6"
+          )}>
             <Button
               variant="secondary"
-              className="h-auto px-4 py-2 gap-14"
-              onClick={() => setIsToolsPanelOpen(true)}
+              className={cn(
+                "h-auto gap-2",
+                isMobile ? "px-3 py-1.5" : "px-4 py-2 gap-14"
+              )}
+              onClick={() => {
+                setIsToolsPanelOpen(true);
+                // Fechar menu de controles quando abrir o painel de ferramentas
+                if (isMobile) {
+                  setIsControlsMenuOpen(false);
+                }
+              }}
             >
-              <span className="text-base font-medium">{tPage('tools')}</span>
+              <span className={cn(
+                "font-medium",
+                isMobile ? "text-sm" : "text-base"
+              )}>{tPage('tools')}</span>
               <svg
-                width="16"
-                height="16"
+                width={isMobile ? "14" : "16"}
+                height={isMobile ? "14" : "16"}
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -642,217 +723,589 @@ export default function CanvasPage() {
         </div>
 
         {/* Bottom Right - Controls */}
-        <div className="absolute right-6 bottom-6 z-10 flex items-center gap-6">
-          {/* Tool Modes */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={toolMode === 'select' ? 'default' : 'secondary'}
-              size="icon"
-              className="size-10"
-              onClick={() => setToolMode('select')}
-              title={tControls('cursorTool')}
-            >
-              <MousePointer2 className="w-5 h-5" />
-            </Button>
-            <Button
-              variant={toolMode === 'draw' ? 'default' : 'secondary'}
-              size="icon"
-              className="size-10"
-              onClick={() => {
-                if (toolMode === 'draw' && isEraserMode) {
-                  // If already in draw mode with eraser, turn off eraser mode
-                  setIsEraserMode(false);
-                } else if (toolMode === 'draw') {
-                  // If already in draw mode (without eraser), exit draw mode
-                  setToolMode('select');
-                  setIsEraserMode(false); // Reset eraser mode when exiting draw mode
-                } else {
-                  // Enter draw mode
-                  setToolMode('draw');
-                  setIsEraserMode(false); // Reset eraser mode when entering draw mode
-                }
-              }}
-              title={tControls('drawTool') || 'Draw'}
-            >
-              <Pencil className="w-5 h-5" />
-            </Button>
-
-            {toolMode === 'draw' && (
-              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
-                {/* Color Swatches */}
-                <div className="flex items-center gap-1.5">
-                  {[
-                    '#18181b', // charcoal
-                    '#ef4444', // red
-                    '#22c55e', // green
-                    '#3b82f6', // blue
-                    '#f59e0b', // amber
-                    '#a855f7', // purple
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
-                      className={cn(
-                        "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
-                        strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
-                      )}
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-
-                  {/* Custom Color Picker */}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
-                        <Palette className="size-3.5 text-gray-500" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-3" side="top" align="center">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
-                        <input
-                          type="color"
-                          value={strokeColor}
-                          onChange={(e) => setStrokeColor(e.target.value)}
-                          className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
-                        />
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Thickness Selection */}
-                <div className="flex items-center gap-1">
-                  {[4, 8, 12].map((width) => (
-                    <button
-                      key={width}
-                      onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
-                      className={cn(
-                        "h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
-                        strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
-                      )}
-                      title={`${width}px`}
-                    >
-                      <div
-                        className="bg-current rounded-full"
-                        style={{
-                          width: '16px',
-                          height: `${Math.min(width, 14)}px`,
-                          opacity: strokeWidth === width ? 1 : 0.6
-                        }}
-                      />
-                    </button>
-                  ))}
-                </div>
-
-                <Separator orientation="vertical" className="h-6" />
-
-                {/* Eraser Button */}
-                <button
-                  onClick={() => setIsEraserMode(true)}
+        {isMobile ? (
+          /* Mobile: Menu expansível */
+          <>
+            {/* Overlay para fechar o menu ao clicar fora */}
+            {isControlsMenuOpen && (
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setIsControlsMenuOpen(false)}
+              />
+            )}
+            <div className="absolute right-2 bottom-2 z-20">
+              {/* Botão principal do menu */}
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-10"
+                onClick={() => setIsControlsMenuOpen(!isControlsMenuOpen)}
+                title="Menu de controles"
+              >
+                <svg
                   className={cn(
-                    "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
-                    isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                    "w-5 h-5 transition-transform duration-200",
+                    isControlsMenuOpen && "rotate-180"
                   )}
-                  title={tControls('eraser')}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <Eraser className="w-4 h-4" />
-                </button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </Button>
+
+            {/* Menu expandido verticalmente para cima */}
+            {isControlsMenuOpen && (
+              <div className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 bg-white rounded-2xl border border-gray-200 shadow-lg p-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                {/* Clear Canvas Button - primeiro (mais próximo do botão) */}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="size-9"
+                  onClick={() => {
+                    setShowClearDialog(true);
+                    setIsControlsMenuOpen(false);
+                  }}
+                  title={tControls('clearCanvas') || 'Clear Canvas'}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-9"
+                    onClick={() => setZoomLevel(Math.min(240, zoomLevel + 10))}
+                    title={tControls('zoomIn')}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="default"
+                    className="h-9 w-[70px] text-sm"
+                    onClick={() => setZoomLevel(100)}
+                  >
+                    {Math.round(zoomLevel)}%
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-9"
+                    onClick={() => setZoomLevel(Math.max(80, zoomLevel - 10))}
+                    title={tControls('zoomOut')}
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-9"
+                    onClick={() => {
+                      const win = window as WindowWithCanvasCard;
+                      if (win._fitToScreen) {
+                        win._fitToScreen();
+                      }
+                    }}
+                    title={tControls('fitToScreen') || 'Fit to Screen'}
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Undo/Redo */}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-9"
+                    title={tControls('undo')}
+                    onClick={() => {
+                      const win = window as WindowWithCanvasCard;
+                      if (win._undoCanvas) {
+                        win._undoCanvas();
+                      }
+                    }}
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-9"
+                    title={tControls('redo')}
+                    onClick={() => {
+                      const win = window as WindowWithCanvasCard;
+                      if (win._redoCanvas) {
+                        win._redoCanvas();
+                      }
+                    }}
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Tool Modes */}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant={toolMode === 'select' ? 'default' : 'secondary'}
+                    size="icon"
+                    className="size-9"
+                    onClick={() => {
+                      setToolMode('select');
+                      setIsEraserMode(false);
+                    }}
+                    title={tControls('cursorTool')}
+                  >
+                    <MousePointer2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={toolMode === 'draw' ? 'default' : 'secondary'}
+                    size="icon"
+                    className="size-9"
+                    onClick={() => {
+                      if (toolMode === 'draw') {
+                        setToolMode('select');
+                        setIsEraserMode(false);
+                      } else {
+                        setToolMode('draw');
+                        setIsEraserMode(false);
+                      }
+                    }}
+                    title={tControls('drawTool') || 'Draw'}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Draw Tools - só aparece quando em modo draw */}
+                {toolMode === 'draw' && (
+                  <div className="flex flex-col gap-2 bg-gray-50 rounded-xl p-2 border border-gray-200">
+                    {/* Color Swatches */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {[
+                        '#18181b', // charcoal
+                        '#ef4444', // red
+                        '#22c55e', // green
+                        '#3b82f6', // blue
+                        '#f59e0b', // amber
+                        '#a855f7', // purple
+                      ].map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
+                          className={cn(
+                            "size-5 rounded-full border-2 transition-all active:scale-95",
+                            strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                          )}
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-5 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center transition-colors active:border-gray-400">
+                            <Palette className="size-3 text-gray-500" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-3" side="left" align="center">
+                          <div className="flex flex-col gap-2">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
+                            <input
+                              type="color"
+                              value={strokeColor}
+                              onChange={(e) => setStrokeColor(e.target.value)}
+                              className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                            />
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Thickness Selection */}
+                    <div className="flex items-center gap-0.5">
+                      {[4, 8, 12].map((width) => (
+                        <button
+                          key={width}
+                          onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
+                          className={cn(
+                            "h-7 px-1.5 rounded-md flex items-center justify-center transition-all active:bg-gray-100",
+                            strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                          )}
+                          title={`${width}px`}
+                        >
+                          <div
+                            className="bg-current rounded-full"
+                            style={{
+                              width: '12px',
+                              height: `${Math.min(width, 10)}px`,
+                              opacity: strokeWidth === width ? 1 : 0.6
+                            }}
+                          />
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setIsEraserMode(true)}
+                        className={cn(
+                          "h-7 w-7 rounded-md flex items-center justify-center transition-all active:bg-gray-100",
+                          isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                        )}
+                        title={tControls('eraser')}
+                      >
+                        <Eraser className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+            </div>
+          </>
+        ) : (
+          /* Desktop: Controles horizontais normais */
+          <div className="absolute right-6 bottom-6 z-10 flex items-center gap-6">
+            {/* Tool Modes */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={toolMode === 'select' ? 'default' : 'secondary'}
+                size="icon"
+                className="size-10"
+                onClick={() => setToolMode('select')}
+                title={tControls('cursorTool')}
+              >
+                <MousePointer2 className="w-5 h-5" />
+              </Button>
 
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-2">
+              {/* Text Tool */}
+              <Button
+                variant={toolMode === 'text' ? 'default' : 'secondary'}
+                size="icon"
+                className="size-10"
+                onClick={() => {
+                  if (toolMode === 'text') {
+                    setToolMode('select');
+                  } else {
+                    setToolMode('text');
+                  }
+                }}
+                title={tControls('textTool') || 'Text'}
+              >
+                <Type className="w-5 h-5" />
+              </Button>
+
+              {toolMode === 'text' && (
+                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
+                  {/* Color Swatches */}
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      '#18181b', // charcoal
+                      '#ef4444', // red
+                      '#22c55e', // green
+                      '#3b82f6', // blue
+                      '#f59e0b', // amber
+                      '#a855f7', // purple
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setTextColor(color)}
+                        className={cn(
+                          "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                          textColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                        )}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+
+                    {/* Custom Color Picker */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                          <Palette className="size-3.5 text-gray-500" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" side="top" align="center">
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                          <input
+                            type="color"
+                            value={textColor}
+                            onChange={(e) => setTextColor(e.target.value)}
+                            className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <Separator orientation="vertical" className="h-6" />
+
+                  {/* Font Size Slider */}
+                  <div className="flex items-center gap-2 min-w-[120px]">
+                    <span className="text-xs text-gray-500 w-6">{textFontSize}</span>
+                    <input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={textFontSize}
+                      onChange={(e) => setTextFontSize(parseInt(e.target.value))}
+                      className="w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Post-it Tool */}
+              <Button
+                variant={toolMode === 'postit' ? 'default' : 'secondary'}
+                size="icon"
+                className="size-10"
+                onClick={() => {
+                  if (toolMode === 'postit') {
+                    setToolMode('select');
+                  } else {
+                    setToolMode('postit');
+                  }
+                }}
+                title={tControls('postitTool') || 'Post-it'}
+              >
+                <StickyNote className="w-5 h-5" />
+              </Button>
+
+              {toolMode === 'postit' && (
+                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
+                  {/* Post-it Color Swatches */}
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      '#fff085', // yellow
+                      '#fca5a5', // red/pink
+                      '#86efac', // green
+                      '#93c5fd', // blue
+                      '#fdba74', // orange
+                      '#d8b4fe', // purple
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setPostItColor(color)}
+                        className={cn(
+                          "size-6 rounded-md border-2 transition-all hover:scale-110 active:scale-95",
+                          postItColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                        )}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+
+                    {/* Custom Color Picker */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-6 rounded-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                          <Palette className="size-3.5 text-gray-500" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" side="top" align="center">
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                          <input
+                            type="color"
+                            value={postItColor}
+                            onChange={(e) => setPostItColor(e.target.value)}
+                            className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              )}
+
+              {/* Draw Tool */}
+              <Button
+                variant={toolMode === 'draw' ? 'default' : 'secondary'}
+                size="icon"
+                className="size-10"
+                onClick={() => {
+                  if (toolMode === 'draw' && isEraserMode) {
+                    setIsEraserMode(false);
+                  } else if (toolMode === 'draw') {
+                    setToolMode('select');
+                    setIsEraserMode(false);
+                  } else {
+                    setToolMode('draw');
+                    setIsEraserMode(false);
+                  }
+                }}
+                title={tControls('drawTool') || 'Draw'}
+              >
+                <Pencil className="w-5 h-5" />
+              </Button>
+
+              {toolMode === 'draw' && (
+                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
+                  {/* Color Swatches */}
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      '#18181b', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#a855f7',
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
+                        className={cn(
+                          "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                          strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                        )}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                          <Palette className="size-3.5 text-gray-500" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" side="top" align="center">
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
+                          <input
+                            type="color"
+                            value={strokeColor}
+                            onChange={(e) => setStrokeColor(e.target.value)}
+                            className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <Separator orientation="vertical" className="h-6" />
+                  <div className="flex items-center gap-1">
+                    {[4, 8, 12].map((width) => (
+                      <button
+                        key={width}
+                        onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
+                        className={cn(
+                          "h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                          strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                        )}
+                        title={`${width}px`}
+                      >
+                        <div
+                          className="bg-current rounded-full"
+                          style={{
+                            width: '16px',
+                            height: `${Math.min(width, 14)}px`,
+                            opacity: strokeWidth === width ? 1 : 0.6
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <Separator orientation="vertical" className="h-6" />
+                  <button
+                    onClick={() => setIsEraserMode(true)}
+                    className={cn(
+                      "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                      isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                    )}
+                    title={tControls('eraser')}
+                  >
+                    <Eraser className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Undo/Redo */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-10"
+                title={tControls('undo')}
+                onClick={() => {
+                  const win = window as WindowWithCanvasCard;
+                  if (win._undoCanvas) {
+                    win._undoCanvas();
+                  }
+                }}
+              >
+                <Undo2 className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-10"
+                title={tControls('redo')}
+                onClick={() => {
+                  const win = window as WindowWithCanvasCard;
+                  if (win._redoCanvas) {
+                    win._redoCanvas();
+                  }
+                }}
+              >
+                <Redo2 className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-10"
+                onClick={() => setZoomLevel(Math.min(240, zoomLevel + 10))}
+                title={tControls('zoomIn')}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="default"
+                className="h-10 w-[85px]"
+                onClick={() => setZoomLevel(100)}
+              >
+                {Math.round(zoomLevel)}%
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-10"
+                onClick={() => setZoomLevel(Math.max(80, zoomLevel - 10))}
+                title={tControls('zoomOut')}
+              >
+                <Minus className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-10"
+                onClick={() => {
+                  const win = window as WindowWithCanvasCard;
+                  if (win._fitToScreen) {
+                    win._fitToScreen();
+                  }
+                }}
+                title={tControls('fitToScreen') || 'Fit to Screen'}
+              >
+                <Maximize2 className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Clear Canvas Button */}
             <Button
               variant="secondary"
               size="icon"
               className="size-10"
-              title={tControls('undo')}
-              onClick={() => {
-                const win = window as WindowWithCanvasCard;
-                if (win._undoCanvas) {
-                  win._undoCanvas();
-                }
-              }}
+              onClick={() => setShowClearDialog(true)}
+              title={tControls('clearCanvas') || 'Clear Canvas'}
             >
-              <Undo2 className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="size-10"
-              title={tControls('redo')}
-              onClick={() => {
-                const win = window as WindowWithCanvasCard;
-                if (win._redoCanvas) {
-                  win._redoCanvas();
-                }
-              }}
-            >
-              <Redo2 className="w-5 h-5" />
+              <Trash2 className="w-5 h-5" />
             </Button>
           </div>
-
-          {/* Zoom Controls */}
-          {/* Min displayed: 80% (40% actual), Max displayed: 240% (200% actual) */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="size-10"
-              onClick={() => setZoomLevel(Math.min(240, zoomLevel + 10))}
-              title={tControls('zoomIn')}
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="default"
-              className="h-10 w-[85px]"
-              onClick={() => setZoomLevel(100)}
-            >
-              {Math.round(zoomLevel)}%
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="size-10"
-              onClick={() => setZoomLevel(Math.max(80, zoomLevel - 10))}
-              title={tControls('zoomOut')}
-            >
-              <Minus className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="size-10"
-              onClick={() => {
-                const win = window as WindowWithCanvasCard;
-                if (win._fitToScreen) {
-                  win._fitToScreen();
-                }
-              }}
-              title={tControls('fitToScreen') || 'Fit to Screen'}
-            >
-              <Maximize2 className="w-5 h-5" />
-            </Button>
-          </div>
-
-          {/* Clear Canvas Button */}
-          <Button
-            variant="secondary"
-            size="icon"
-            className="size-10"
-            onClick={() => setShowClearDialog(true)}
-            title={tControls('clearCanvas') || 'Clear Canvas'}
-          >
-            <Trash2 className="w-5 h-5" />
-          </Button>
-        </div>
+        )}
       </div>
 
       {/* Clear Canvas Confirmation Dialog */}

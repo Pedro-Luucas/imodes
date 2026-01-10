@@ -11,11 +11,13 @@ import {
   CardCategory,
   ToolMode,
   DrawPath,
-  // PostItNote,
+  TextElement,
+  PostItElement,
 } from '@/types/canvas';
 import { CanvasCard } from './CanvasCard';
 import { CanvasLoading } from './CanvasLoading';
-//import { PostItNoteComponent } from './PostItNote';
+import { TextElementComponent } from './TextElement';
+import { PostItElementComponent } from './PostItElement';
 import { preloadImagesWithPriority } from '@/lib/imagePreloader';
 import { saveCard } from '@/lib/savedCardsTracker';
 import { useCanvasStore, canvasStore } from '@/stores/canvasStore';
@@ -52,6 +54,11 @@ interface CanvasBoardProps {
   strokeColor?: string;
   strokeWidth?: number;
   isEraserMode?: boolean;
+  // Text element settings
+  textColor?: string;
+  textFontSize?: number;
+  // Post-it element settings
+  postItColor?: string;
 }
 
 interface WindowWithCanvasCard extends Window {
@@ -95,11 +102,18 @@ export function CanvasBoard({
   strokeColor = '#000000',
   strokeWidth = 2,
   isEraserMode = false,
+  textColor = '#18181b',
+  textFontSize = 24,
+  postItColor = '#fff085',
 }: CanvasBoardProps) {
   const t = useTranslations('canvas.card');
   const cards = useCanvasStore((state) => state.cards);
+  const textElements = useCanvasStore((state) => state.textElements);
+  const postItElements = useCanvasStore((state) => state.postItElements);
   const drawPaths = useCanvasStore((state) => state.drawPaths);
   const selectedCardId = useCanvasStore((state) => state.selectedCardId);
+  const selectedTextElementId = useCanvasStore((state) => state.selectedTextElementId);
+  const selectedPostItElementId = useCanvasStore((state) => state.selectedPostItElementId);
   const selectedDrawPathId = useCanvasStore((state) => state.selectedDrawPathId);
   const displayScale = useCanvasStore((state) => state.displayScale);
   const stagePosition = useCanvasStore((state) => state.stagePosition);
@@ -118,14 +132,19 @@ export function CanvasBoard({
     addCard,
     updateCard,
     removeCard,
-    //addNote,
-    //updateNote,
-    //removeNote,
-    //bringNoteToFront,
+    addTextElement,
+    updateTextElement,
+    removeTextElement,
+    bringTextElementToFront,
+    selectTextElement,
+    addPostItElement,
+    updatePostItElement,
+    removePostItElement,
+    bringPostItElementToFront,
+    selectPostItElement,
     clearCanvas,
     bringCardToFront,
     selectCard,
-    selectNote,
     setDisplayScale,
     setStagePosition,
     setZoomLevel,
@@ -302,7 +321,16 @@ export function CanvasBoard({
         })
         .join(' ');
 
-      checkAndShowWarning(errorMessage);
+      // Filter out SSE errors that are expected and handled automatically
+      // These are transient errors that don't require user attention
+      const isSSEError = 
+        errorMessage.includes('SSE error from server') ||
+        errorMessage.includes('Channel subscription failed') ||
+        errorMessage.includes('Error parsing SSE message');
+      
+      if (!isSSEError) {
+        checkAndShowWarning(errorMessage);
+      }
     };
 
     // Also listen to window error events as a backup
@@ -671,18 +699,31 @@ export function CanvasBoard({
 
   // Fit to screen - centers view on all elements
   const fitToScreen = useCallback(() => {
-    if (!dimensions.width || !dimensions.height) return;
+    if (!dimensions.width || !dimensions.height) {
+      console.warn('[Fit to Screen] Dimensions not available');
+      return;
+    }
 
     const currentCards = canvasStore.getState().cards;
-    const currentNotes = canvasStore.getState().notes;
+    const currentTextElements = canvasStore.getState().textElements;
+    const currentPostItElements = canvasStore.getState().postItElements;
     const currentDrawPaths = canvasStore.getState().drawPaths;
 
+    console.log('[Fit to Screen] Calculando fit para:', {
+      cards: currentCards.length,
+      textElements: currentTextElements.length,
+      postItElements: currentPostItElements.length,
+      drawPaths: currentDrawPaths.length,
+      viewport: { width: dimensions.width, height: dimensions.height },
+    });
+
     // If no elements, just center the origin
-    if (currentCards.length === 0 && currentNotes.length === 0 && currentDrawPaths.length === 0) {
+    if (currentCards.length === 0 && currentTextElements.length === 0 && currentPostItElements.length === 0 && currentDrawPaths.length === 0) {
       const centeredPosition = {
         x: dimensions.width / 2,
         y: dimensions.height / 2,
       };
+      console.log('[Fit to Screen] Sem elementos, centralizando:', centeredPosition);
       setStagePosition(centeredPosition);
       stagePositionRef.current = centeredPosition;
       return;
@@ -698,24 +739,34 @@ export function CanvasBoard({
     currentCards.forEach((card) => {
       minX = Math.min(minX, card.x);
       minY = Math.min(minY, card.y);
-      maxX = Math.max(maxX, card.x + card.width);
-      maxY = Math.max(maxY, card.y + card.height);
+      maxX = Math.max(maxX, card.x + (card.width || 280));
+      maxY = Math.max(maxY, card.y + (card.height || 320));
     });
 
-    // Include notes
-    currentNotes.forEach((note) => {
-      minX = Math.min(minX, note.x);
-      minY = Math.min(minY, note.y);
-      maxX = Math.max(maxX, note.x + note.width);
-      maxY = Math.max(maxY, note.y + note.height);
+    // Include text elements (estimate size based on font size)
+    currentTextElements.forEach((el) => {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + 200); // Estimate width
+      maxY = Math.max(maxY, el.y + (el.fontSize || 24) * 1.5);
+    });
+
+    // Include post-it elements (fixed size 200x200)
+    currentPostItElements.forEach((el) => {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + 200);
+      maxY = Math.max(maxY, el.y + 200);
     });
 
     // Include draw paths
     currentDrawPaths.forEach((path) => {
       if (path.points && path.points.length >= 2) {
+        const pathX = path.x || 0;
+        const pathY = path.y || 0;
         for (let i = 0; i < path.points.length; i += 2) {
-          const x = (path.x || 0) + path.points[i];
-          const y = (path.y || 0) + path.points[i + 1];
+          const x = pathX + path.points[i];
+          const y = pathY + path.points[i + 1];
           minX = Math.min(minX, x);
           minY = Math.min(minY, y);
           maxX = Math.max(maxX, x);
@@ -726,6 +777,7 @@ export function CanvasBoard({
 
     // If no valid bounds found, center the origin
     if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+      console.warn('[Fit to Screen] Bounds inválidos, centralizando');
       const centeredPosition = {
         x: dimensions.width / 2,
         y: dimensions.height / 2,
@@ -745,6 +797,17 @@ export function CanvasBoard({
     const contentWidth = maxX - minX;
     const contentHeight = maxY - minY;
 
+    console.log('[Fit to Screen] Bounds calculados:', {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      contentWidth,
+      contentHeight,
+      availableWidth,
+      availableHeight,
+    });
+
     // Calculate scale to fit content with padding
     const scaleX = availableWidth / contentWidth;
     const scaleY = availableHeight / contentHeight;
@@ -761,15 +824,26 @@ export function CanvasBoard({
       y: dimensions.height / 2 - contentCenterY * clampedScale,
     };
 
-    // Update scale via parent component (which will trigger zoom effect)
-    if (onZoomChange) {
-      onZoomChange(clampedScale * 100);
-    }
+    console.log('[Fit to Screen] Aplicando:', {
+      scale: clampedScale,
+      scalePercent: clampedScale * 100,
+      position: newPosition,
+      contentCenter: { x: contentCenterX, y: contentCenterY },
+    });
+
+    // Update scale directly in store first (for immediate visual feedback)
+    setDisplayScale(clampedScale);
+    prevScaleRef.current = clampedScale;
 
     // Update position
     setStagePosition(newPosition);
     stagePositionRef.current = newPosition;
-  }, [dimensions.width, dimensions.height, setStagePosition, onZoomChange]);
+
+    // Update scale via parent component (which will trigger zoom effect and sync with zoom level)
+    if (onZoomChange) {
+      onZoomChange(clampedScale * 100);
+    }
+  }, [dimensions.width, dimensions.height, setStagePosition, setDisplayScale, onZoomChange]);
 
   // Expose reset function via window object
   useEffect(() => {
@@ -1445,53 +1519,88 @@ export function CanvasBoard({
       const stage = e.target.getStage();
       if (!stage) return;
 
-      // if (toolMode === 'text' && e.target === stage) {
-      //   const pointerPos = stage.getPointerPosition();
-      //   if (!pointerPos) return;
-      //   const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
-      //   const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
-      //
-      //   const noteWidth = 142;
-      //   const noteHeight = 100;
-      //
-      //   const newNote: PostItNote = {
-      //     id: Date.now().toString(),
-      //     x: stageX - noteWidth / 2,
-      //     y: stageY - noteHeight / 2,
-      //     text: '',
-      //     width: noteWidth,
-      //     height: noteHeight,
-      //     isEditing: true,
-      //   };
-      //
-      //   addNote(newNote);
-      //   selectNote(newNote.id);
-      //   selectCard(null);
-      //   markDirty('interaction');
-      //
-      //   if (sessionId) {
-      //     void publish('note.add', { note: newNote });
-      //   }
-      //   return;
-      // }
+      // Handle text tool mode - create new text element
+      if (toolMode === 'text' && e.target === stage) {
+        const pointerPos = stage.getPointerPosition();
+        if (!pointerPos) return;
+        const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
+        const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
+
+        const newTextElement: TextElement = {
+          id: Date.now().toString(),
+          x: stageX,
+          y: stageY,
+          text: '',
+          fontSize: textFontSize,
+          color: textColor,
+          isBold: false,
+          isUnderline: false,
+          isEditing: true,
+        };
+
+        addTextElement(newTextElement);
+        selectTextElement(newTextElement.id);
+        selectCard(null);
+        selectPostItElement(null);
+        markDirty('interaction');
+
+        if (sessionId) {
+          void publish('textElement.add', { element: newTextElement });
+        }
+        return;
+      }
+
+      // Handle postit tool mode - create new post-it element
+      if (toolMode === 'postit' && e.target === stage) {
+        const pointerPos = stage.getPointerPosition();
+        if (!pointerPos) return;
+        const stageX = (pointerPos.x - stagePositionRef.current.x) / displayScale;
+        const stageY = (pointerPos.y - stagePositionRef.current.y) / displayScale;
+
+        const newPostItElement: PostItElement = {
+          id: Date.now().toString(),
+          x: stageX - 100, // Center the 200x200 post-it
+          y: stageY - 100,
+          text: '',
+          color: postItColor,
+          isEditing: true,
+        };
+
+        addPostItElement(newPostItElement);
+        selectPostItElement(newPostItElement.id);
+        selectCard(null);
+        selectTextElement(null);
+        markDirty('interaction');
+
+        if (sessionId) {
+          void publish('postItElement.add', { element: newPostItElement });
+        }
+        return;
+      }
 
       if (e.target === stage) {
         selectCard(null);
-        selectNote(null);
+        selectTextElement(null);
+        selectPostItElement(null);
       }
 
       // Notify parent of rapid click (not a drag) on canvas
       onCanvasClick?.();
     },
     [
-      // addNote,
-      // displayScale,
-      // markDirty,
-      // publish,
+      addTextElement,
+      addPostItElement,
+      displayScale,
+      markDirty,
+      publish,
       selectCard,
-      selectNote,
-      // sessionId,
-      // toolMode,
+      selectTextElement,
+      selectPostItElement,
+      sessionId,
+      toolMode,
+      textColor,
+      textFontSize,
+      postItColor,
       onCanvasClick,
     ]
   );
@@ -1554,83 +1663,155 @@ export function CanvasBoard({
     }
   }, [isEraserMode, toolMode]);
 
-  // const handleNoteSelect = useCallback(
-  //   (id: string) => {
-  //     selectNote(id);
-  //     selectCard(null);
-  //     bringNoteToFront(id, { skipHistory: true });
-  //   },
-  //   [bringNoteToFront, selectCard, selectNote]
-  // );
-  //
-  // const handleNoteDragEnd = useCallback(
-  //   (id: string, x: number, y: number) => {
-  //     updateNote(id, { x, y }, { skipHistory: true });
-  //
-  //     if (dragDebounceTimerRef.current) {
-  //       clearTimeout(dragDebounceTimerRef.current);
-  //     }
-  //     dragDebounceTimerRef.current = setTimeout(() => {
-  //       saveHistorySnapshot();
-  //     }, 300);
-  //
-  //     markDirty('interaction');
-  //
-  //     if (sessionId) {
-  //       void publish('note.patch', { id, patch: { x, y } });
-  //     }
-  //   },
-  //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
-  // );
-  //
-  // const handleNoteTextChange = useCallback(
-  //   (id: string, text: string) => {
-  //     updateNote(id, { text }, { skipHistory: true });
-  //
-  //     if (dragDebounceTimerRef.current) {
-  //       clearTimeout(dragDebounceTimerRef.current);
-  //     }
-  //     dragDebounceTimerRef.current = setTimeout(() => {
-  //       saveHistorySnapshot();
-  //     }, 500);
-  //
-  //     markDirty('interaction');
-  //
-  //     if (sessionId) {
-  //       void publish('note.patch', { id, patch: { text } });
-  //     }
-  //   },
-  //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
-  // );
-  //
-  // const handleNoteEditStateChange = useCallback(
-  //   (id: string, isEditing: boolean) => {
-  //     updateNote(id, { isEditing }, { skipHistory: true });
-  //   },
-  //   [updateNote]
-  // );
-  //
-  // const handleNoteSizeChange = useCallback(
-  //   (id: string, width: number, height: number) => {
-  //     updateNote(id, { width, height }, { skipHistory: true });
-  //
-  //     if (dragDebounceTimerRef.current) {
-  //       clearTimeout(dragDebounceTimerRef.current);
-  //     }
-  //     dragDebounceTimerRef.current = setTimeout(() => {
-  //       saveHistorySnapshot();
-  //     }, 300);
-  //
-  //     markDirty('interaction');
-  //
-  //     if (sessionId) {
-  //       void publish('note.patch', { id, patch: { width, height } });
-  //     }
-  //   },
-  //   [markDirty, publish, saveHistorySnapshot, sessionId, updateNote]
-  // );
-  //
-  // Delete selected card or drawing on Delete/Backspace key
+  // Text Element Handlers
+  const handleTextElementSelect = useCallback(
+    (id: string) => {
+      selectTextElement(id);
+      selectCard(null);
+      selectPostItElement(null);
+      bringTextElementToFront(id, { skipHistory: true });
+    },
+    [bringTextElementToFront, selectCard, selectTextElement, selectPostItElement]
+  );
+
+  const handleTextElementDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      updateTextElement(id, { x, y }, { skipHistory: true });
+
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveHistorySnapshot();
+      }, 300);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('textElement.patch', { id, patch: { x, y } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateTextElement]
+  );
+
+  const handleTextElementTextChange = useCallback(
+    (id: string, text: string) => {
+      updateTextElement(id, { text }, { skipHistory: true });
+
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveHistorySnapshot();
+      }, 500);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('textElement.patch', { id, patch: { text } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updateTextElement]
+  );
+
+  const handleTextElementEditStateChange = useCallback(
+    (id: string, isEditing: boolean) => {
+      updateTextElement(id, { isEditing }, { skipHistory: true });
+    },
+    [updateTextElement]
+  );
+
+  const handleTextElementDelete = useCallback(
+    (id: string) => {
+      removeTextElement(id);
+      if (selectedTextElementId === id) {
+        selectTextElement(null);
+      }
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('textElement.remove', { id });
+      }
+    },
+    [markDirty, publish, removeTextElement, selectTextElement, selectedTextElementId, sessionId]
+  );
+
+  // Post-It Element Handlers
+  const handlePostItElementSelect = useCallback(
+    (id: string) => {
+      selectPostItElement(id);
+      selectCard(null);
+      selectTextElement(null);
+      bringPostItElementToFront(id, { skipHistory: true });
+    },
+    [bringPostItElementToFront, selectCard, selectTextElement, selectPostItElement]
+  );
+
+  const handlePostItElementDragEnd = useCallback(
+    (id: string, x: number, y: number) => {
+      updatePostItElement(id, { x, y }, { skipHistory: true });
+
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveHistorySnapshot();
+      }, 300);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('postItElement.patch', { id, patch: { x, y } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updatePostItElement]
+  );
+
+  const handlePostItElementTextChange = useCallback(
+    (id: string, text: string) => {
+      updatePostItElement(id, { text }, { skipHistory: true });
+
+      if (dragDebounceTimerRef.current) {
+        clearTimeout(dragDebounceTimerRef.current);
+      }
+      dragDebounceTimerRef.current = setTimeout(() => {
+        saveHistorySnapshot();
+      }, 500);
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('postItElement.patch', { id, patch: { text } });
+      }
+    },
+    [markDirty, publish, saveHistorySnapshot, sessionId, updatePostItElement]
+  );
+
+  const handlePostItElementEditStateChange = useCallback(
+    (id: string, isEditing: boolean) => {
+      updatePostItElement(id, { isEditing }, { skipHistory: true });
+    },
+    [updatePostItElement]
+  );
+
+  const handlePostItElementDelete = useCallback(
+    (id: string) => {
+      removePostItElement(id);
+      if (selectedPostItElementId === id) {
+        selectPostItElement(null);
+      }
+
+      markDirty('interaction');
+
+      if (sessionId) {
+        void publish('postItElement.remove', { id });
+      }
+    },
+    [markDirty, publish, removePostItElement, selectPostItElement, selectedPostItElementId, sessionId]
+  );
+
+  // Delete selected card, text element, post-it, or drawing on Delete/Backspace key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check if user is typing in an input/textarea - don't delete in that case
@@ -1643,19 +1824,21 @@ export function CanvasBoard({
       }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        const sid = selectedCardId;
-        const did = selectedDrawPathId;
-        if (sid) {
-          handleCardDelete(sid);
-        } else if (did) {
-          handleDrawPathDelete(did);
+        if (selectedCardId) {
+          handleCardDelete(selectedCardId);
+        } else if (selectedTextElementId) {
+          handleTextElementDelete(selectedTextElementId);
+        } else if (selectedPostItElementId) {
+          handlePostItElementDelete(selectedPostItElementId);
+        } else if (selectedDrawPathId) {
+          handleDrawPathDelete(selectedDrawPathId);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCardId, selectedDrawPathId, handleCardDelete, handleDrawPathDelete]);
+  }, [selectedCardId, selectedTextElementId, selectedPostItElementId, selectedDrawPathId, handleCardDelete, handleTextElementDelete, handlePostItElementDelete, handleDrawPathDelete]);
 
   return (
     <div
@@ -1771,20 +1954,30 @@ export function CanvasBoard({
                 listening={false}
               />
             )}
-            {/*
-            // {notes.map((note) => (
-            //   <PostItNoteComponent
-            //     key={note.id}
-            //     note={note}
-            //     isSelected={selectedNoteId === note.id}
-            //     onSelect={() => handleNoteSelect(note.id)}
-            //     onDragEnd={handleNoteDragEnd}
-            //     onTextChange={handleNoteTextChange}
-            //     onEditStateChange={handleNoteEditStateChange}
-            //     onSizeChange={handleNoteSizeChange}
-            //   />
-            // ))}
-            */}
+            {/* Text Elements */}
+            {textElements.map((element) => (
+              <TextElementComponent
+                key={element.id}
+                element={element}
+                isSelected={selectedTextElementId === element.id}
+                onSelect={() => handleTextElementSelect(element.id)}
+                onDragEnd={handleTextElementDragEnd}
+                onTextChange={handleTextElementTextChange}
+                onEditStateChange={handleTextElementEditStateChange}
+              />
+            ))}
+            {/* Post-It Elements */}
+            {postItElements.map((element) => (
+              <PostItElementComponent
+                key={element.id}
+                element={element}
+                isSelected={selectedPostItElementId === element.id}
+                onSelect={() => handlePostItElementSelect(element.id)}
+                onDragEnd={handlePostItElementDragEnd}
+                onTextChange={handlePostItElementTextChange}
+                onEditStateChange={handlePostItElementEditStateChange}
+              />
+            ))}
           </Layer>
         </Stage>
       )}

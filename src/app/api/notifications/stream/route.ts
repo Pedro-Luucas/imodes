@@ -57,8 +57,15 @@ export async function GET(request: NextRequest) {
             if (status === 'SUBSCRIBED') {
               console.log('Subscribed to notifications broadcast channel');
             } else if (status === 'CHANNEL_ERROR') {
-              console.error('Broadcast channel error occurred');
-              send({ type: 'error', message: 'Channel subscription failed' });
+              // Log error on server but don't send to client
+              // The EventSource will automatically try to reconnect
+              // Sending errors to client causes noise and unnecessary warnings
+              console.error('Broadcast channel error occurred (will attempt to reconnect)');
+              // Only send error to client if we're unable to continue the stream
+              // For transient errors, let EventSource handle reconnection
+            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+              // These are also transient - EventSource will handle reconnection
+              console.warn(`Notification channel status: ${status} (will attempt to reconnect)`);
             }
           }
         );

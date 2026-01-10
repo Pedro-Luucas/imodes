@@ -45,11 +45,16 @@ export interface CheckpointMessage {
     name: string;
     state: {
       cards?: unknown[];
-      notes?: unknown[];
+      textElements?: unknown[];
+      postItElements?: unknown[];
       gender?: string;
-      patientZoomLevel?: number;
-      therapistZoomLevel?: number;
-      therapistNotes?: string;
+      patientSettings?: {
+        zoomLevel?: number;
+      };
+      therapistSettings?: {
+        zoomLevel?: number;
+        notes?: string;
+      };
       version: number;
       updatedAt: string;
       drawPaths?: unknown[];

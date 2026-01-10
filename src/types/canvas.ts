@@ -33,7 +33,7 @@ export interface ParsedCardData {
   description: string;
 }
 
-export type ToolMode = 'select' | 'hand' | 'text' | 'draw';
+export type ToolMode = 'select' | 'hand' | 'text' | 'postit' | 'draw';
 
 export interface DrawPath {
   id: string;
@@ -46,13 +46,24 @@ export interface DrawPath {
   isEraser?: boolean;
 }
 
-export interface PostItNote {
+export interface TextElement {
   id: string;
   x: number;
   y: number;
   text: string;
-  width: number;
-  height: number;
+  fontSize: number;
+  color: string;
+  isBold?: boolean;
+  isUnderline?: boolean;
+  isEditing?: boolean;
+}
+
+export interface PostItElement {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
   isEditing?: boolean;
 }
 
@@ -72,7 +83,8 @@ export interface TimeSpentEntry {
 
 export interface CanvasState {
   cards: CanvasCard[];
-  notes: PostItNote[];
+  textElements?: TextElement[];
+  postItElements?: PostItElement[];
   drawPaths?: DrawPath[];
   gender: Gender;
   patientSettings: PatientSettings;

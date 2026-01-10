@@ -128,7 +128,17 @@ const useNotificationStore = create<NotificationState & { actions: NotificationA
             }
 
             if (data.type === 'error') {
-              console.error('SSE error from server:', data.message || 'Unknown error');
+              // Only log errors that are truly critical (not transient)
+              // Transient errors like channel subscription failures are handled automatically
+              // by EventSource reconnection, so we don't need to spam the console
+              const errorMessage = data.message || 'Unknown error';
+              if (errorMessage.includes('Failed to initialize')) {
+                // This is a critical error that prevents the stream from working
+                console.error('SSE stream initialization failed:', errorMessage);
+              } else {
+                // Other errors are logged at warning level as they may be transient
+                console.warn('SSE message from server:', errorMessage);
+              }
             }
           } catch (error) {
             console.error('Error parsing SSE message:', error);

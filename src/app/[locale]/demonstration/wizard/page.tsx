@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -24,27 +25,36 @@ interface DemoFormData {
   role: 'therapist' | 'patient' | 'student' | 'professor' | null;
 }
 
+type FormErrors = Partial<Record<keyof DemoFormData, string>> & {
+  acceptCookies?: string;
+};
+
 export default function DemonstrationWizardPage() {
   const t = useTranslations('demonstration.wizard');
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [isCreating, setIsCreating] = useState(false);
+  const [acceptCookies, setAcceptCookies] = useState(false);
   const [formData, setFormData] = useState<DemoFormData>({
     fullName: '',
     email: '',
     role: null,
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof DemoFormData, string>>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const validateStep = (step: WizardStep): boolean => {
-    const newErrors: Partial<Record<keyof DemoFormData, string>> = {};
+    const newErrors: FormErrors = {};
 
     if (step === 1) {
       if (!formData.fullName.trim()) {
         newErrors.fullName = t('errors.fullNameRequired') || 'Nome é obrigatório';
       } else if (formData.fullName.trim().length < 2) {
         newErrors.fullName = t('errors.fullNameMinLength') || 'Nome deve ter pelo menos 2 caracteres';
+      }
+      
+      if (!acceptCookies) {
+        newErrors.acceptCookies = t('errors.acceptCookiesRequired') || 'Aceite os termos e condições';
       }
     }
 
@@ -101,6 +111,7 @@ export default function DemonstrationWizardPage() {
           first_name: formData.fullName.split(' ')[0] || formData.fullName,
           email: formData.email,
           role: formData.role,
+          accept_cookies: acceptCookies,
         }),
       });
 
@@ -208,9 +219,30 @@ export default function DemonstrationWizardPage() {
                     className="mt-2"
                     autoFocus
                   />
+
                   {errors.fullName && (
                     <p className="text-sm text-red-500 mt-1">{errors.fullName}</p>
                   )}
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="acceptCookies"
+                    checked={acceptCookies}
+                    onCheckedChange={(checked) => {
+                      setAcceptCookies(checked === 'indeterminate' ? false : Boolean(checked));
+                      if (errors.acceptCookies) {
+                        setErrors((prev) => ({ ...prev, acceptCookies: undefined }));
+                      }
+                    }}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="acceptCookies" className="cursor-pointer text-sm">
+                      {t('step1.acceptCookies') || 'Aceito os termos e condições'}
+                    </Label>
+                    {errors.acceptCookies && (
+                      <p className="text-sm text-red-500 mt-1">{errors.acceptCookies}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { CanvasCard, CanvasState, Gender, PostItNote, DrawPath } from '@/types/canvas';
+import type { CanvasCard, CanvasState, Gender, TextElement, PostItElement, DrawPath } from '@/types/canvas';
 
 const MAX_HISTORY_LENGTH = 50;
 
@@ -16,7 +16,8 @@ export type CanvasSaveReason = 'interaction' | 'autosave' | 'remote-sync' | 'man
 
 export interface CanvasHistorySnapshot {
   cards: CanvasCard[];
-  notes: PostItNote[];
+  textElements: TextElement[];
+  postItElements: PostItElement[];
   drawPaths: DrawPath[];
 }
 
@@ -26,7 +27,8 @@ interface CanvasStoreState {
   clientId: string;
 
   cards: CanvasCard[];
-  notes: PostItNote[];
+  textElements: TextElement[];
+  postItElements: PostItElement[];
   drawPaths: DrawPath[];
   gender: Gender;
 
@@ -38,7 +40,8 @@ interface CanvasStoreState {
   stagePosition: { x: number; y: number };
 
   selectedCardId: string | null;
-  selectedNoteId: string | null;
+  selectedTextElementId: string | null;
+  selectedPostItElementId: string | null;
   selectedDrawPathId: string | null;
 
   history: CanvasHistorySnapshot[];
@@ -68,7 +71,8 @@ interface CanvasStoreActions {
   setStagePosition: (position: { x: number; y: number }) => void;
 
   selectCard: (id: string | null) => void;
-  selectNote: (id: string | null) => void;
+  selectTextElement: (id: string | null) => void;
+  selectPostItElement: (id: string | null) => void;
   selectDrawPath: (id: string | null) => void;
 
   addCard: (card: CanvasCard, options?: { skipHistory?: boolean }) => void;
@@ -77,10 +81,15 @@ interface CanvasStoreActions {
   clearCanvas: (options?: { skipHistory?: boolean }) => void;
   bringCardToFront: (id: string, options?: { skipHistory?: boolean }) => void;
 
-  addNote: (note: PostItNote, options?: { skipHistory?: boolean }) => void;
-  updateNote: (id: string, patch: Partial<PostItNote>, options?: { skipHistory?: boolean }) => void;
-  removeNote: (id: string, options?: { skipHistory?: boolean }) => void;
-  bringNoteToFront: (id: string, options?: { skipHistory?: boolean }) => void;
+  addTextElement: (element: TextElement, options?: { skipHistory?: boolean }) => void;
+  updateTextElement: (id: string, patch: Partial<TextElement>, options?: { skipHistory?: boolean }) => void;
+  removeTextElement: (id: string, options?: { skipHistory?: boolean }) => void;
+  bringTextElementToFront: (id: string, options?: { skipHistory?: boolean }) => void;
+
+  addPostItElement: (element: PostItElement, options?: { skipHistory?: boolean }) => void;
+  updatePostItElement: (id: string, patch: Partial<PostItElement>, options?: { skipHistory?: boolean }) => void;
+  removePostItElement: (id: string, options?: { skipHistory?: boolean }) => void;
+  bringPostItElementToFront: (id: string, options?: { skipHistory?: boolean }) => void;
 
   setDrawPaths: (paths: DrawPath[], options?: { skipHistory?: boolean }) => void;
   addDrawPath: (path: DrawPath, options?: { skipHistory?: boolean }) => void;
@@ -109,7 +118,8 @@ const initialState: CanvasStoreState = {
   userRole: null,
   clientId: createClientId(),
   cards: [],
-  notes: [],
+  textElements: [],
+  postItElements: [],
   drawPaths: [],
   gender: 'male',
   patientZoomLevel: 60,
@@ -118,7 +128,8 @@ const initialState: CanvasStoreState = {
   displayScale: 0.6,
   stagePosition: { x: 0, y: 0 },
   selectedCardId: null,
-  selectedNoteId: null,
+  selectedTextElementId: null,
+  selectedPostItElementId: null,
   selectedDrawPathId: null,
   history: [],
   historyIndex: -1,
@@ -131,7 +142,8 @@ const initialState: CanvasStoreState = {
 
 const createSnapshot = (state: CanvasStoreState): CanvasHistorySnapshot => ({
   cards: state.cards.map((card) => ({ ...card })),
-  notes: state.notes.map((note) => ({ ...note })),
+  textElements: state.textElements.map((el) => ({ ...el })),
+  postItElements: state.postItElements.map((el) => ({ ...el })),
   drawPaths: state.drawPaths.map((path) => ({ ...path })),
 });
 
@@ -166,7 +178,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   hydrateFromServer: ({ sessionId, role, state, updatedAt }) => {
     set((current) => {
       const cards = Array.isArray(state?.cards) ? state.cards.map((card) => ({ ...card })) : [];
-      const notes = Array.isArray(state?.notes) ? state.notes.map((note) => ({ ...note })) : [];
+      const textElements = Array.isArray(state?.textElements) ? state.textElements.map((el) => ({ ...el })) : [];
+      const postItElements = Array.isArray(state?.postItElements) ? state.postItElements.map((el) => ({ ...el })) : [];
+      const drawPaths = Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [];
       const gender = state?.gender ?? 'male';
       // Default zoom is 60% actual which displays as 100% (with +40 offset)
       const patientZoomLevel = state?.patientSettings?.zoomLevel ?? 60;
@@ -176,8 +190,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const snapshot = createSnapshot({
         ...current,
         cards,
-        notes,
-        drawPaths: Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [],
+        textElements,
+        postItElements,
+        drawPaths,
         gender,
       });
 
@@ -189,8 +204,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         sessionId,
         userRole: role,
         cards,
-        notes,
-        drawPaths: Array.isArray(state?.drawPaths) ? state.drawPaths.map((path) => ({ ...path })) : [],
+        textElements,
+        postItElements,
+        drawPaths,
         gender,
         patientZoomLevel,
         therapistZoomLevel,
@@ -210,8 +226,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const cards = Array.isArray(snapshotState.cards)
         ? snapshotState.cards.map((card) => ({ ...card }))
         : [];
-      const notes = Array.isArray(snapshotState.notes)
-        ? snapshotState.notes.map((note) => ({ ...note }))
+      const textElements = Array.isArray(snapshotState.textElements)
+        ? snapshotState.textElements.map((el) => ({ ...el }))
+        : [];
+      const postItElements = Array.isArray(snapshotState.postItElements)
+        ? snapshotState.postItElements.map((el) => ({ ...el }))
         : [];
       const gender = snapshotState.gender ?? state.gender;
       const patientZoomLevel = snapshotState.patientSettings?.zoomLevel ?? state.patientZoomLevel;
@@ -222,7 +241,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const snapshot = createSnapshot({
         ...state,
         cards,
-        notes,
+        textElements,
+        postItElements,
         drawPaths: Array.isArray(snapshotState.drawPaths) ? snapshotState.drawPaths.map((path) => ({ ...path })) : [],
         gender,
       });
@@ -232,7 +252,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       return {
         ...state,
         cards,
-        notes,
+        textElements,
+        postItElements,
         drawPaths: Array.isArray(snapshotState.drawPaths) ? snapshotState.drawPaths.map((path) => ({ ...path })) : [],
         gender,
         patientZoomLevel,
@@ -300,16 +321,28 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set((state) => ({
       ...state,
       selectedCardId: id,
-      selectedNoteId: id ? null : state.selectedNoteId,
+      selectedTextElementId: id ? null : state.selectedTextElementId,
+      selectedPostItElementId: id ? null : state.selectedPostItElementId,
       selectedDrawPathId: id ? null : state.selectedDrawPathId,
     }));
   },
 
-  selectNote: (id) => {
+  selectTextElement: (id) => {
     set((state) => ({
       ...state,
-      selectedNoteId: id,
+      selectedTextElementId: id,
       selectedCardId: id ? null : state.selectedCardId,
+      selectedPostItElementId: id ? null : state.selectedPostItElementId,
+      selectedDrawPathId: id ? null : state.selectedDrawPathId,
+    }));
+  },
+
+  selectPostItElement: (id) => {
+    set((state) => ({
+      ...state,
+      selectedPostItElementId: id,
+      selectedCardId: id ? null : state.selectedCardId,
+      selectedTextElementId: id ? null : state.selectedTextElementId,
       selectedDrawPathId: id ? null : state.selectedDrawPathId,
     }));
   },
@@ -319,7 +352,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ...state,
       selectedDrawPathId: id,
       selectedCardId: id ? null : state.selectedCardId,
-      selectedNoteId: id ? null : state.selectedNoteId,
+      selectedTextElementId: id ? null : state.selectedTextElementId,
+      selectedPostItElementId: id ? null : state.selectedPostItElementId,
     }));
   },
 
@@ -430,7 +464,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         const snapshot = createSnapshot({
           ...state,
           cards: [],
-          notes: [],
+          textElements: [],
+          postItElements: [],
           drawPaths: [],
         });
         ({ history, historyIndex } = pushHistory(state, snapshot));
@@ -438,92 +473,96 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       return {
         ...state,
         cards: [],
-        notes: [],
+        textElements: [],
+        postItElements: [],
         drawPaths: [],
         selectedCardId: null,
-        selectedNoteId: null,
+        selectedTextElementId: null,
+        selectedPostItElementId: null,
+        selectedDrawPathId: null,
         history,
         historyIndex,
       };
     });
   },
 
-  addNote: (note, options) => {
+  // Text Element Actions
+  addTextElement: (element, options) => {
     const skipHistory = options?.skipHistory ?? false;
     set((state) => {
-      const notes = [...state.notes, { ...note }];
+      const textElements = [...state.textElements, { ...element }];
       let history = state.history;
       let historyIndex = state.historyIndex;
 
       if (!skipHistory && !state.isApplyingRemote) {
-        const snapshot = createSnapshot({ ...state, notes });
+        const snapshot = createSnapshot({ ...state, textElements });
         ({ history, historyIndex } = pushHistory(state, snapshot));
       }
 
       return {
         ...state,
-        notes,
+        textElements,
         history,
         historyIndex,
       };
     });
   },
 
-  updateNote: (id, patch, options) => {
+  updateTextElement: (id, patch, options) => {
     const skipHistory = options?.skipHistory ?? false;
     set((state) => {
-      const notes = state.notes.map((note) => (note.id === id ? { ...note, ...patch } : note));
+      const textElements = state.textElements.map((el) => (el.id === id ? { ...el, ...patch } : el));
       let history = state.history;
       let historyIndex = state.historyIndex;
 
       if (!skipHistory && !state.isApplyingRemote) {
-        const snapshot = createSnapshot({ ...state, notes });
+        const snapshot = createSnapshot({ ...state, textElements });
         ({ history, historyIndex } = pushHistory(state, snapshot));
       }
 
       return {
         ...state,
-        notes,
+        textElements,
         history,
         historyIndex,
       };
     });
   },
 
-  removeNote: (id, options) => {
+  removeTextElement: (id, options) => {
     const skipHistory = options?.skipHistory ?? false;
     set((state) => {
-      const notes = state.notes.filter((note) => note.id !== id);
+      const textElements = state.textElements.filter((el) => el.id !== id);
       let history = state.history;
       let historyIndex = state.historyIndex;
-      const selectedNoteId = state.selectedNoteId === id ? null : state.selectedNoteId;
+      const selectedTextElementId = state.selectedTextElementId === id ? null : state.selectedTextElementId;
 
       if (!skipHistory && !state.isApplyingRemote) {
-        const snapshot = createSnapshot({ ...state, notes });
+        const snapshot = createSnapshot({ ...state, textElements });
         ({ history, historyIndex } = pushHistory(state, snapshot));
       }
 
       return {
         ...state,
-        notes,
+        textElements,
         history,
         historyIndex,
-        selectedNoteId,
+        selectedTextElementId,
       };
     });
   },
 
-  bringNoteToFront: (id, options) => {
+  bringTextElementToFront: (id, options) => {
     const skipHistory = options?.skipHistory ?? false;
     set((state) => {
-      const index = state.notes.findIndex((note) => note.id === id);
+      const index = state.textElements.findIndex((el) => el.id === id);
       if (index === -1) {
         return state;
       }
 
-      const notes = [...state.notes];
-      const [selectedNote] = notes.splice(index, 1);
-      notes.push(selectedNote);
+      const textElements = [...state.textElements];
+      const [selectedElement] = textElements.splice(index, 1);
+      textElements.push(selectedElement);
 
       let history = state.history;
       let historyIndex = state.historyIndex;
@@ -531,14 +570,112 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (!skipHistory && !state.isApplyingRemote) {
         const snapshot = createSnapshot({
           ...state,
-          notes,
+          textElements,
         });
         ({ history, historyIndex } = pushHistory(state, snapshot));
       }
 
       return {
         ...state,
-        notes,
+        textElements,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
+  // Post-It Element Actions
+  addPostItElement: (element, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const postItElements = [...state.postItElements, { ...element }];
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, postItElements });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        postItElements,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
+  updatePostItElement: (id, patch, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const postItElements = state.postItElements.map((el) => (el.id === id ? { ...el, ...patch } : el));
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, postItElements });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        postItElements,
+        history,
+        historyIndex,
+      };
+    });
+  },
+
+  removePostItElement: (id, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const postItElements = state.postItElements.filter((el) => el.id !== id);
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+      const selectedPostItElementId = state.selectedPostItElementId === id ? null : state.selectedPostItElementId;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({ ...state, postItElements });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        postItElements,
+        history,
+        historyIndex,
+        selectedPostItElementId,
+      };
+    });
+  },
+
+  bringPostItElementToFront: (id, options) => {
+    const skipHistory = options?.skipHistory ?? false;
+    set((state) => {
+      const index = state.postItElements.findIndex((el) => el.id === id);
+      if (index === -1) {
+        return state;
+      }
+
+      const postItElements = [...state.postItElements];
+      const [selectedElement] = postItElements.splice(index, 1);
+      postItElements.push(selectedElement);
+
+      let history = state.history;
+      let historyIndex = state.historyIndex;
+
+      if (!skipHistory && !state.isApplyingRemote) {
+        const snapshot = createSnapshot({
+          ...state,
+          postItElements,
+        });
+        ({ history, historyIndex } = pushHistory(state, snapshot));
+      }
+
+      return {
+        ...state,
+        postItElements,
         history,
         historyIndex,
       };
@@ -709,10 +846,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         ...state,
         historyIndex: newIndex,
         cards: snapshot.cards.map((card) => ({ ...card })),
-        notes: snapshot.notes.map((note) => ({ ...note })),
+        textElements: snapshot.textElements.map((el) => ({ ...el })),
+        postItElements: snapshot.postItElements.map((el) => ({ ...el })),
         drawPaths: snapshot.drawPaths.map((path) => ({ ...path })),
         selectedCardId: null,
-        selectedNoteId: null,
+        selectedTextElementId: null,
+        selectedPostItElementId: null,
         selectedDrawPathId: null,
       };
     });
@@ -732,10 +871,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         ...state,
         historyIndex: newIndex,
         cards: snapshot.cards.map((card) => ({ ...card })),
-        notes: snapshot.notes.map((note) => ({ ...note })),
+        textElements: snapshot.textElements.map((el) => ({ ...el })),
+        postItElements: snapshot.postItElements.map((el) => ({ ...el })),
         drawPaths: snapshot.drawPaths.map((path) => ({ ...path })),
         selectedCardId: null,
-        selectedNoteId: null,
+        selectedTextElementId: null,
+        selectedPostItElementId: null,
         selectedDrawPathId: null,
       };
     });
@@ -782,13 +923,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
 export const canvasStoreSelectors = {
   cards: (state: CanvasStore) => state.cards,
-  notes: (state: CanvasStore) => state.notes,
+  textElements: (state: CanvasStore) => state.textElements,
+  postItElements: (state: CanvasStore) => state.postItElements,
   drawPaths: (state: CanvasStore) => state.drawPaths,
   gender: (state: CanvasStore) => state.gender,
   displayScale: (state: CanvasStore) => state.displayScale,
   stagePosition: (state: CanvasStore) => state.stagePosition,
   selectedCardId: (state: CanvasStore) => state.selectedCardId,
-  selectedNoteId: (state: CanvasStore) => state.selectedNoteId,
+  selectedTextElementId: (state: CanvasStore) => state.selectedTextElementId,
+  selectedPostItElementId: (state: CanvasStore) => state.selectedPostItElementId,
   zoomLevels: (state: CanvasStore) => ({
     patient: state.patientZoomLevel,
     therapist: state.therapistZoomLevel,
@@ -812,4 +955,3 @@ export const canvasStore = {
 if (typeof window !== 'undefined') {
   (window as unknown as { canvasStore: unknown }).canvasStore = canvasStore;
 }
-

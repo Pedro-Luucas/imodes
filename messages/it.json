@@ -266,7 +266,8 @@
         "title": "Qual è il tuo nome?",
         "description": "Inserisci il tuo nome completo",
         "label": "Nome Completo",
-        "placeholder": "Inserisci il tuo nome completo"
+        "placeholder": "Inserisci il tuo nome completo",
+        "acceptCookies": "Accetto i termini e le condizioni"
       },
       "step2": {
         "title": "Qual è la tua email?",
@@ -295,6 +296,7 @@
         "emailRequired": "L'email è obbligatoria",
         "emailInvalid": "Email non valida",
         "roleRequired": "Seleziona un ruolo",
+        "acceptCookiesRequired": "Devi accettare i termini e le condizioni",
         "createFailed": "Creazione dimostrazione fallita"
       }
     }
@@ -406,7 +408,10 @@
       "checkpointLimitReached": "Numero massimo di lavori salvati raggiunto",
       "cancel": "Annulla"
     },
-    "postItNote": {
+    "textElement": {
+      "clickToEdit": "Clicca per modificare"
+    },
+    "postItElement": {
       "clickToEdit": "Clicca per modificare"
     },
     "card": {
@@ -447,6 +452,7 @@
     "controls": {
       "cursorTool": "Strumento Cursore",
       "textTool": "Strumento Testo",
+      "postitTool": "Strumento Post-it",
       "undo": "Annulla",
       "redo": "Ripeti",
       "zoomIn": "Ingrandisci",
@@ -458,7 +464,9 @@
       "clear": "Pulisci",
       "drawTool": "Strumento Disegno",
       "color": "Colore",
+      "customColor": "Colore personalizzato",
       "thickness": "Spessore",
+      "fontSize": "Dimensione carattere",
       "fitToScreen": "Adatta allo Schermo",
       "eraser": "Gomma"
     },

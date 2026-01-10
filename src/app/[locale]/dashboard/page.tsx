@@ -15,6 +15,7 @@ import { useAuthProfile } from '@/stores/authStore';
 import { InvitePatientDialog } from '@/components/dashboard/InvitePatientDialog';
 import { SelectPatientDialog } from '@/components/canvas/SelectPatientDialog';
 import { useCreateSession } from '@/hooks/useCreateSession';
+import { AcceptCookies } from '@/components/AcceptCookies';
 
 export default function DashboardPage() {
   const locale = useLocale();
@@ -208,7 +209,6 @@ export default function DashboardPage() {
       <DevWarning
         text={page('developmentDescription')}
       />
-       
 
       {profile?.id && (
         <InvitePatientDialog

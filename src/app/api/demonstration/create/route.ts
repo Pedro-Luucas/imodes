@@ -7,6 +7,7 @@ type CreateDemoRequest = {
   first_name: string;
   email: string;
   role: 'therapist' | 'patient' | 'student' | 'professor';
+  accept_cookies?: boolean;
 };
 
 type CreateDemoResponse = {
@@ -28,7 +29,7 @@ export async function POST(
 ): Promise<NextResponse<CreateDemoResponse | ErrorResponse>> {
   try {
     const body = await request.json();
-    const { full_name, first_name, email, role } = body as CreateDemoRequest;
+    const { full_name, first_name, email, role, accept_cookies } = body as CreateDemoRequest;
 
     // Validation
     if (!full_name || !first_name || !email || !role) {
@@ -69,10 +70,12 @@ export async function POST(
         email,
         role,
         session_id: tempSessionId, // Store temp session ID as text
+        accept_cookies: accept_cookies ?? false, // GDPR compliance: store cookie consent
         metadata: {
           source: 'demonstration_wizard',
           created_via: 'workshop_masterclass',
           temp_session_id: tempSessionId,
+          accept_cookies: accept_cookies ?? false, // Also store in metadata for redundancy
         },
       })
       .select()

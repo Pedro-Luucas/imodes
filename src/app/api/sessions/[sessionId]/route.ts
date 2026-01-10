@@ -320,43 +320,10 @@ export async function PUT(
       );
     }
 
-    // Enqueue message for async processing
+    // Save directly to database first (guaranteed save)
+    // Then enqueue for async processing if needed
     try {
-      const messagePayload = {
-        sessionId: String(sessionId), // Ensure it's a string
-        canvasState,
-        reasons: reasons || ['autosave'],
-        userId: String(profile.id), // Ensure it's a string
-      };
-
-      console.log('[PGMQ] 🚀 Enfileirando mensagem de autosave do canvas:', {
-        sessionId: messagePayload.sessionId,
-        userId: messagePayload.userId,
-        reasons: messagePayload.reasons,
-        canvasStateSize: JSON.stringify(canvasState).length,
-        timestamp: new Date().toISOString(),
-      });
-
-      const msgId = await sendCanvasAutosaveMessage(messagePayload);
-      
-      console.log('[PGMQ] ✅ Mensagem enfileirada com sucesso:', {
-        msgId,
-        sessionId: messagePayload.sessionId,
-        queue: 'canvas-autosave',
-      });
-
-      // Return 202 Accepted - message is queued and will be processed asynchronously
-      console.log('[PGMQ] 📤 Retornando 202 Accepted para cliente - mensagem enfileirada');
-      return NextResponse.json(
-        { 
-          message: 'Canvas update queued for processing',
-          sessionId,
-        },
-        { status: 202 }
-      );
-    } catch (queueError) {
-      console.error('Error enqueueing canvas autosave message:', queueError);
-      // Fallback: try direct update if queue fails
+      // Save directly to database
       const { data: updatedSession, error: updateError } = await supabase
         .from('imodes_session')
         .update({
@@ -368,18 +335,34 @@ export async function PUT(
         .single();
 
       if (updateError) {
-        console.error('Error updating session (fallback):', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update session' },
-          { status: 500 }
-        );
+        console.error('Error updating session:', updateError);
+        throw new Error(`Failed to update session: ${updateError.message}`);
       }
 
-      // Return success but log that queue failed
-      console.warn('Queue failed, updated session directly as fallback');
+      // Also enqueue message for async processing (for backup/audit)
+      try {
+        const messagePayload = {
+          sessionId: String(sessionId),
+          canvasState,
+          reasons: reasons || ['autosave'],
+          userId: String(profile.id),
+        };
+
+        await sendCanvasAutosaveMessage(messagePayload);
+      } catch (queueError) {
+        // Non-critical - data is already saved
+        console.warn('Failed to enqueue message (data already saved):', queueError);
+      }
+
       return NextResponse.json(
         { session: updatedSession as CanvasSession },
         { status: 200 }
+      );
+    } catch (error) {
+      console.error('Error saving session:', error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to update session' },
+        { status: 500 }
       );
     }
   } catch (error) {

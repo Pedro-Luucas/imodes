@@ -354,7 +354,10 @@
       "checkpointLimitReached": "Número máximo de trabalhos salvos atingido",
       "cancel": "Cancelar"
     },
-    "postItNote": {
+    "textElement": {
+      "clickToEdit": "Clique para editar"
+    },
+    "postItElement": {
       "clickToEdit": "Clique para editar"
     },
     "card": {
@@ -395,6 +398,7 @@
     "controls": {
       "cursorTool": "Ferramenta de Cursor",
       "textTool": "Ferramenta de Texto",
+      "postitTool": "Ferramenta Post-it",
       "undo": "Desfazer",
       "redo": "Refazer",
       "zoomIn": "Ampliar",
@@ -406,7 +410,9 @@
       "clear": "Limpar",
       "drawTool": "Ferramenta de Desenho",
       "color": "Cor",
+      "customColor": "Cor Personalizada",
       "thickness": "Espessura",
+      "fontSize": "Tamanho da Fonte",
       "fitToScreen": "Ajustar à Tela",
       "eraser": "Borracha"
     },
@@ -793,6 +799,23 @@
       "inviteTokenInvalid": "Formato de token de convite inválido",
       "accessTokenRequired": "Token de acesso é obrigatório",
       "refreshTokenRequired": "Token de atualização é obrigatório"
+    },
+    "cookies": {
+      "title": "Usamos cookies",
+      "description": "Usamos cookies para melhorar sua experiência de navegação, analisar o tráfego do site e personalizar o conteúdo. Ao clicar em \"Aceitar Tudo\", você consente com o uso de cookies.",
+      "customize": "Personalizar preferências",
+      "acceptAll": "Aceitar Tudo",
+      "rejectAll": "Rejeitar Tudo",
+      "settingsTitle": "Preferências de Cookies",
+      "settingsDescription": "Gerencie suas preferências de cookies. Você pode habilitar ou desabilitar diferentes tipos de cookies abaixo.",
+      "essentialTitle": "Cookies Essenciais",
+      "required": "Obrigatório",
+      "essentialDescription": "Estes cookies são necessários para o funcionamento do site e não podem ser desativados. Eles geralmente são definidos apenas em resposta a ações realizadas por você.",
+      "analyticsTitle": "Cookies de Análise",
+      "analyticsDescription": "Estes cookies nos ajudam a entender como os visitantes interagem com nosso site coletando e relatando informações anonimamente.",
+      "marketingTitle": "Cookies de Marketing",
+      "marketingDescription": "Estes cookies são usados para entregar anúncios personalizados e rastrear a eficácia de nossas campanhas de marketing.",
+      "savePreferences": "Salvar Preferências"
     }
   },
   "demonstration": {
@@ -814,7 +837,8 @@
         "title": "Qual é o seu nome?",
         "description": "Digite seu nome completo",
         "label": "Nome Completo",
-        "placeholder": "Digite seu nome completo"
+        "placeholder": "Digite seu nome completo",
+        "acceptCookies": "Aceito os termos e condições"
       },
       "step2": {
         "title": "Qual é o seu email?",
@@ -843,6 +867,7 @@
         "emailRequired": "Email é obrigatório",
         "emailInvalid": "Email inválido",
         "roleRequired": "Selecione um papel",
+        "acceptCookiesRequired": "Você deve aceitar os termos e condições",
         "createFailed": "Falha ao criar demonstração"
       }
     }
