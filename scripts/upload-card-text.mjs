@@ -27,19 +27,6 @@ This set contains the following cards:
 7 Meaningful World
 8 Coherent Self
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 1
 Attachment
 Safety, stability, emotional connection, acceptance

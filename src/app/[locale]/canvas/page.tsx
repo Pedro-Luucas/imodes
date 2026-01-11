@@ -697,29 +697,252 @@ export default function CanvasPage() {
           </div>
         )}
 
-        {/* Right Panel - Vertical Tool Icons */}
-        <div className="absolute right-6 top-6 z-10">
-          <div className="flex flex-col gap-4">
-            <Button
-              variant={toolMode === 'select' ? 'default' : 'secondary'}
-              size="icon"
-              className="size-10 hidden"
-              onClick={() => setToolMode('select')}
-              title={tControls('cursorTool')}
-            >
-              <MousePointer2 className="w-5 h-5" />
-            </Button>
+        {/* Right Toolbar - Drawing Tools */}
+        <div className="absolute right-6 top-6 z-10 flex flex-col gap-2 bg-white rounded-2xl border border-gray-200 shadow-lg p-2">
+          {/* Cursor Tool */}
+          <Button
+            variant={toolMode === 'select' ? 'default' : 'secondary'}
+            size="icon"
+            className="size-10"
+            onClick={() => setToolMode('select')}
+            title={tControls('cursorTool')}
+          >
+            <MousePointer2 className="w-5 h-5" />
+          </Button>
 
-            {/*<Button
-              variant={toolMode === 'text' ? 'default' : 'secondary'}
-              size="icon"
-              className="size-10"
-              onClick={() => setToolMode('text')}
-              title={tControls('textTool')}
-            >
-              <Type className="w-5 h-5" />
-            </Button>*/}
-          </div>
+          {/* Text Tool */}
+          <Button
+            variant={toolMode === 'text' ? 'default' : 'secondary'}
+            size="icon"
+            className="size-10"
+            onClick={() => {
+              if (toolMode === 'text') {
+                setToolMode('select');
+              } else {
+                setToolMode('text');
+              }
+            }}
+            title={tControls('textTool') || 'Text'}
+          >
+            <Type className="w-5 h-5" />
+          </Button>
+
+          {/* Post-it Tool */}
+          <Button
+            variant={toolMode === 'postit' ? 'default' : 'secondary'}
+            size="icon"
+            className="size-10"
+            onClick={() => {
+              if (toolMode === 'postit') {
+                setToolMode('select');
+              } else {
+                setToolMode('postit');
+              }
+            }}
+            title={tControls('postitTool') || 'Post-it'}
+          >
+            <StickyNote className="w-5 h-5" />
+          </Button>
+
+          {/* Draw Tool */}
+          <Button
+            variant={toolMode === 'draw' ? 'default' : 'secondary'}
+            size="icon"
+            className="size-10"
+            onClick={() => {
+              if (toolMode === 'draw' && isEraserMode) {
+                setIsEraserMode(false);
+              } else if (toolMode === 'draw') {
+                setToolMode('select');
+                setIsEraserMode(false);
+              } else {
+                setToolMode('draw');
+                setIsEraserMode(false);
+              }
+            }}
+            title={tControls('drawTool') || 'Draw'}
+          >
+            <Pencil className="w-5 h-5" />
+          </Button>
+
+          {/* Text Tool Options */}
+          {toolMode === 'text' && (
+            <>
+              <Separator orientation="horizontal" className="w-full my-1" />
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {[
+                  '#18181b', // charcoal
+                  '#ef4444', // red
+                  '#22c55e', // green
+                  '#3b82f6', // blue
+                  '#f59e0b', // amber
+                  '#a855f7', // purple
+                ].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setTextColor(color)}
+                    className={cn(
+                      "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                      textColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                    )}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                      <Palette className="size-3.5 text-gray-500" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" side="left" align="center">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                      <input
+                        type="color"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Separator orientation="horizontal" className="w-full my-1" />
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs text-gray-500">{textFontSize}</span>
+                <input
+                  type="range"
+                  min="12"
+                  max="72"
+                  value={textFontSize}
+                  onChange={(e) => setTextFontSize(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Post-it Tool Options */}
+          {toolMode === 'postit' && (
+            <>
+              <Separator orientation="horizontal" className="w-full my-1" />
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {[
+                  '#fff085', // yellow
+                  '#fca5a5', // red/pink
+                  '#86efac', // green
+                  '#93c5fd', // blue
+                  '#fdba74', // orange
+                  '#d8b4fe', // purple
+                ].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setPostItColor(color)}
+                    className={cn(
+                      "size-6 rounded-md border-2 transition-all hover:scale-110 active:scale-95",
+                      postItColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                    )}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="size-6 rounded-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                      <Palette className="size-3.5 text-gray-500" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" side="left" align="center">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                      <input
+                        type="color"
+                        value={postItColor}
+                        onChange={(e) => setPostItColor(e.target.value)}
+                        className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </>
+          )}
+
+          {/* Draw Tool Options */}
+          {toolMode === 'draw' && (
+            <>
+              <Separator orientation="horizontal" className="w-full my-1" />
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {[
+                  '#18181b', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#a855f7',
+                ].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
+                    className={cn(
+                      "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                      strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
+                    )}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                      <Palette className="size-3.5 text-gray-500" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" side="left" align="center">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
+                      <input
+                        type="color"
+                        value={strokeColor}
+                        onChange={(e) => setStrokeColor(e.target.value)}
+                        className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Separator orientation="horizontal" className="w-full my-1" />
+              <div className="flex flex-col items-center gap-2">
+                {[4, 8, 12].map((width) => (
+                  <button
+                    key={width}
+                    onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
+                    className={cn(
+                      "w-full h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                      strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                    )}
+                    title={`${width}px`}
+                  >
+                    <div
+                      className="bg-current rounded-full"
+                      style={{
+                        width: `${width * 2}px`,
+                        height: `${Math.min(width, 14)}px`,
+                        opacity: strokeWidth === width ? 1 : 0.6
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <Separator orientation="horizontal" className="w-full my-1" />
+              <button
+                onClick={() => setIsEraserMode(true)}
+                className={cn(
+                  "w-full h-10 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
+                  isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
+                )}
+                title={tControls('eraser')}
+              >
+                <Eraser className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Bottom Right - Controls */}
@@ -848,118 +1071,6 @@ export default function CanvasPage() {
                   </Button>
                 </div>
 
-                {/* Tool Modes */}
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant={toolMode === 'select' ? 'default' : 'secondary'}
-                    size="icon"
-                    className="size-9"
-                    onClick={() => {
-                      setToolMode('select');
-                      setIsEraserMode(false);
-                    }}
-                    title={tControls('cursorTool')}
-                  >
-                    <MousePointer2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={toolMode === 'draw' ? 'default' : 'secondary'}
-                    size="icon"
-                    className="size-9"
-                    onClick={() => {
-                      if (toolMode === 'draw') {
-                        setToolMode('select');
-                        setIsEraserMode(false);
-                      } else {
-                        setToolMode('draw');
-                        setIsEraserMode(false);
-                      }
-                    }}
-                    title={tControls('drawTool') || 'Draw'}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Draw Tools - só aparece quando em modo draw */}
-                {toolMode === 'draw' && (
-                  <div className="flex flex-col gap-2 bg-gray-50 rounded-xl p-2 border border-gray-200">
-                    {/* Color Swatches */}
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {[
-                        '#18181b', // charcoal
-                        '#ef4444', // red
-                        '#22c55e', // green
-                        '#3b82f6', // blue
-                        '#f59e0b', // amber
-                        '#a855f7', // purple
-                      ].map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
-                          className={cn(
-                            "size-5 rounded-full border-2 transition-all active:scale-95",
-                            strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
-                          )}
-                          style={{ backgroundColor: color }}
-                          title={color}
-                        />
-                      ))}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className="size-5 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center transition-colors active:border-gray-400">
-                            <Palette className="size-3 text-gray-500" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-3" side="left" align="center">
-                          <div className="flex flex-col gap-2">
-                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
-                            <input
-                              type="color"
-                              value={strokeColor}
-                              onChange={(e) => setStrokeColor(e.target.value)}
-                              className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
-                            />
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    {/* Thickness Selection */}
-                    <div className="flex items-center gap-0.5">
-                      {[4, 8, 12].map((width) => (
-                        <button
-                          key={width}
-                          onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
-                          className={cn(
-                            "h-7 px-1.5 rounded-md flex items-center justify-center transition-all active:bg-gray-100",
-                            strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
-                          )}
-                          title={`${width}px`}
-                        >
-                          <div
-                            className="bg-current rounded-full"
-                            style={{
-                              width: '12px',
-                              height: `${Math.min(width, 10)}px`,
-                              opacity: strokeWidth === width ? 1 : 0.6
-                            }}
-                          />
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => setIsEraserMode(true)}
-                        className={cn(
-                          "h-7 w-7 rounded-md flex items-center justify-center transition-all active:bg-gray-100",
-                          isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
-                        )}
-                        title={tControls('eraser')}
-                      >
-                        <Eraser className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
             </div>
@@ -967,257 +1078,6 @@ export default function CanvasPage() {
         ) : (
           /* Desktop: Controles horizontais normais */
           <div className="absolute right-6 bottom-6 z-10 flex items-center gap-6">
-            {/* Tool Modes */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant={toolMode === 'select' ? 'default' : 'secondary'}
-                size="icon"
-                className="size-10"
-                onClick={() => setToolMode('select')}
-                title={tControls('cursorTool')}
-              >
-                <MousePointer2 className="w-5 h-5" />
-              </Button>
-
-              {/* Text Tool */}
-              <Button
-                variant={toolMode === 'text' ? 'default' : 'secondary'}
-                size="icon"
-                className="size-10"
-                onClick={() => {
-                  if (toolMode === 'text') {
-                    setToolMode('select');
-                  } else {
-                    setToolMode('text');
-                  }
-                }}
-                title={tControls('textTool') || 'Text'}
-              >
-                <Type className="w-5 h-5" />
-              </Button>
-
-              {toolMode === 'text' && (
-                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
-                  {/* Color Swatches */}
-                  <div className="flex items-center gap-1.5">
-                    {[
-                      '#18181b', // charcoal
-                      '#ef4444', // red
-                      '#22c55e', // green
-                      '#3b82f6', // blue
-                      '#f59e0b', // amber
-                      '#a855f7', // purple
-                    ].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setTextColor(color)}
-                        className={cn(
-                          "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
-                          textColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
-                        )}
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                    ))}
-
-                    {/* Custom Color Picker */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
-                          <Palette className="size-3.5 text-gray-500" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3" side="top" align="center">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
-                          <input
-                            type="color"
-                            value={textColor}
-                            onChange={(e) => setTextColor(e.target.value)}
-                            className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <Separator orientation="vertical" className="h-6" />
-
-                  {/* Font Size Slider */}
-                  <div className="flex items-center gap-2 min-w-[120px]">
-                    <span className="text-xs text-gray-500 w-6">{textFontSize}</span>
-                    <input
-                      type="range"
-                      min="12"
-                      max="72"
-                      value={textFontSize}
-                      onChange={(e) => setTextFontSize(parseInt(e.target.value))}
-                      className="w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Post-it Tool */}
-              <Button
-                variant={toolMode === 'postit' ? 'default' : 'secondary'}
-                size="icon"
-                className="size-10"
-                onClick={() => {
-                  if (toolMode === 'postit') {
-                    setToolMode('select');
-                  } else {
-                    setToolMode('postit');
-                  }
-                }}
-                title={tControls('postitTool') || 'Post-it'}
-              >
-                <StickyNote className="w-5 h-5" />
-              </Button>
-
-              {toolMode === 'postit' && (
-                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
-                  {/* Post-it Color Swatches */}
-                  <div className="flex items-center gap-1.5">
-                    {[
-                      '#fff085', // yellow
-                      '#fca5a5', // red/pink
-                      '#86efac', // green
-                      '#93c5fd', // blue
-                      '#fdba74', // orange
-                      '#d8b4fe', // purple
-                    ].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setPostItColor(color)}
-                        className={cn(
-                          "size-6 rounded-md border-2 transition-all hover:scale-110 active:scale-95",
-                          postItColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
-                        )}
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                    ))}
-
-                    {/* Custom Color Picker */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="size-6 rounded-md border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
-                          <Palette className="size-3.5 text-gray-500" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3" side="top" align="center">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{tControls('customColor') || 'Custom Color'}</span>
-                          <input
-                            type="color"
-                            value={postItColor}
-                            onChange={(e) => setPostItColor(e.target.value)}
-                            className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              )}
-
-              {/* Draw Tool */}
-              <Button
-                variant={toolMode === 'draw' ? 'default' : 'secondary'}
-                size="icon"
-                className="size-10"
-                onClick={() => {
-                  if (toolMode === 'draw' && isEraserMode) {
-                    setIsEraserMode(false);
-                  } else if (toolMode === 'draw') {
-                    setToolMode('select');
-                    setIsEraserMode(false);
-                  } else {
-                    setToolMode('draw');
-                    setIsEraserMode(false);
-                  }
-                }}
-                title={tControls('drawTool') || 'Draw'}
-              >
-                <Pencil className="w-5 h-5" />
-              </Button>
-
-              {toolMode === 'draw' && (
-                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-2xl border border-gray-200 h-12 shadow-md animate-in fade-in slide-in-from-right-4 duration-300">
-                  {/* Color Swatches */}
-                  <div className="flex items-center gap-1.5">
-                    {[
-                      '#18181b', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#a855f7',
-                    ].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => { setStrokeColor(color); setIsEraserMode(false); }}
-                        className={cn(
-                          "size-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
-                          strokeColor === color ? "border-gray-400 scale-110 ring-2 ring-gray-100" : "border-transparent"
-                        )}
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                    ))}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="size-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
-                          <Palette className="size-3.5 text-gray-500" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3" side="top" align="center">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Color</span>
-                          <input
-                            type="color"
-                            value={strokeColor}
-                            onChange={(e) => setStrokeColor(e.target.value)}
-                            className="w-full h-8 rounded cursor-pointer border-none bg-transparent"
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <Separator orientation="vertical" className="h-6" />
-                  <div className="flex items-center gap-1">
-                    {[4, 8, 12].map((width) => (
-                      <button
-                        key={width}
-                        onClick={() => { setStrokeWidth(width); setIsEraserMode(false); }}
-                        className={cn(
-                          "h-8 px-2 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
-                          strokeWidth === width ? "bg-gray-100 text-blue-600" : "text-gray-400"
-                        )}
-                        title={`${width}px`}
-                      >
-                        <div
-                          className="bg-current rounded-full"
-                          style={{
-                            width: '16px',
-                            height: `${Math.min(width, 14)}px`,
-                            opacity: strokeWidth === width ? 1 : 0.6
-                          }}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <Separator orientation="vertical" className="h-6" />
-                  <button
-                    onClick={() => setIsEraserMode(true)}
-                    className={cn(
-                      "h-8 w-8 rounded-md flex items-center justify-center transition-all hover:bg-gray-100",
-                      isEraserMode ? "bg-gray-100 text-blue-600" : "text-gray-400"
-                    )}
-                    title={tControls('eraser')}
-                  >
-                    <Eraser className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Undo/Redo */}
             <div className="flex items-center gap-2">
               <Button
